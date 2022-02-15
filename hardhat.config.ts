@@ -87,7 +87,7 @@ const config: HardhatUserConfig = {
     tests: "./test",
   },
   solidity: {
-    version: "0.8.9",
+    version: "0.8.6",
     settings: {
       metadata: {
         // Not including the metadata hash
@@ -116,7 +116,15 @@ const config: HardhatUserConfig = {
   },
   dodoc: {
     runOnCompile: process.env.GENERATE_DOCS ? true : false,
-    include: ["Greeter"],
+    include: [
+      "IVault",
+      "BaseStrategy",
+      "IMarginTradingStrategy",
+      "IWrappedToken",
+      "VaultMath",
+      "TraderMath",
+      "TransferHelper",
+    ],
   },
 };
 
