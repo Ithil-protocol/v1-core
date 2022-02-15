@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import { task } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
 
@@ -72,4 +73,17 @@ task("deploy").setAction(async function (taskArguments: TaskArguments, { ethers 
   const ys: YearnStrategy = <YearnStrategy>await ysFactory.deploy(yearn.address, vault.address);
   await ys.deployed();
   console.log("YearnStrategy deployed to address: ", ys.address);
+
+  // write addresses to a file
+  const addresses = {
+    kyberMock: kyber.address,
+    yearnMock: yearn.address,
+    wethMock: weth.address,
+    tknMock: tkn.address,
+    vault: vault.address,
+    marginTradingStrategy: mts.address,
+    yearnStrategy: ys.address,
+  };
+  const str = JSON.stringify(addresses, null, 4);
+  fs.writeFileSync("addresses.json", str, "utf8");
 });
