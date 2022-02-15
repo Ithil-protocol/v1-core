@@ -1,6 +1,6 @@
 {
-  "name": "@ithil-protocol/template",
-  "description": "Smart contract template",
+  "name": "@ithil-protocol/v1-core",
+  "description": "Core smart contracts for the Ithil protocol",
   "version": "1.0.0",
   "license": "BUSL-1.1",
   "keywords": [
@@ -12,7 +12,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Ithil-protocol/template"
+    "url": "https://github.com/Ithil-protocol/v1-core"
   },
   "engines": {
     "node": ">=14"
@@ -29,6 +29,8 @@
     "@nomiclabs/hardhat-ethers": "^2.0.4",
     "@nomiclabs/hardhat-etherscan": "^3.0.1",
     "@nomiclabs/hardhat-waffle": "^2.0.2",
+    "@openzeppelin/contracts": "^4.5.0",
+    "@pooltogether/v4-core": "^1.2.0",
     "@primitivefi/hardhat-dodoc": "^0.1.3",
     "@tenderly/hardhat-tenderly": "^1.0.13",
     "@typechain/ethers-v5": "^9.0.0",
@@ -80,7 +82,7 @@
     "commit": "git-cz",
     "compile": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat compile",
     "coverage": "yarn typechain && hardhat coverage --solcoverjs ./.solcover.js --temp artifacts --testfiles \"test/**/*.ts\"",
-    "deploy": "hardhat deploy:Greeter",
+    "deploy": "hardhat deploy",
     "lint": "yarn lint:sol && yarn lint:ts && yarn prettier:check",
     "lint:sol": "solhint --config ./.solhint.json --max-warnings 0 \"contracts/**/*.sol\"",
     "lint:ts": "eslint --config ./.eslintrc.yaml --ignore-path ./.eslintignore --ext .js,.ts .",
@@ -91,9 +93,5 @@
     "prettier:check": "prettier --check --config ./.prettierrc.yaml \"**/*.{js,json,md,sol,ts}\"",
     "test": "hardhat test",
     "typechain": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat typechain"
-  },
-  "dependencies": {
-    "@openzeppelin/contracts": "^4.5.0",
-    "@pooltogether/v4-core": "^1.2.0"
   }
 }
