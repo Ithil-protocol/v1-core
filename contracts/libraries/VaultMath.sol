@@ -57,22 +57,6 @@ library VaultMath {
         }
     }
 
-    /// @notice Computes realised APY in bips (1 = 0.01%)
-    function computeAPY(
-        uint256 totalBalance,
-        uint256 totalClaimingPower,
-        uint256 startingTime, // moment in which the vault was created, in universal time
-        uint256 endingTime // the moment the APY is computed
-    ) internal pure returns (uint256 apy) {
-        if (totalBalance <= 0 || totalClaimingPower <= 0) {
-            apy = 0;
-        } else {
-            apy =
-                ((totalBalance - totalClaimingPower) * (APY_PERIOD * RESOLUTION)) /
-                (totalClaimingPower * (endingTime - startingTime));
-        }
-    }
-
     function computeFees(uint256 amount, uint256 fixedFee) internal pure returns (uint256 debt) {
         return (amount * fixedFee) / RESOLUTION;
     }

@@ -11,10 +11,6 @@ interface IVault {
     /// @param token the token to check the claimable amount against
     function claimable(address token) external view returns (uint256);
 
-    /// @notice Gets an estimation of the past APY of a given token
-    /// @param token the token to check the APY against
-    function apy(address token) external view returns (uint256);
-
     /// @notice Add tokens to the vault, and updates internal status to register updated claiming powers
     /// @param token the token to deposit
     /// @param amount the amount of native tokens deposited

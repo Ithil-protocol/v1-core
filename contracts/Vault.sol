@@ -61,17 +61,6 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         return IERC20(token).balanceOf(address(this)) + vaults[token].netLoans - vaults[token].insuranceReserveBalance;
     }
 
-    function apy(address token) external view override whitelisted(token) returns (uint256) {
-        uint256 totalWealth = balance(token);
-        return
-            VaultMath.computeAPY(
-                totalWealth,
-                IWrappedToken(vaults[token].wrappedToken).totalSupply(),
-                vaults[token].creationTime,
-                block.timestamp
-            );
-    }
-
     function claimable(address token) external view override whitelisted(token) returns (uint256) {
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
 
