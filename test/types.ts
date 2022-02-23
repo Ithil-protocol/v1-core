@@ -27,4 +27,7 @@ declare module "mocha" {
 
 export interface Signers {
   admin: SignerWithAddress;
+  investor: SignerWithAddress;
+  trader: SignerWithAddress;
+  liquidator: SignerWithAddress;
 }
