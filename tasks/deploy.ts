@@ -68,7 +68,7 @@ task("deploy").setAction(async function (taskArguments: TaskArguments, { ethers 
   await mts.deployed();
   console.log("MarginTradingStrategy deployed to address: ", mts.address);
 
-  // MarginTradingStrategy
+  // YearnStrategy
   const ysFactory: YearnStrategy__factory = <YearnStrategy__factory>await ethers.getContractFactory("YearnStrategy");
   const ys: YearnStrategy = <YearnStrategy>await ysFactory.deploy(yearn.address, vault.address);
   await ys.deployed();

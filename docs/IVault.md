@@ -20,26 +20,6 @@ Adds a new strategy address to the list
 | -------- | ------- | ------------------- |
 | strategy | address | the strategy to add |
 
-### apy
-
-```solidity
-function apy(address token) external view returns (uint256)
-```
-
-Gets an estimation of the past APY of a given token
-
-#### Parameters
-
-| Name  | Type    | Description                        |
-| ----- | ------- | ---------------------------------- |
-| token | address | the token to check the APY against |
-
-#### Returns
-
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | uint256 | undefined   |
-
 ### balance
 
 ```solidity
