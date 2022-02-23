@@ -47,6 +47,7 @@ contract MockKyberNetworkProxy is IKyberNetworkProxy {
         uint256 srcAmount
     ) public view override returns (uint256, uint256) {
         Rate memory rate = rates[src][dest];
+        if (rate.denominator == 0) return (0, 0);
 
         uint256 res = (srcAmount * rate.numerator) / rate.denominator;
 
