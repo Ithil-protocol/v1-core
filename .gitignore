@@ -34,3 +34,8 @@ src/types/*
 !src/types/factories
 src/types/factories/*
 !src/types/factories/Greeter__factory.ts
+
+# Exclude dirs
+/abi
+/docs
+/src

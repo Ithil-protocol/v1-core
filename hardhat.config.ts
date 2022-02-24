@@ -3,6 +3,7 @@ import "@nomiclabs/hardhat-etherscan";
 import "@primitivefi/hardhat-dodoc";
 import "@tenderly/hardhat-tenderly";
 import "@typechain/hardhat";
+import "hardhat-abi-exporter";
 import "hardhat-gas-reporter";
 import "hardhat-spdx-license-identifier";
 import "solidity-coverage";
@@ -44,6 +45,13 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
 }
 
 const config: HardhatUserConfig = {
+  abiExporter: {
+    path: "./abi",
+    clear: false,
+    flat: true,
+    // only: [],
+    // except: []
+  },
   defaultNetwork: "hardhat",
   gasReporter: {
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,

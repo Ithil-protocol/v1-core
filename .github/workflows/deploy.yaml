@@ -1,0 +1,77 @@
+name: Deploy to Testnet
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deployment:
+    name: "Build & Migrate to Testnet"
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [lts/*]
+
+    # Only deploy from master
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      # Checkout source code
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # Setup Nodejs
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      # Setup yarn
+      - name: Install yarn
+        run: npm install -g yarn
+
+      # Cache dependencies for faster build time in future
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ./node_modules
+            ./.yarn
+          key: ${{ runner.os }}-modules-${{ hashFiles('./yarn.lock') }}
+
+      # Install GYP as build dependencies
+      - name: Install GYP
+        run: |
+          npm install node-gyp -g
+          npm install node-gyp-build -g
+
+      # Install project dependencies
+      - name: Install dependencies
+        run: |
+          yarn install --prefer-offline --pure-lockfile --cache-folder .yarn --modules-folder node_modules
+
+      # Configure Git information
+      - name: Configure git information
+        run: |
+          git config --global user.name $GITHUB_ACTOR
+          git config --global user.email $GITHUB_ACTOR@users.noreply.github.com
+
+      # Deploy smart contracts to Rinkeby testnet
+      - name: Deploy
+        env:
+          INFURA_KEY: ${{ secrets.INFURA_KEY }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          REPORT_GAS: true
+          FORKING: false
+          GENERATE_DOCS: false
+        run: |
+          yarn deploy --network rinkeby
+          yarn export-abi
+
+      # Prepare release files from arifacts
+      - name: Prepare release files
+        run: |
+          git add .
+          git commit -am "New testnet deployment"
+          git push
