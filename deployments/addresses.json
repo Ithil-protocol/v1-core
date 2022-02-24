@@ -1,7 +1,7 @@
 {
   "name": "Deployed Contracts",
   "version": "1.0.0",
-  "timestamp": "2022-02-23T17:53:57.970Z",
+  "timestamp": "2022-02-24T19:47:45.463Z",
   "chainId": 31337,
   "addresses": {
     "MockKyberNetworkProxy": "0xFE63dA96722522641a105c6ac9B708aCDc450427",
