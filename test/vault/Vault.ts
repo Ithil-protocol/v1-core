@@ -7,6 +7,7 @@ import type { Vault } from "../../src/types/Vault";
 import { Signers } from "../types";
 import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../src/types/MockWETH";
+import { BigNumber } from "ethers";
 
 describe("Unit tests", function () {
   before(async function () {
@@ -42,20 +43,49 @@ describe("Unit tests", function () {
 });
 
 function checkWhiteList(): void {
-  it("check states", async function () {
+  it("check whitelistToken", async function () {
+    const baseFee = 10;
+    const fixedFee = 11;
     const token = this.mockWETH.address;
     const initialState = {
       vaultState: await this.vault.vaults(token),
     };
 
-    await this.vault.whitelistToken(token, 10, 10);
+    await this.vault.whitelistToken(token, baseFee, fixedFee);
 
     const finalState = {
       vaultState: await this.vault.vaults(token),
     };
+    console.log(initialState, finalState);
 
-    expect(initialState.vaultState[0]).to.equal(false);
-    expect(finalState.vaultState[0]).to.equal(true);
+    expect(initialState.vaultState.supported).to.equal(false);
+    expect(finalState.vaultState.supported).to.equal(true);
+    expect(finalState.vaultState.baseFee).to.equal(BigNumber.from(baseFee));
+    expect(finalState.vaultState.fixedFee).to.equal(BigNumber.from(fixedFee));
+  });
+
+  it("check whitelistTokenAndExec", async function () {
+    const baseFee = 10;
+    const fixedFee = 11;
+    const OUSD = "0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86";
+    let ABI = '[{"inputs": [],"name": "rebaseOptIn","outputs": [],"stateMutability": "nonpayable","type": "function"}]';
+    let iface = new ethers.utils.Interface(ABI);
+    const data = iface.encodeFunctionData("rebaseOptIn");
+
+    const initialState = {
+      vaultState: await this.vault.vaults(OUSD),
+    };
+
+    await this.vault.whitelistTokenAndExec(OUSD, baseFee, fixedFee, data);
+
+    const finalState = {
+      vaultState: await this.vault.vaults(OUSD),
+    };
+
+    expect(initialState.vaultState.supported).to.equal(false);
+    expect(finalState.vaultState.supported).to.equal(true);
+    expect(finalState.vaultState.baseFee).to.equal(BigNumber.from(baseFee));
+    expect(finalState.vaultState.fixedFee).to.equal(BigNumber.from(fixedFee));
   });
 }
 
