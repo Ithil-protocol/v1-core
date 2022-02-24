@@ -49,7 +49,7 @@ jobs:
       # Install project dependencies
       - name: Install dependencies
         run: |
-          yarn install --prefer-offline --pure-lockfile --cache-folder .yarn --modules-folder node_modules
+          yarn install --prefer-offline  --cache-folder .yarn --modules-folder node_modules
 
       # Configure Git information
       - name: Configure git information
