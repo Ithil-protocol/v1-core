@@ -73,7 +73,7 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   await mts.deployed();
   console.log("MarginTradingStrategy deployed to address: ", mts.address);
 
-  // yearnStrategy
+  // MarginTradingStrategy
   const ysFactory: YearnStrategy__factory = <YearnStrategy__factory>(
     await hre.ethers.getContractFactory("YearnStrategy")
   );
