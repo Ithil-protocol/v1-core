@@ -1,5 +1,6 @@
 import { expect } from "chai";
-import { BigNumber, ethers } from "ethers";
+import { BigNumber } from "ethers";
+import { ethers } from "hardhat";
 
 export function checkBorrow(): void {
   it("check borrow", async function () {

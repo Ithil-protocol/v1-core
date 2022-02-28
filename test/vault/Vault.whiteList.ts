@@ -1,5 +1,6 @@
 import { expect } from "chai";
-import { BigNumber, ethers } from "ethers";
+import { BigNumber } from "ethers";
+import { ethers } from "hardhat";
 
 export function checkWhiteList(): void {
   it("check whitelistToken", async function () {
@@ -15,7 +16,6 @@ export function checkWhiteList(): void {
     const finalState = {
       vaultState: await this.vault.vaults(token),
     };
-    console.log(initialState, finalState);
 
     expect(initialState.vaultState.supported).to.equal(false);
     expect(finalState.vaultState.supported).to.equal(true);

@@ -13,6 +13,9 @@ import { MarginTradingStrategy__factory } from "../src/types/factories/MarginTra
 import { YearnStrategy } from "../src/types/YearnStrategy";
 import { YearnStrategy__factory } from "../src/types/factories/YearnStrategy__factory";
 
+import { BaseStrategy } from "../src/types/BaseStrategy";
+import { BaseStrategy__factory } from "../src/types/factories/BaseStrategy__factory";
+
 import { MockKyberNetworkProxy } from "../src/types/MockKyberNetworkProxy";
 import { MockKyberNetworkProxy__factory } from "../src/types/factories/MockKyberNetworkProxy__factory";
 
