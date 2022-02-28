@@ -944,6 +944,7 @@ __metadata:
     ethers: ^5.5.4
     fs-extra: ^10.0.0
     hardhat: ^2.8.3
+    hardhat-abi-exporter: ^2.8.0
     hardhat-gas-reporter: ^1.0.7
     hardhat-spdx-license-identifier: ^2.0.3
     husky: ^7.0.4
@@ -2047,7 +2048,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ansi-colors@npm:4.1.1, ansi-colors@npm:^4.1.1":
+"ansi-colors@npm:4.1.1, ansi-colors@npm:^4.1.0, ansi-colors@npm:^4.1.1":
   version: 4.1.1
   resolution: "ansi-colors@npm:4.1.1"
   checksum: 138d04a51076cb085da0a7e2d000c5c0bb09f6e772ed5c65c53cb118d37f6c5f1637506d7155fb5f330f0abcf6f12fa2e489ac3f8cdab9da393bf1bb4f9a32b0
@@ -7365,6 +7366,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"hardhat-abi-exporter@npm:^2.8.0":
+  version: 2.8.0
+  resolution: "hardhat-abi-exporter@npm:2.8.0"
+  dependencies:
+    "@ethersproject/abi": ^5.5.0
+    delete-empty: ^3.0.0
+  peerDependencies:
+    hardhat: ^2.0.0
+  checksum: d8657b0d4ed55e1de0a18d8e70b8de38cf1f8c85e4162cdfe499b74d75f17992359c0c621d1b920f5a666eed2bd26c0a63d8c18ba60d1660f49c9fed378afe62
+  languageName: node
+  linkType: hard
+
 "hardhat-gas-reporter@npm:^1.0.7":
   version: 1.0.8
   resolution: "hardhat-gas-reporter@npm:1.0.8"
@@ -10996,6 +11009,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"path-starts-with@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "path-starts-with@npm:2.0.0"
+  checksum: c780e5feb53f37a0cc78c446181aac2d1e4554e5693bbc4ad03c99157b9411ade26a3503dcd5b3b8f0fd56d36daa60ce5a8c24d66b54a400c812fe11eb5bcab9
+  languageName: node
+  linkType: hard
+
 "path-to-regexp@npm:0.1.7":
   version: 0.1.7
   resolution: "path-to-regexp@npm:0.1.7"
@@ -12079,7 +12099,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rimraf@npm:^2.2.8, rimraf@npm:^2.6.3":
+"rimraf@npm:^2.2.8, rimraf@npm:^2.6.2, rimraf@npm:^2.6.3":
   version: 2.7.1
   resolution: "rimraf@npm:2.7.1"
   dependencies:
