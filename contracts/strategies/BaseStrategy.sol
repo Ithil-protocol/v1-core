@@ -60,6 +60,10 @@ abstract contract BaseStrategy is IStrategy, Ownable {
         return totalAllowances[token];
     }
 
+    function vaultAddress() public view override returns (address) {
+        return address(vault);
+    }
+
     function computePairRiskFactor(address token0, address token1) public view override returns (uint256) {
         return (riskFactors[token0] + riskFactors[token1]) / 2;
     }

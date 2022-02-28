@@ -17,6 +17,7 @@ contract Liquidator is Ownable {
     using TransferHelper for IERC20;
 
     error Insufficient_Margin_Call(uint256);
+    error Insufficient_Price(uint256);
 
     function computeLiquidationScore(address _strategy, IStrategy.Position memory position)
         public
@@ -85,6 +86,27 @@ contract Liquidator is Ownable {
             strategy.modifyCollateralAndOwner(positionId, received, msg.sender);
             (int256 newScore, ) = computeLiquidationScore(_strategy, strategy.getPosition(positionId));
             if (newScore > 0) revert Insufficient_Margin_Call(extraMargin);
+        }
+    }
+
+    function purchaseAssets(
+        address _strategy,
+        uint256 positionId,
+        uint256 price
+    ) external {
+        //todo: add checks on liquidator
+        IStrategy strategy = IStrategy(_strategy);
+        IStrategy.Position memory position = strategy.getPosition(positionId);
+        (int256 score, ) = computeLiquidationScore(_strategy, position);
+        address vault = strategy.vaultAddress();
+
+        //todo: this contract is not a strategy, thus it cannot repay the vault (modify net loans).
+        //todo: put some specific strategy function to make this possible
+        if (score > 0) {
+            (, uint256 received) = IERC20(position.owedToken).transferTokens(msg.sender, vault, price);
+            //todo: calculate fees!
+            if (received < position.principal + position.fees) revert Insufficient_Price(price);
+            else IERC20(position.heldToken).transferTokens(_strategy, msg.sender, position.allowance);
         }
     }
 
