@@ -62,7 +62,11 @@ interface IStrategy {
 
     function forcefullyDelete(uint256 _id) external;
 
-    function modifyTotalAllowances(uint256 _id) external;
+    function modifyCollateralAndOwner(
+        uint256 _id,
+        uint256 newCollateral,
+        address newOwner
+    ) external;
 
     function getPosition(uint256 positionId) external view returns (Position memory);
 

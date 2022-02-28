@@ -13,6 +13,11 @@ import { TransferHelper } from "../libraries/TransferHelper.sol";
 /// @author   Ithil
 /// @notice   Base liquidation contract, can forcefully close base strategy's positions
 contract Liquidator is Ownable {
+    using SafeERC20 for IERC20;
+    using TransferHelper for IERC20;
+
+    error Insufficient_Margin_Call(uint256);
+
     function computeLiquidationScore(address _strategy, IStrategy.Position memory position)
         public
         view
@@ -63,6 +68,23 @@ contract Liquidator is Ownable {
                     position.principal + position.fees
                 );
             if (position.allowance > 0) strategy.forcefullyClose(position, expectedCost);
+        }
+    }
+
+    function marginCall(
+        address _strategy,
+        uint256 positionId,
+        uint256 extraMargin
+    ) external {
+        //todo: add checks on liquidator
+        IStrategy strategy = IStrategy(_strategy);
+        IStrategy.Position memory position = strategy.getPosition(positionId);
+        (int256 score, ) = computeLiquidationScore(_strategy, position);
+        if (score > 0) {
+            (, uint256 received) = IERC20(position.collateralToken).transferTokens(msg.sender, _strategy, extraMargin);
+            strategy.modifyCollateralAndOwner(positionId, received, msg.sender);
+            (int256 newScore, ) = computeLiquidationScore(_strategy, strategy.getPosition(positionId));
+            if (newScore > 0) revert Insufficient_Margin_Call(extraMargin);
         }
     }
 

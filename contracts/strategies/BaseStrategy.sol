@@ -182,9 +182,13 @@ abstract contract BaseStrategy is IStrategy, Ownable {
         emit PositionWasLiquidated(_id);
     }
 
-    function modifyTotalAllowances(uint256 _id) external override onlyLiquidator {
-        delete positions[_id];
-        emit PositionWasLiquidated(_id);
+    function modifyCollateralAndOwner(
+        uint256 _id,
+        uint256 newCollateral,
+        address newOwner
+    ) external override onlyLiquidator {
+        positions[_id].collateral += newCollateral;
+        positions[_id].owner = newOwner;
     }
 
     function _openPosition(
