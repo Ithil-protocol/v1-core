@@ -106,7 +106,10 @@ contract Liquidator is Ownable {
             (, uint256 received) = IERC20(position.owedToken).transferTokens(msg.sender, vault, price);
             //todo: calculate fees!
             if (received < position.principal + position.fees) revert Insufficient_Price(price);
-            else IERC20(position.heldToken).transferTokens(_strategy, msg.sender, position.allowance);
+            else {
+                IERC20(position.heldToken).transferTokens(_strategy, msg.sender, position.allowance);
+                strategy.forcefullyDelete(positionId);
+            }
         }
     }
 
