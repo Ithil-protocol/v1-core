@@ -17,7 +17,11 @@ contract MarginTradingStrategy is BaseStrategy {
 
     IKyberNetworkProxy public immutable kyberProxy;
 
-    constructor(address _kyber, address _vault) BaseStrategy(_vault) {
+    constructor(
+        address _kyber,
+        address _vault,
+        address _liquidator
+    ) BaseStrategy(_vault, _liquidator) {
         kyberProxy = IKyberNetworkProxy(_kyber);
     }
 
@@ -52,11 +56,11 @@ contract MarginTradingStrategy is BaseStrategy {
         );
     }
 
-    function _quote(
+    function quote(
         address src,
         address dst,
         uint256 amount
-    ) internal view override returns (uint256, uint256) {
+    ) public view override returns (uint256, uint256) {
         return kyberProxy.getExpectedRate(IERC20(src), IERC20(dst), amount);
     }
 

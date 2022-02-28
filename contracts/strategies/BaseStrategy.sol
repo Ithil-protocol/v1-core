@@ -17,13 +17,15 @@ abstract contract BaseStrategy is IStrategy, Ownable {
     using TransferHelper for IERC20;
 
     IVault public immutable vault;
+    address public immutable liquidator;
     uint256 public id;
     mapping(address => uint256) public riskFactors;
     mapping(uint256 => Position) public positions;
     mapping(address => uint256) public totalAllowances;
 
-    constructor(address _vault) {
+    constructor(address _vault, address _liquidator) {
         vault = IVault(_vault);
+        liquidator = _liquidator;
         id = 0;
     }
 
@@ -41,11 +43,24 @@ abstract contract BaseStrategy is IStrategy, Ownable {
         _;
     }
 
+    modifier onlyLiquidator() {
+        if (msg.sender != liquidator) revert Only_Liquidator(msg.sender, liquidator);
+        _;
+    }
+
     function setRiskFactor(address token, uint256 riskFactor) external onlyOwner {
         riskFactors[token] = riskFactor;
     }
 
-    function computePairRiskFactor(address token0, address token1) public view returns (uint256) {
+    function getPosition(uint256 positionId) public view override returns (Position memory) {
+        return positions[positionId];
+    }
+
+    function totalAllowance(address token) external view override returns (uint256) {
+        return totalAllowances[token];
+    }
+
+    function computePairRiskFactor(address token0, address token1) public view override returns (uint256) {
         return (riskFactors[token0] + riskFactors[token1]) / 2;
     }
 
@@ -59,7 +74,7 @@ abstract contract BaseStrategy is IStrategy, Ownable {
         (, uint256 collateralReceived) = collateralToken.transferTokens(msg.sender, address(this), order.collateral);
 
         if (!order.collateralIsSpentToken)
-            (collateralPlaced, ) = _quote(order.spentToken, order.obtainedToken, collateralReceived);
+            (collateralPlaced, ) = quote(order.spentToken, order.obtainedToken, collateralReceived);
 
         if (order.collateralIsSpentToken) {
             order.maxSpent -= collateralReceived;
@@ -132,7 +147,7 @@ abstract contract BaseStrategy is IStrategy, Ownable {
         bool collateralInHeldTokens = position.collateralToken != position.owedToken;
 
         if (collateralInHeldTokens)
-            (expectedCost, ) = _quote(position.owedToken, position.heldToken, position.principal + position.fees);
+            (expectedCost, ) = quote(position.owedToken, position.heldToken, position.principal + position.fees);
 
         (uint256 amountIn, uint256 amountOut) = _closePosition(position, expectedCost);
 
@@ -156,69 +171,20 @@ abstract contract BaseStrategy is IStrategy, Ownable {
         else tokenToTransfer.safeTransferFrom(msg.sender, address(this), newCollateral);
     }
 
-    function computeLiquidationScore(Position memory position) public view returns (int256 score, uint256 dueFees) {
-        bool collateralInOwedToken = position.collateralToken != position.heldToken;
-        uint256 pairRiskFactor = computePairRiskFactor(position.heldToken, position.owedToken);
-        uint256 expectedTokens;
-        int256 profitAndLoss;
-
-        dueFees =
-            position.fees +
-            (position.interestRate * (block.timestamp - position.createdAt) * position.principal) /
-            (uint32(VaultMath.TIME_FEE_PERIOD) * VaultMath.RESOLUTION);
-
-        if (collateralInOwedToken) {
-            (expectedTokens, ) = _quote(position.heldToken, position.owedToken, position.allowance);
-            profitAndLoss = int256(expectedTokens) - int256(position.principal + dueFees);
-        } else {
-            (expectedTokens, ) = _quote(position.heldToken, position.owedToken, position.principal + dueFees);
-            profitAndLoss = int256(position.allowance) - int256(expectedTokens);
-        }
-
-        score = int256(position.collateral * pairRiskFactor) - profitAndLoss * int24(VaultMath.RESOLUTION);
+    function forcefullyClose(Position memory position, uint256 expectedCost) external override onlyLiquidator {
+        _closePosition(position, expectedCost);
     }
 
-    function liquidate(uint256[] memory positionIds) external {
-        //todo: add checks on liquidator
-        Position memory modelPosition = positions[positionIds[0]];
-        modelPosition.allowance = 0;
-        modelPosition.principal = 0;
-        modelPosition.fees = 0;
-        modelPosition.interestRate = 0;
-        modelPosition.owner = msg.sender;
-        for (uint256 i = 0; i < positionIds.length; i++) {
-            Position memory position = positions[positionIds[i]];
+    function forcefullyDelete(uint256 _id) external override onlyLiquidator {
+        Position memory position = positions[_id];
+        delete positions[_id];
+        if (totalAllowances[position.heldToken] > 0) totalAllowances[position.heldToken] -= position.allowance;
+        emit PositionWasLiquidated(_id);
+    }
 
-            if (position.heldToken != modelPosition.heldToken || position.owedToken != modelPosition.owedToken)
-                continue;
-
-            if (totalAllowances[position.heldToken] > 0) {
-                uint256 nominalAllowance = position.allowance;
-                totalAllowances[position.heldToken] -= nominalAllowance;
-                position.allowance *= IERC20(position.heldToken).balanceOf(address(this));
-                position.allowance /= (totalAllowances[position.heldToken] + nominalAllowance);
-            }
-
-            (int256 score, uint256 dueFees) = computeLiquidationScore(position);
-            if (score > 0) {
-                delete positions[positionIds[i]];
-                modelPosition.allowance += position.allowance;
-                modelPosition.principal += position.principal;
-                modelPosition.fees += dueFees;
-                emit PositionWasLiquidated(positionIds[i]);
-            }
-        }
-
-        uint256 expectedCost = 0;
-        bool collateralInHeldTokens = modelPosition.collateralToken != modelPosition.owedToken;
-
-        if (collateralInHeldTokens)
-            (expectedCost, ) = _quote(
-                modelPosition.owedToken,
-                modelPosition.heldToken,
-                modelPosition.principal + modelPosition.fees
-            );
-        if (modelPosition.allowance > 0) _closePosition(modelPosition, expectedCost);
+    function modifyTotalAllowances(uint256 _id) external override onlyLiquidator {
+        delete positions[_id];
+        emit PositionWasLiquidated(_id);
     }
 
     function _openPosition(
@@ -232,9 +198,9 @@ abstract contract BaseStrategy is IStrategy, Ownable {
         virtual
         returns (uint256 amountIn, uint256 amountOut);
 
-    function _quote(
+    function quote(
         address src,
         address dst,
         uint256 amount
-    ) internal view virtual returns (uint256, uint256);
+    ) public view virtual override returns (uint256, uint256);
 }
