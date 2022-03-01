@@ -9,6 +9,7 @@ import type { MockYearnRegistry } from "../src/types/MockYearnRegistry";
 import type { MockYearnVault } from "../src/types/MockYearnVault";
 import type { Vault } from "../src/types/Vault";
 import type { YearnStrategy } from "../src/types/YearnStrategy";
+import type { BaseStrategy } from "../src/types/BaseStrategy";
 
 declare module "mocha" {
   export interface Context {
@@ -20,6 +21,7 @@ declare module "mocha" {
     mockYearnVault: MockYearnVault;
     vault: Vault;
     yearnStrategy: YearnStrategy;
+    baseStrategy: BaseStrategy;
     loadFixture: <T>(fixture: Fixture<T>) => Promise<T>;
     signers: Signers;
   }
@@ -27,4 +29,7 @@ declare module "mocha" {
 
 export interface Signers {
   admin: SignerWithAddress;
+  investor: SignerWithAddress;
+  trader: SignerWithAddress;
+  liquidator: SignerWithAddress;
 }
