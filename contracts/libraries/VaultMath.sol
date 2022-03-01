@@ -2,6 +2,8 @@
 pragma solidity >=0.8.6;
 pragma experimental ABIEncoderV2;
 
+import { VaultState } from "./VaultState.sol";
+
 /// @title    VaultMath library
 /// @author   Ithil
 /// @notice   A library to calculate vault-related stuff, like APY, lending interests, max withdrawable tokens
@@ -93,5 +95,16 @@ library VaultMath {
         interestRate =
             ((baseFee + riskFactor) * uncoveredBalance * tradeAmount) /
             (freeLiquidity * collateral * RESOLUTION);
+    }
+
+    function addInsuranceReserve(
+        VaultState.VaultData storage self,
+        uint256 totalBalance,
+        uint256 insReserveBalance,
+        uint256 fees
+    ) internal {
+        self.insuranceReserveBalance +=
+            (fees * VaultMath.RESERVE_RATIO * (totalBalance - insReserveBalance)) /
+            (totalBalance * VaultMath.RESOLUTION);
     }
 }

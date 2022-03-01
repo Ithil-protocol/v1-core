@@ -11,6 +11,7 @@ import { IVault } from "./interfaces/IVault.sol";
 import { IWrappedToken } from "./interfaces/IWrappedToken.sol";
 import { VaultMath } from "./libraries/VaultMath.sol";
 import { VaultState } from "./libraries/VaultState.sol";
+import { GeneralMath } from "./libraries/GeneralMath.sol";
 import { WrappedToken } from "./WrappedToken.sol";
 import { TransferHelper } from "./libraries/TransferHelper.sol";
 
@@ -21,6 +22,9 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     using TransferHelper for IERC20;
     using SafeERC20 for IERC20;
     using VaultMath for uint256;
+    using GeneralMath for uint256;
+    using GeneralMath for VaultState.VaultData;
+    using VaultMath for VaultState.VaultData;
 
     IWETH internal immutable weth;
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -206,22 +210,16 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     ) external override whitelisted(token) onlyStrategy {
         VaultState.VaultData storage vaultData = vaults[token];
 
-        vaultData.netLoans -= debt;
+        vaultData.subtractLoan(debt);
+
         if (amount >= debt + fees) {
             IERC20 tkn = IERC20(token);
-            uint256 availableInsuranceBalance = 0;
+            uint256 availableInsuranceBalance = vaultData.insuranceReserveBalance.positiveSub(vaultData.netLoans);
 
-            if (vaultData.insuranceReserveBalance > vaultData.netLoans)
-                availableInsuranceBalance = vaultData.insuranceReserveBalance - vaultData.netLoans;
+            vaultData.addInsuranceReserve(tkn.balanceOf(address(this)), availableInsuranceBalance, fees);
 
-            vaultData.insuranceReserveBalance +=
-                (fees * VaultMath.RESERVE_RATIO * (tkn.balanceOf(address(this)) - availableInsuranceBalance)) /
-                (tkn.balanceOf(address(this)) * VaultMath.RESOLUTION);
             tkn.safeTransfer(borrower, amount - debt - fees);
-        } else if (amount < debt) {
-            if (vaultData.insuranceReserveBalance >= debt - amount) vaultData.insuranceReserveBalance -= debt - amount;
-            else vaultData.insuranceReserveBalance = 0;
-        }
+        } else if (amount < debt) vaultData.subtractInsuranceReserve(debt - amount);
 
         emit LoanRepaid(borrower, token, amount);
     }
