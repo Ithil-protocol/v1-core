@@ -34,7 +34,7 @@ contract UniversalStrategy is BaseStrategy {
         address dst,
         uint256 amount
     ) internal view override returns (uint256, uint256) {
-        return (0, 0);
+        return (amount, amount);
     }
 
     function arbitraryBorrow(
