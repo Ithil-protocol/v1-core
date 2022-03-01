@@ -3,29 +3,21 @@ pragma solidity >=0.8.6;
 pragma experimental ABIEncoderV2;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IVault } from "../interfaces/IVault.sol";
-import { IStrategy } from "../interfaces/IStrategy.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
+import { Liquidable } from "./Liquidable.sol";
 
 /// @title    BaseStrategy contract
 /// @author   Ithil
 /// @notice   Base contract to inherit to keep status updates consistent
-abstract contract BaseStrategy is IStrategy, Ownable {
+abstract contract BaseStrategy is Liquidable {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
 
-    IVault public immutable vault;
-    address public immutable liquidator;
     uint256 public id;
     mapping(address => uint256) public riskFactors;
-    mapping(uint256 => Position) public positions;
-    mapping(address => uint256) public totalAllowances;
 
-    constructor(address _vault, address _liquidator) {
-        vault = IVault(_vault);
-        liquidator = _liquidator;
+    constructor(address _vault, address _liquidator) Liquidable(_liquidator, _vault) {
         id = 0;
     }
 
@@ -40,11 +32,6 @@ abstract contract BaseStrategy is IStrategy, Ownable {
     modifier validPosition(uint256 positionId) {
         bool nonzero = positions[positionId].owner != address(0);
         if (!nonzero) revert Invalid_Position(positionId, address(this));
-        _;
-    }
-
-    modifier onlyLiquidator() {
-        if (msg.sender != liquidator) revert Only_Liquidator(msg.sender, liquidator);
         _;
     }
 
@@ -174,41 +161,4 @@ abstract contract BaseStrategy is IStrategy, Ownable {
             tokenToTransfer.safeTransferFrom(msg.sender, address(vault), newCollateral);
         else tokenToTransfer.safeTransferFrom(msg.sender, address(this), newCollateral);
     }
-
-    function forcefullyClose(Position memory position, uint256 expectedCost) external override onlyLiquidator {
-        _closePosition(position, expectedCost);
-    }
-
-    function forcefullyDelete(uint256 _id) external override onlyLiquidator {
-        Position memory position = positions[_id];
-        delete positions[_id];
-        if (totalAllowances[position.heldToken] > 0) totalAllowances[position.heldToken] -= position.allowance;
-        emit PositionWasLiquidated(_id);
-    }
-
-    function modifyCollateralAndOwner(
-        uint256 _id,
-        uint256 newCollateral,
-        address newOwner
-    ) external override onlyLiquidator {
-        positions[_id].collateral += newCollateral;
-        positions[_id].owner = newOwner;
-    }
-
-    function _openPosition(
-        Order memory order,
-        uint256 borrowed,
-        uint256 collateralReceived
-    ) internal virtual returns (uint256);
-
-    function _closePosition(Position memory position, uint256 expectedCost)
-        internal
-        virtual
-        returns (uint256 amountIn, uint256 amountOut);
-
-    function quote(
-        address src,
-        address dst,
-        uint256 amount
-    ) public view virtual override returns (uint256, uint256);
 }
