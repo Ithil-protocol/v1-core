@@ -48,6 +48,9 @@ interface IStrategy {
     error No_Withdraw(uint256);
     error Insufficient_Collateral(uint256);
     error Source_Eq_Dest(address);
+    error Obtained_Insufficient_Amount(uint256);
+    error Opened_Liquidable_Position(uint256);
+    error Loan_Not_Repaid(uint256, uint256);
 
     /// @notice Emitted when a new position has been opened
     event PositionWasOpened(

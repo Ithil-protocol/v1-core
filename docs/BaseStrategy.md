@@ -330,10 +330,47 @@ error Invalid_Position(uint256, address)
 | \_0  | uint256 | undefined   |
 | \_1  | address | undefined   |
 
+### Loan_Not_Repaid
+
+```solidity
+error Loan_Not_Repaid(uint256, uint256)
+```
+
+#### Parameters
+
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | uint256 | undefined   |
+| \_1  | uint256 | undefined   |
+
 ### No_Withdraw
 
 ```solidity
 error No_Withdraw(uint256)
+```
+
+#### Parameters
+
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | uint256 | undefined   |
+
+### Obtained_Insufficient_Amount
+
+```solidity
+error Obtained_Insufficient_Amount(uint256)
+```
+
+#### Parameters
+
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | uint256 | undefined   |
+
+### Opened_Liquidable_Position
+
+```solidity
+error Opened_Liquidable_Position(uint256)
 ```
 
 #### Parameters

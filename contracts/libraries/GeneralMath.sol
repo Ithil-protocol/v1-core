@@ -11,14 +11,4 @@ library GeneralMath {
     function positiveSub(uint256 a, uint256 b) internal pure returns (uint256 c) {
         if (a > b) c = a - b;
     }
-
-    function subtractLoan(VaultState.VaultData storage self, uint256 b) internal {
-        if (self.netLoans > b) self.netLoans -= b;
-        else self.netLoans = 0;
-    }
-
-    function subtractInsuranceReserve(VaultState.VaultData storage self, uint256 b) internal {
-        if (self.insuranceReserveBalance > b) self.insuranceReserveBalance -= b;
-        else self.insuranceReserveBalance = 0;
-    }
 }

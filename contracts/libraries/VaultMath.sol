@@ -3,11 +3,14 @@ pragma solidity >=0.8.6;
 pragma experimental ABIEncoderV2;
 
 import { VaultState } from "./VaultState.sol";
+import { GeneralMath } from "./GeneralMath.sol";
 
 /// @title    VaultMath library
 /// @author   Ithil
 /// @notice   A library to calculate vault-related stuff, like APY, lending interests, max withdrawable tokens
 library VaultMath {
+    using GeneralMath for uint256;
+
     uint24 internal constant RESOLUTION = 10000;
     uint24 internal constant TIME_FEE_PERIOD = 86400;
     uint40 internal constant APY_PERIOD = 31536000;
@@ -72,29 +75,32 @@ library VaultMath {
     }
 
     /// @notice Computes the interest rate to apply to a position at its opening
-    /// @param baseFee fees for token1
-    /// @param riskFactor fees for token2
-    /// @param tradeAmount always in the same token as the considered vault
+    /// @param data the data containing the current vault state
+    /// @param freeLiquidity the free liquidity of the vault
+    /// @param loanAmount the loan taken
     /// @param collateral the collateral placed for the loan, always in the same token as the considered vault
-    /// @param freeLiquidity the liquidity available for borrowing
-    /// @param insuranceBalance the insured balance
+    /// @param riskFactor the riskiness of the investment
     function computeInterestRate(
-        uint256 baseFee,
-        uint256 riskFactor,
-        uint256 tradeAmount,
-        uint256 collateral,
+        VaultState.VaultData memory data,
         uint256 freeLiquidity,
-        uint256 insuranceBalance
+        uint256 loanAmount,
+        uint256 collateral,
+        uint256 riskFactor
     ) internal pure returns (uint256 interestRate) {
-        assert(freeLiquidity > 0);
-        // tradeAmount is covered by insurance balance,
-        // thus the uncovered balance is liquidity - (insurance - tradeAmount)
-        uint256 uncoveredBalance = 0;
-        if (freeLiquidity + tradeAmount >= insuranceBalance)
-            uncoveredBalance = freeLiquidity + tradeAmount - insuranceBalance;
-        interestRate =
-            ((baseFee + riskFactor) * uncoveredBalance * tradeAmount) /
-            (freeLiquidity * collateral * RESOLUTION);
+        uint256 uncovered = data.netLoans.positiveSub(data.insuranceReserveBalance);
+        interestRate = (data.netLoans + uncovered) * loanAmount * riskFactor;
+        interestRate /= (data.netLoans + freeLiquidity) * collateral;
+        interestRate += data.baseFee;
+    }
+
+    function subtractLoan(VaultState.VaultData storage self, uint256 b) internal {
+        if (self.netLoans > b) self.netLoans -= b;
+        else self.netLoans = 0;
+    }
+
+    function subtractInsuranceReserve(VaultState.VaultData storage self, uint256 b) internal {
+        if (self.insuranceReserveBalance > b) self.insuranceReserveBalance -= b;
+        else self.insuranceReserveBalance = 0;
     }
 
     function addInsuranceReserve(

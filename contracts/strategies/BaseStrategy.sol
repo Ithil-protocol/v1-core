@@ -49,9 +49,16 @@ abstract contract BaseStrategy is IStrategy, Ownable {
         return (riskFactors[token0] + riskFactors[token1]) / 2;
     }
 
-    function openPosition(Order memory order) external validOrder(order) returns (uint256) {
+    function _transferCollateral(Order memory order)
+        internal
+        validOrder(order)
+        returns (
+            uint256,
+            uint256,
+            address
+        )
+    {
         uint256 collateralPlaced = 0;
-        uint256 riskFactor = computePairRiskFactor(order.spentToken, order.obtainedToken);
         IERC20 collateralToken;
         if (order.collateralIsSpentToken) collateralToken = IERC20(order.spentToken);
         else collateralToken = IERC20(order.obtainedToken);
@@ -66,6 +73,14 @@ abstract contract BaseStrategy is IStrategy, Ownable {
             collateralPlaced = collateralReceived;
         }
 
+        return (collateralReceived, collateralPlaced, address(collateralToken));
+    }
+
+    function openPosition(Order memory order) external returns (uint256) {
+        uint256 riskFactor = computePairRiskFactor(order.spentToken, order.obtainedToken);
+
+        (uint256 collateralReceived, uint256 collateralPlaced, address collateralToken) = _transferCollateral(order);
+
         (uint256 interestRate, uint256 fees, uint256 debt, uint256 borrowed) = vault.borrow(
             order.spentToken,
             order.maxSpent,
@@ -76,11 +91,13 @@ abstract contract BaseStrategy is IStrategy, Ownable {
 
         uint256 amountIn = _openPosition(order, borrowed, collateralReceived);
 
+        if (amountIn < order.minObtained) revert Obtained_Insufficient_Amount(amountIn);
+
         positions[++id] = Position({
             owner: msg.sender,
             owedToken: order.spentToken,
             heldToken: order.obtainedToken,
-            collateralToken: address(collateralToken),
+            collateralToken: collateralToken,
             collateral: collateralReceived,
             principal: debt,
             allowance: amountIn,
@@ -89,12 +106,16 @@ abstract contract BaseStrategy is IStrategy, Ownable {
             createdAt: block.timestamp
         });
 
+        (int256 score, ) = computeLiquidationScore(positions[id]);
+
+        if (score > 0) revert Opened_Liquidable_Position(amountIn);
+
         emit PositionWasOpened(
             id,
             msg.sender,
             order.spentToken,
             order.obtainedToken,
-            address(collateralToken),
+            collateralToken,
             collateralReceived,
             debt,
             amountIn,
@@ -134,12 +155,17 @@ abstract contract BaseStrategy is IStrategy, Ownable {
         if (collateralInHeldTokens)
             (expectedCost, ) = _quote(position.owedToken, position.heldToken, position.principal + position.fees);
 
+        uint256 vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault));
         (uint256 amountIn, uint256 amountOut) = _closePosition(position, expectedCost);
 
         if (collateralInHeldTokens && amountOut <= position.allowance)
             IERC20(position.heldToken).safeTransfer(position.owner, position.allowance - amountOut);
 
         vault.repay(position.owedToken, amountIn, position.principal, position.fees, position.owner);
+
+        vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault)) - vaultRepaid;
+
+        if (vaultRepaid < position.principal) revert Loan_Not_Repaid(vaultRepaid, position.principal);
 
         emit PositionWasClosed(positionId);
     }

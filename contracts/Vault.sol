@@ -179,18 +179,12 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         )
     {
         VaultState.VaultData storage vaultData = vaults[token];
-        uint256 internalBalance = IERC20(token).balanceOf(address(this));
+        uint256 freeLiquidity = IERC20(token).balanceOf(address(this)) - vaultData.insuranceReserveBalance;
 
-        if (amount > internalBalance) revert Vault__Insufficient_Funds_Available(token, amount);
+        if (amount > freeLiquidity) revert Vault__Insufficient_Funds_Available(token, amount);
 
-        interestRate = VaultMath.computeInterestRate(
-            vaultData.baseFee,
-            riskFactor,
-            amount,
-            collateral,
-            internalBalance,
-            vaultData.insuranceReserveBalance
-        );
+        interestRate = VaultMath.computeInterestRate(vaultData, freeLiquidity, amount, collateral, riskFactor);
+
         fees = VaultMath.computeFees(amount, vaultData.fixedFee);
 
         if (interestRate > VaultMath.MAX_RATE) revert Vault__Maximum_Leverage_Exceeded();
