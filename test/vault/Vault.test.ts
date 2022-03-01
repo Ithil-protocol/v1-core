@@ -5,12 +5,11 @@ import type { Vault } from "../../src/types/Vault";
 import { Signers } from "../types";
 import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../src/types/MockWETH";
-import { MarginTradingStrategy } from "../../src/types/MarginTradingStrategy";
 
-import { checkRiskFactor } from "./MTS.riskFactor";
-import { checkPosition } from "./MTS.position";
-import { checkLiquidate } from "./MTS.liquidate";
-import { MockTaxedToken } from "../../src/types/MockTaxedToken";
+import { checkWhiteList } from "./Vault.whiteList.test";
+import { checkStake } from "./Vault.stake.test";
+import { checkBorrow } from "./Vault.borrow.test";
+import { checkAddStrategy } from "./Vault.addStrategy.test";
 
 describe("Unit tests", function () {
   before(async function () {
@@ -23,7 +22,7 @@ describe("Unit tests", function () {
     this.signers.liquidator = signers[3];
   });
 
-  describe("MTS", function () {
+  describe("Vault", function () {
     beforeEach(async function () {
       const kyberArtifact: Artifact = await artifacts.readArtifact("MockKyberNetworkProxy");
       this.mockKyberNetworkProxy = <MockKyberNetworkProxy>(
@@ -37,29 +36,11 @@ describe("Unit tests", function () {
 
       const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
       this.vault = <Vault>await waffle.deployContract(this.signers.admin, vaultArtifact, [this.mockWETH.address]);
-
-      const mtsArtifact: Artifact = await artifacts.readArtifact("MarginTradingStrategy");
-      this.marginTradingStrategy = <MarginTradingStrategy>(
-        await waffle.deployContract(this.signers.admin, mtsArtifact, [
-          this.mockKyberNetworkProxy.address,
-          this.vault.address,
-        ])
-      );
-
-      const tknArtifact: Artifact = await artifacts.readArtifact("MockTaxedToken");
-      this.mockTaxedToken = <MockTaxedToken>(
-        await waffle.deployContract(this.signers.admin, tknArtifact, [
-          "Dai Stablecoin",
-          "DAI",
-          this.mockKyberNetworkProxy.address,
-        ])
-      );
-
-      await this.vault.addStrategy(this.marginTradingStrategy.address);
     });
 
-    checkRiskFactor(); // setRiskFactor, computePairRiskFactor
-    checkPosition(); // openPosition, closePosition, editPosition
-    checkLiquidate(); // computeLiquidationScore, liquidate
+    checkWhiteList(); // whitelistToken, whitelistTokenAndExec
+    checkStake(); // stake, unstake
+    checkAddStrategy(); // addStrategy, removeStrategy
+    // checkBorrow(); // borrow, repay // TODO: currently, skip borrow checking because it is strategyOnly
   });
 });

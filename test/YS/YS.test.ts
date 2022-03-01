@@ -7,9 +7,9 @@ import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../src/types/MockWETH";
 import { YearnStrategy } from "../../src/types/YearnStrategy";
 
-import { checkRiskFactor } from "./YS.riskFactor";
-import { checkPosition } from "./YS.position";
-import { checkLiquidate } from "./YS.liquidate";
+import { checkRiskFactor } from "./YS.riskFactor.test";
+import { checkPosition } from "./YS.position.test";
+import { checkLiquidate } from "./YS.liquidate.test";
 import { MockTaxedToken } from "../../src/types/MockTaxedToken";
 import { MockYearnRegistry } from "../../src/types/MockYearnRegistry";
 
