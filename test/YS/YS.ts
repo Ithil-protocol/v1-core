@@ -12,6 +12,7 @@ import { checkPosition } from "./YS.position";
 import { checkLiquidate } from "./YS.liquidate";
 import { MockTaxedToken } from "../../src/types/MockTaxedToken";
 import { MockYearnRegistry } from "../../src/types/MockYearnRegistry";
+import { Liquidator } from "../../src/types/Liquidator";
 
 describe("Unit tests", function () {
   before(async function () {
