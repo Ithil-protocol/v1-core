@@ -54,10 +54,10 @@ contract Liquidator is Ownable {
 
         if (totalAllowances > 0) {
             position.allowance *= IERC20(position.heldToken).balanceOf(_strategy);
-            position.allowance /= (totalAllowances + position.allowance);
+            position.allowance /= totalAllowances;
         }
 
-        (int256 score, uint256 dueFees) = computeLiquidationScore(_strategy, position);
+        (int256 score, ) = computeLiquidationScore(_strategy, position);
         if (score > 0) {
             strategy.forcefullyDelete(positionId);
             uint256 expectedCost = 0;
