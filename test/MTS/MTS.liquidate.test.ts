@@ -53,24 +53,25 @@ export function checkLiquidate(): void {
     await this.marginTradingStrategy.connect(trader).openPosition(order);
 
     let position0 = await this.marginTradingStrategy.positions(1);
-    let liquidationScore0 = await this.marginTradingStrategy.connect(liquidator).computeLiquidationScore(position0);
+    let liquidationScore0 = await this.liquidatorContract
+      .connect(liquidator)
+      .computeLiquidationScore(this.marginTradingStrategy.address, position0);
 
     // step 2. try to liquidate
     await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 10, 98);
-    let liquidationScore1 = await this.marginTradingStrategy
+    let liquidationScore1 = await this.liquidatorContract
       .connect(liquidator)
-      .computeLiquidationScore(await this.marginTradingStrategy.positions(1));
-    await this.marginTradingStrategy.connect(liquidator).liquidate([1]);
-
+      .computeLiquidationScore(this.marginTradingStrategy.address, await this.marginTradingStrategy.positions(1));
+    await this.liquidatorContract.connect(liquidator).liquidateSingle(this.marginTradingStrategy.address, 1);
     let position1 = await this.marginTradingStrategy.positions(1);
     expect(position1.principal).to.equal(position0.principal);
 
     // step 3. liquidate
     await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 10, 95);
-    let liquidationScore2 = await this.marginTradingStrategy
+    let liquidationScore2 = await this.liquidatorContract
       .connect(liquidator)
-      .computeLiquidationScore(await this.marginTradingStrategy.positions(1));
-    await this.marginTradingStrategy.connect(liquidator).liquidate([1]);
+      .computeLiquidationScore(this.marginTradingStrategy.address, await this.marginTradingStrategy.positions(1));
+    await this.liquidatorContract.connect(liquidator).liquidateSingle(this.marginTradingStrategy.address, 1);
 
     let position2 = await this.marginTradingStrategy.positions(1);
     expect(position2.principal).to.equal(0);
