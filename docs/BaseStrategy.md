@@ -71,6 +71,50 @@ function editPosition(uint256 positionId, uint256 newCollateral) external nonpay
 | positionId    | uint256 | undefined   |
 | newCollateral | uint256 | undefined   |
 
+### forcefullyClose
+
+```solidity
+function forcefullyClose(uint256 _id) external nonpayable
+```
+
+#### Parameters
+
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_id | uint256 | undefined   |
+
+### forcefullyDelete
+
+```solidity
+function forcefullyDelete(address purchaser, uint256 positionId, uint256 price) external nonpayable
+```
+
+#### Parameters
+
+| Name       | Type    | Description |
+| ---------- | ------- | ----------- |
+| purchaser  | address | undefined   |
+| positionId | uint256 | undefined   |
+| price      | uint256 | undefined   |
+
+### getPosition
+
+```solidity
+function getPosition(uint256 positionId) external view returns (struct IStrategy.Position)
+```
+
+#### Parameters
+
+| Name       | Type    | Description |
+| ---------- | ------- | ----------- |
+| positionId | uint256 | undefined   |
+
+#### Returns
+
+| Name | Type               | Description |
+| ---- | ------------------ | ----------- |
+| \_0  | IStrategy.Position | undefined   |
+
 ### id
 
 ```solidity
@@ -83,17 +127,31 @@ function id() external view returns (uint256)
 | ---- | ------- | ----------- |
 | \_0  | uint256 | undefined   |
 
-### liquidate
+### liquidator
 
 ```solidity
-function liquidate(uint256[] positionIds) external nonpayable
+function liquidator() external view returns (address)
+```
+
+#### Returns
+
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | address | undefined   |
+
+### modifyCollateralAndOwner
+
+```solidity
+function modifyCollateralAndOwner(uint256 _id, uint256 newCollateral, address newOwner) external nonpayable
 ```
 
 #### Parameters
 
-| Name        | Type      | Description |
-| ----------- | --------- | ----------- |
-| positionIds | uint256[] | undefined   |
+| Name          | Type    | Description |
+| ------------- | ------- | ----------- |
+| \_id          | uint256 | undefined   |
+| newCollateral | uint256 | undefined   |
+| newOwner      | address | undefined   |
 
 ### openPosition
 
@@ -154,6 +212,27 @@ function positions(uint256) external view returns (address owner, address owedTo
 | fees            | uint256 | undefined   |
 | createdAt       | uint256 | undefined   |
 
+### quote
+
+```solidity
+function quote(address src, address dst, uint256 amount) external view returns (uint256, uint256)
+```
+
+#### Parameters
+
+| Name   | Type    | Description |
+| ------ | ------- | ----------- |
+| src    | address | undefined   |
+| dst    | address | undefined   |
+| amount | uint256 | undefined   |
+
+#### Returns
+
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | uint256 | undefined   |
+| \_1  | uint256 | undefined   |
+
 ### renounceOwnership
 
 ```solidity
@@ -192,6 +271,24 @@ function setRiskFactor(address token, uint256 riskFactor) external nonpayable
 | ---------- | ------- | ----------- |
 | token      | address | undefined   |
 | riskFactor | uint256 | undefined   |
+
+### totalAllowance
+
+```solidity
+function totalAllowance(address token) external view returns (uint256)
+```
+
+#### Parameters
+
+| Name  | Type    | Description |
+| ----- | ------- | ----------- |
+| token | address | undefined   |
+
+#### Returns
+
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | uint256 | undefined   |
 
 ### totalAllowances
 
@@ -236,6 +333,18 @@ function vault() external view returns (contract IVault)
 | Name | Type            | Description |
 | ---- | --------------- | ----------- |
 | \_0  | contract IVault | undefined   |
+
+### vaultAddress
+
+```solidity
+function vaultAddress() external view returns (address)
+```
+
+#### Returns
+
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | address | undefined   |
 
 ## Events
 
@@ -317,6 +426,30 @@ error Insufficient_Collateral(uint256)
 | ---- | ------- | ----------- |
 | \_0  | uint256 | undefined   |
 
+### Insufficient_Margin_Call
+
+```solidity
+error Insufficient_Margin_Call(uint256)
+```
+
+#### Parameters
+
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | uint256 | undefined   |
+
+### Insufficient_Price
+
+```solidity
+error Insufficient_Price(uint256)
+```
+
+#### Parameters
+
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | uint256 | undefined   |
+
 ### Invalid_Position
 
 ```solidity
@@ -367,6 +500,19 @@ error Obtained_Insufficient_Amount(uint256)
 | ---- | ------- | ----------- |
 | \_0  | uint256 | undefined   |
 
+### Only_Liquidator
+
+```solidity
+error Only_Liquidator(address, address)
+```
+
+#### Parameters
+
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | address | undefined   |
+| \_1  | address | undefined   |
+
 ### Opened_Liquidable_Position
 
 ```solidity
@@ -378,6 +524,18 @@ error Opened_Liquidable_Position(uint256)
 | Name | Type    | Description |
 | ---- | ------- | ----------- |
 | \_0  | uint256 | undefined   |
+
+### Position_Not_Liquidable
+
+```solidity
+error Position_Not_Liquidable(int256)
+```
+
+#### Parameters
+
+| Name | Type   | Description |
+| ---- | ------ | ----------- |
+| \_0  | int256 | undefined   |
 
 ### Restricted_Access
 

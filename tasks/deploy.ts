@@ -4,6 +4,9 @@ import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
 import { chainIds } from "../constants";
 
+import { Liquidator } from "../src/types/Liquidator";
+import { Liquidator__factory } from "../src/types/factories/Liquidator__factory";
+
 import { Vault } from "../src/types/Vault";
 import { Vault__factory } from "../src/types/factories/Vault__factory";
 
@@ -65,19 +68,29 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   await vault.deployed();
   console.log("Vault deployed to address: ", vault.address);
 
+  // Liquidator
+  const liquidatorFactory: Liquidator__factory = <Liquidator__factory>await hre.ethers.getContractFactory("Liquidator");
+  const liquidatorContract: Liquidator = <Liquidator>await liquidatorFactory.deploy();
+  await liquidatorContract.deployed();
+  console.log("Liquidator deployed to address: ", liquidatorContract.address);
+
   // MarginTradingStrategy
   const mtsFactory: MarginTradingStrategy__factory = <MarginTradingStrategy__factory>(
     await hre.ethers.getContractFactory("MarginTradingStrategy")
   );
-  const mts: MarginTradingStrategy = <MarginTradingStrategy>await mtsFactory.deploy(kyber.address, vault.address);
+  const mts: MarginTradingStrategy = <MarginTradingStrategy>(
+    await mtsFactory.deploy(kyber.address, vault.address, liquidatorContract.address)
+  );
   await mts.deployed();
   console.log("MarginTradingStrategy deployed to address: ", mts.address);
 
-  // MarginTradingStrategy
+  // YearnStrategy
   const ysFactory: YearnStrategy__factory = <YearnStrategy__factory>(
     await hre.ethers.getContractFactory("YearnStrategy")
   );
-  const ys: YearnStrategy = <YearnStrategy>await ysFactory.deploy(yearn.address, vault.address);
+  const ys: YearnStrategy = <YearnStrategy>(
+    await ysFactory.deploy(yearn.address, vault.address, liquidatorContract.address)
+  );
   await ys.deployed();
   console.log("YearnStrategy deployed to address: ", ys.address);
 

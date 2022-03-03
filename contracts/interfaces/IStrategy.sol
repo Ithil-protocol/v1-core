@@ -48,9 +48,35 @@ interface IStrategy {
     error No_Withdraw(uint256);
     error Insufficient_Collateral(uint256);
     error Source_Eq_Dest(address);
-    error Obtained_Insufficient_Amount(uint256);
-    error Opened_Liquidable_Position(uint256);
-    error Loan_Not_Repaid(uint256, uint256);
+    error Only_Liquidator(address, address);
+
+    function computePairRiskFactor(address token0, address token1) external view returns (uint256);
+
+    function quote(
+        address src,
+        address dst,
+        uint256 amount
+    ) external view returns (uint256, uint256);
+
+    function forcefullyClose(uint256 _id) external;
+
+    function forcefullyDelete(
+        address purchaser,
+        uint256 positionId,
+        uint256 price
+    ) external;
+
+    function modifyCollateralAndOwner(
+        uint256 _id,
+        uint256 newCollateral,
+        address newOwner
+    ) external;
+
+    function getPosition(uint256 positionId) external view returns (Position memory);
+
+    function totalAllowance(address token) external view returns (uint256);
+
+    function vaultAddress() external view returns (address);
 
     /// @notice Emitted when a new position has been opened
     event PositionWasOpened(
