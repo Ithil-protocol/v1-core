@@ -28,25 +28,11 @@ jobs:
       - name: Install yarn
         run: npm install -g yarn
 
-      # Cache dependencies for faster build time in future
-      - name: Cache dependencies
-        uses: actions/cache@v2
-        with:
-          path: |
-            ./node_modules
-            ./.yarn
-          key: ${{ runner.os }}-modules-${{ hashFiles('./yarn.lock') }}
-
       # Install GYP as build dependencies
       - name: Install GYP
         run: |
           npm install node-gyp -g
           npm install node-gyp-build -g
-
-      # Install project dependencies
-      - name: Install dependencies
-        run: |
-          yarn install --prefer-offline  --cache-folder .yarn --modules-folder node_modules
 
       # Run coverage
       - name: Run coverage analysis
