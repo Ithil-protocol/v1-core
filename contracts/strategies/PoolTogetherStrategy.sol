@@ -23,6 +23,10 @@ contract PoolTogetherStrategy is BaseStrategy {
         pool = IPrizePool(_pool);
     }
 
+    function name() external pure override returns(string memory){
+        return "PoolTogetherStrategy";
+    }
+
     function _openPosition(
         Order memory order,
         uint256 borrowed,

@@ -18,6 +18,8 @@ abstract contract AbstractStrategy is IStrategy, Ownable {
         vault = IVault(_vault);
     }
 
+    function name() external pure virtual returns (string memory);
+
     function _openPosition(
         Order memory order,
         uint256 borrowed,
