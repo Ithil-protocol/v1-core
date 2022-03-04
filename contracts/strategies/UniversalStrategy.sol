@@ -15,7 +15,7 @@ contract UniversalStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
 
-    constructor(address _vault) BaseStrategy(_vault) {}
+    constructor(address _vault, address _liquidator) BaseStrategy(_vault, _liquidator) {}
 
     function _openPosition(
         Order memory order,
@@ -29,11 +29,11 @@ contract UniversalStrategy is BaseStrategy {
         returns (uint256 amountIn, uint256 amountOut)
     {}
 
-    function _quote(
+    function quote(
         address src,
         address dst,
         uint256 amount
-    ) internal view override returns (uint256, uint256) {
+    ) public view override returns (uint256, uint256) {
         return (amount, amount);
     }
 
