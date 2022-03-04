@@ -19,57 +19,10 @@ contract Liquidator is Ownable {
     error Insufficient_Margin_Call(uint256);
     error Insufficient_Price(uint256);
 
-    function computeLiquidationScore(address _strategy, IStrategy.Position memory position)
-        public
-        view
-        returns (int256 score, uint256 dueFees)
-    {
-        IStrategy strategy = IStrategy(_strategy);
-        bool collateralInOwedToken = position.collateralToken != position.heldToken;
-        uint256 pairRiskFactor = strategy.computePairRiskFactor(position.heldToken, position.owedToken);
-        uint256 expectedTokens;
-        int256 profitAndLoss;
-
-        dueFees =
-            position.fees +
-            (position.interestRate * (block.timestamp - position.createdAt) * position.principal) /
-            (uint32(VaultMath.TIME_FEE_PERIOD) * VaultMath.RESOLUTION);
-
-        if (collateralInOwedToken) {
-            (expectedTokens, ) = strategy.quote(position.heldToken, position.owedToken, position.allowance);
-            profitAndLoss = int256(expectedTokens) - int256(position.principal + dueFees);
-        } else {
-            (expectedTokens, ) = strategy.quote(position.heldToken, position.owedToken, position.principal + dueFees);
-            profitAndLoss = int256(position.allowance) - int256(expectedTokens);
-        }
-
-        score = int256(position.collateral * pairRiskFactor) - profitAndLoss * int24(VaultMath.RESOLUTION);
-    }
-
     function liquidateSingle(address _strategy, uint256 positionId) external {
         //todo: add checks on liquidator
         IStrategy strategy = IStrategy(_strategy);
-        IStrategy.Position memory position = strategy.getPosition(positionId);
-        uint256 totalAllowances = strategy.totalAllowance(position.heldToken);
-
-        if (totalAllowances > 0) {
-            position.allowance *= IERC20(position.heldToken).balanceOf(_strategy);
-            position.allowance /= totalAllowances;
-        }
-
-        (int256 score, ) = computeLiquidationScore(_strategy, position);
-        if (score > 0) {
-            strategy.forcefullyDelete(positionId);
-            uint256 expectedCost = 0;
-            bool collateralInHeldTokens = position.collateralToken != position.owedToken;
-            if (collateralInHeldTokens)
-                (expectedCost, ) = strategy.quote(
-                    position.owedToken,
-                    position.heldToken,
-                    position.principal + position.fees
-                );
-            if (position.allowance > 0) strategy.forcefullyClose(position, expectedCost);
-        }
+        strategy.forcefullyClose(positionId);
     }
 
     function marginCall(
@@ -79,14 +32,7 @@ contract Liquidator is Ownable {
     ) external {
         //todo: add checks on liquidator
         IStrategy strategy = IStrategy(_strategy);
-        IStrategy.Position memory position = strategy.getPosition(positionId);
-        (int256 score, ) = computeLiquidationScore(_strategy, position);
-        if (score > 0) {
-            (, uint256 received) = IERC20(position.collateralToken).transferTokens(msg.sender, _strategy, extraMargin);
-            strategy.modifyCollateralAndOwner(positionId, received, msg.sender);
-            (int256 newScore, ) = computeLiquidationScore(_strategy, strategy.getPosition(positionId));
-            if (newScore > 0) revert Insufficient_Margin_Call(extraMargin);
-        }
+        strategy.modifyCollateralAndOwner(positionId, extraMargin, msg.sender);
     }
 
     function purchaseAssets(
@@ -96,21 +42,7 @@ contract Liquidator is Ownable {
     ) external {
         //todo: add checks on liquidator
         IStrategy strategy = IStrategy(_strategy);
-        IStrategy.Position memory position = strategy.getPosition(positionId);
-        (int256 score, ) = computeLiquidationScore(_strategy, position);
-        address vault = strategy.vaultAddress();
-
-        //todo: this contract is not a strategy, thus it cannot repay the vault (modify net loans).
-        //todo: put some specific strategy function to make this possible
-        if (score > 0) {
-            (, uint256 received) = IERC20(position.owedToken).transferTokens(msg.sender, vault, price);
-            //todo: calculate fees!
-            if (received < position.principal + position.fees) revert Insufficient_Price(price);
-            else {
-                IERC20(position.heldToken).transferTokens(_strategy, msg.sender, position.allowance);
-                strategy.forcefullyDelete(positionId);
-            }
-        }
+        strategy.forcefullyDelete(msg.sender, positionId, price);
     }
 
     // function liquidate(address _strategy, uint256[] memory positionIds) external {
