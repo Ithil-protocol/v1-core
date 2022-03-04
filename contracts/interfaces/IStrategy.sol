@@ -58,9 +58,13 @@ interface IStrategy {
         uint256 amount
     ) external view returns (uint256, uint256);
 
-    function forcefullyClose(Position memory position, uint256 expectedCost) external;
+    function forcefullyClose(uint256 _id) external;
 
-    function forcefullyDelete(uint256 _id) external;
+    function forcefullyDelete(
+        address purchaser,
+        uint256 positionId,
+        uint256 price
+    ) external;
 
     function modifyCollateralAndOwner(
         uint256 _id,
