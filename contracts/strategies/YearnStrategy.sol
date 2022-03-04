@@ -19,7 +19,11 @@ contract YearnStrategy is BaseStrategy {
 
     IYearnRegistry internal immutable registry;
 
-    constructor(address _registry, address _vault) BaseStrategy(_vault) {
+    constructor(
+        address _registry,
+        address _vault,
+        address _liquidator
+    ) BaseStrategy(_vault, _liquidator) {
         registry = IYearnRegistry(_registry);
     }
 
@@ -68,11 +72,11 @@ contract YearnStrategy is BaseStrategy {
         /// @todo check maxLoss=1 (0.01%) parameter
     }
 
-    function _quote(
+    function quote(
         address src,
         address dst,
         uint256 amount
-    ) internal view override returns (uint256, uint256) {
+    ) public view override returns (uint256, uint256) {
         (bool success, bytes memory return_data) = address(registry).staticcall(
             abi.encodePacked(registry.latestVault.selector, abi.encode(src))
         );

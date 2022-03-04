@@ -14,6 +14,7 @@
 **/.coverage_contracts
 **/dist
 **/node_modules
+/docs
 
 # files
 .DS_Store
@@ -25,7 +26,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Exclude dirs
-/abi
-/docs
-/src
+# types
+src/types/*
+!src/types/common.ts
+
+# factories
+!src/types/factories
+src/types/factories/*
