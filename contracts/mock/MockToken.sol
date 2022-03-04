@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract MockToken is ERC20, Ownable {
+contract MockToken is ERC20 {
     mapping(address => uint256) public throttledMinters;
     mapping(address => bool) public blockedMinters;
     uint256 public throttlingPeriod = 0;
@@ -18,15 +18,15 @@ contract MockToken is ERC20, Ownable {
         _mint(to, type(uint128).max);
     }
 
-    function toggleBlock(address account) external onlyOwner {
+    function toggleBlock(address account) external {
         blockedMinters[account] = !blockedMinters[account];
     }
 
-    function setThrottlingPeriod(uint256 period) external onlyOwner {
+    function setThrottlingPeriod(uint256 period) external {
         throttlingPeriod = period;
     }
 
-    function mintTo(address to, uint256 amount) external onlyOwner {
+    function mintTo(address to, uint256 amount) external {
         _mint(to, amount);
     }
 

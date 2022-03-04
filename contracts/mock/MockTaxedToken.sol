@@ -33,7 +33,7 @@ contract MockTaxedToken is MockToken {
         return super.transferFrom(from, to, _partialBurn(from, amount));
     }
 
-    function setTax(uint256 tax) external onlyOwner {
+    function setTax(uint256 tax) external {
         taxFee = tax;
     }
 }

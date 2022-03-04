@@ -38,7 +38,7 @@ abstract contract BaseStrategy is Liquidable {
         _;
     }
 
-    function setRiskFactor(address token, uint256 riskFactor) external onlyOwner {
+    function setRiskFactor(address token, uint256 riskFactor) external {
         riskFactors[token] = riskFactor;
     }
 

@@ -18,7 +18,7 @@ import { TransferHelper } from "./libraries/TransferHelper.sol";
 /// @title    Vault contract
 /// @author   Ithil
 /// @notice   Stores staked funds, issues loans and handles repayments to strategies
-contract Vault is IVault, ReentrancyGuard, Ownable {
+contract Vault is IVault, ReentrancyGuard {
     using TransferHelper for IERC20;
     using SafeERC20 for IERC20;
     using VaultMath for uint256;
@@ -71,19 +71,19 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         return VaultMath.maximumWithdrawal(wToken.balanceOf(msg.sender), wToken.totalSupply(), balance(token));
     }
 
-    function toggleLock(bool locked, address token) external override onlyOwner {
+    function toggleLock(bool locked, address token) external override {
         vaults[token].locked = locked;
 
         emit VaultLockWasToggled(locked, token);
     }
 
-    function addStrategy(address strategy) external override onlyOwner {
+    function addStrategy(address strategy) external override {
         strategies[strategy] = true;
 
         emit StrategyWasAdded(strategy);
     }
 
-    function removeStrategy(address strategy) external override onlyOwner {
+    function removeStrategy(address strategy) external override {
         delete strategies[strategy];
 
         emit StrategyWasRemoved(strategy);
@@ -93,7 +93,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         address token,
         uint256 baseFee,
         uint256 fixedFee
-    ) public override onlyOwner {
+    ) public override {
         if (vaults[token].supported) revert Vault__Token_Already_Supported(token);
 
         bytes memory bytecode = abi.encodePacked(type(WrappedToken).creationCode, abi.encode(token));
@@ -113,7 +113,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 baseFee,
         uint256 fixedFee,
         bytes calldata data
-    ) external override onlyOwner {
+    ) external override {
         whitelistToken(token, baseFee, fixedFee);
         (bool success, ) = token.delegatecall(data);
         assert(success);

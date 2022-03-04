@@ -6,7 +6,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IYearnRegistry } from "../interfaces/IYearnRegistry.sol";
 import { MockYearnVault } from "./MockYearnVault.sol";
 
-contract MockYearnRegistry is IYearnRegistry, Ownable {
+contract MockYearnRegistry is IYearnRegistry {
     mapping(address => address) public yvaults;
     uint256 public priceForShare = 0;
 
@@ -21,13 +21,13 @@ contract MockYearnRegistry is IYearnRegistry, Ownable {
         return yvaults[token];
     }
 
-    function newVault(address token) external override onlyOwner returns (address) {
+    function newVault(address token) external override returns (address) {
         yvaults[token] = address(new MockYearnVault(token));
 
         return yvaults[token];
     }
 
-    function setSharePrice(uint256 newPrice) external onlyOwner {
+    function setSharePrice(uint256 newPrice) external {
         emit SharePriceWasChanged(priceForShare, newPrice);
 
         priceForShare = newPrice;

@@ -183,20 +183,6 @@ function openPosition(IStrategy.Order order) external nonpayable returns (uint25
 | ---- | ------- | ----------- |
 | \_0  | uint256 | undefined   |
 
-### owner
-
-```solidity
-function owner() external view returns (address)
-```
-
-_Returns the address of the current owner._
-
-#### Returns
-
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | address | undefined   |
-
 ### positions
 
 ```solidity
@@ -244,14 +230,6 @@ function quote(address src, address dst, uint256 amount) external view returns (
 | ---- | ------- | ----------- |
 | \_0  | uint256 | undefined   |
 | \_1  | uint256 | undefined   |
-
-### renounceOwnership
-
-```solidity
-function renounceOwnership() external nonpayable
-```
-
-_Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner._
 
 ### riskFactors
 
@@ -320,20 +298,6 @@ function totalAllowances(address) external view returns (uint256)
 | ---- | ------- | ----------- |
 | \_0  | uint256 | undefined   |
 
-### transferOwnership
-
-```solidity
-function transferOwnership(address newOwner) external nonpayable
-```
-
-_Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner._
-
-#### Parameters
-
-| Name     | Type    | Description |
-| -------- | ------- | ----------- |
-| newOwner | address | undefined   |
-
 ### vault
 
 ```solidity
@@ -359,19 +323,6 @@ function vaultAddress() external view returns (address)
 | \_0  | address | undefined   |
 
 ## Events
-
-### OwnershipTransferred
-
-```solidity
-event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
-```
-
-#### Parameters
-
-| Name                    | Type    | Description |
-| ----------------------- | ------- | ----------- |
-| previousOwner `indexed` | address | undefined   |
-| newOwner `indexed`      | address | undefined   |
 
 ### PositionWasClosed
 

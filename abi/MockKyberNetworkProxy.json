@@ -1,0 +1,175 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token0",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token1",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "numerator",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "denominator",
+            "type": "uint256"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct IKyberNetworkProxy.Rate",
+        "name": "oldRate",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "numerator",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "denominator",
+            "type": "uint256"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct IKyberNetworkProxy.Rate",
+        "name": "newRate",
+        "type": "tuple"
+      }
+    ],
+    "name": "PriceWasChanged",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "src",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IERC20",
+        "name": "dest",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "srcAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "getExpectedRate",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "src",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IERC20",
+        "name": "dest",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "numerator",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "denominator",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct IKyberNetworkProxy.Rate",
+        "name": "rate",
+        "type": "tuple"
+      }
+    ],
+    "name": "setRate",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "src",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "srcAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "contract IERC20",
+        "name": "dest",
+        "type": "address"
+      },
+      {
+        "internalType": "address payable",
+        "name": "destAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minConversionRate",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address payable",
+        "name": "platformWallet",
+        "type": "address"
+      }
+    ],
+    "name": "trade",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+]

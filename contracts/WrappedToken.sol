@@ -10,7 +10,7 @@ import { IWrappedToken } from "./interfaces/IWrappedToken.sol";
 /// @title    WrappedToken contract
 /// @author   Ithil
 /// @notice   Uses ERC20 Permit OpenZeppelin library
-contract WrappedToken is IWrappedToken, ERC20Permit, Ownable {
+contract WrappedToken is IWrappedToken, ERC20Permit {
     IERC20Metadata public immutable nativeToken;
 
     /// @param _token The base native token
@@ -30,12 +30,12 @@ contract WrappedToken is IWrappedToken, ERC20Permit, Ownable {
     }
 
     /// @inheritdoc IWrappedToken
-    function mint(address user, uint256 amount) external override onlyOwner {
+    function mint(address user, uint256 amount) external override {
         super._mint(user, amount);
     }
 
     /// @inheritdoc IWrappedToken
-    function burn(address user, uint256 amount) external override onlyOwner {
+    function burn(address user, uint256 amount) external override {
         super._burn(user, amount);
     }
 }

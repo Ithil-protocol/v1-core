@@ -9,7 +9,7 @@ import { IStrategy } from "../interfaces/IStrategy.sol";
 /// @title    AbstractStrategy contract
 /// @author   Ithil
 /// @notice   Abstract contract which represent the core of the strategies
-abstract contract AbstractStrategy is IStrategy, Ownable {
+abstract contract AbstractStrategy is IStrategy {
     IVault public immutable vault;
     mapping(uint256 => Position) public positions;
     mapping(address => uint256) public totalAllowances;
