@@ -17,6 +17,10 @@ contract UniversalStrategy is BaseStrategy {
 
     constructor(address _vault, address _liquidator) BaseStrategy(_vault, _liquidator) {}
 
+    function name() external pure override returns (string memory) {
+        return "UniversalStrategy";
+    }
+
     function _openPosition(
         Order memory order,
         uint256 borrowed,
