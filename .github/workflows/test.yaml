@@ -15,40 +15,50 @@ jobs:
         node-version: [lts/*]
 
     steps:
-      # Checkout source code
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      # Setup Nodejs
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
+          node-version: '14'
+          cache: 'yarn'
+      - run: yarn install
+      - run: yarn solhint -c .solhint.json contracts/**/*.sol
 
-      # Setup yarn
-      - name: Install yarn
-        run: npm install -g yarn
+    # steps:
+    #   # Checkout source code
+    #   - name: Checkout
+    #     uses: actions/checkout@v2
 
-      # Cache dependencies for faster build time in future
-      - name: Cache dependencies
-        uses: actions/cache@v2
-        with:
-          path: |
-            ./node_modules
-            ./.yarn
-          key: ${{ runner.os }}-modules-${{ hashFiles('./yarn.lock') }}
+    #   # Setup Nodejs
+    #   - name: Use Node.js ${{ matrix.node-version }}
+    #     uses: actions/setup-node@v2
+    #     with:
+    #       node-version: ${{ matrix.node-version }}
+    #       cache: "npm"
 
-      # Install GYP as build dependencies
+    #   # Setup yarn
+    #   - name: Install yarn
+    #     run: npm install -g yarn
+
+    #   # Cache dependencies for faster build time in future
+    #   - name: Cache dependencies
+    #     uses: actions/cache@v2
+    #     with:
+    #       path: |
+    #         ./node_modules
+    #         ./.yarn
+    #       key: ${{ runner.os }}-modules-${{ hashFiles('./yarn.lock') }}
+
+    #   # Install GYP as build dependencies
       - name: Install GYP
         run: |
           npm install node-gyp -g
           npm install node-gyp-build -g
+          npm i --save-dev @types/node
 
-      # Install project dependencies
-      - name: Install dependencies
-        run: |
-          yarn install --prefer-offline  --cache-folder .yarn --modules-folder node_modules
+    #   # Install project dependencies
+    #   - name: Install dependencies
+    #     run: |
+    #       yarn install --prefer-offline  --cache-folder .yarn --modules-folder node_modules
 
       # Run yarn tests
       - name: Run integration tests
