@@ -25,6 +25,10 @@ contract MarginTradingStrategy is BaseStrategy {
         kyberProxy = IKyberNetworkProxy(_kyber);
     }
 
+    function name() external pure override returns (string memory) {
+        return "MarginTradingStrategy";
+    }
+
     function _openPosition(
         Order memory order,
         uint256 borrowed,

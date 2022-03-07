@@ -153,6 +153,18 @@ function modifyCollateralAndOwner(uint256 _id, uint256 newCollateral, address ne
 | newCollateral | uint256 | undefined   |
 | newOwner      | address | undefined   |
 
+### name
+
+```solidity
+function name() external pure returns (string)
+```
+
+#### Returns
+
+| Name | Type   | Description |
+| ---- | ------ | ----------- |
+| \_0  | string | undefined   |
+
 ### openPosition
 
 ```solidity

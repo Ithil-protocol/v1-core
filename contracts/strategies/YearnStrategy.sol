@@ -27,6 +27,10 @@ contract YearnStrategy is BaseStrategy {
         registry = IYearnRegistry(_registry);
     }
 
+    function name() external pure override returns (string memory) {
+        return "YearnStrategy";
+    }
+
     function _openPosition(
         Order memory order,
         uint256 borrowed,
