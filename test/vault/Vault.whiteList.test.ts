@@ -3,7 +3,7 @@ import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
 export function checkWhiteList(): void {
-  it("check whitelistToken", async function () {
+  it("Vault: whitelistToken", async function () {
     const baseFee = 10;
     const fixedFee = 11;
     const token = this.mockWETH.address;
@@ -23,7 +23,7 @@ export function checkWhiteList(): void {
     expect(finalState.vaultState.fixedFee).to.equal(BigNumber.from(fixedFee));
   });
 
-  it("check whitelistTokenAndExec", async function () {
+  it("Vault: whitelistTokenAndExec", async function () {
     const baseFee = 10;
     const fixedFee = 11;
     const OUSD = "0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86";

@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 import { addresses } from "../../deployments/addresses.json";
 
 export function checkAddStrategy(): void {
-  it("check addStrategy", async function () {
+  it("Vault: addStrategy", async function () {
     const strategy = addresses.MarginTradingStrategy;
 
     const initialState = {
@@ -27,7 +27,7 @@ export function checkAddStrategy(): void {
     expect(validEvents?.length).to.equal(1);
   });
 
-  it("check removeStrategy", async function () {
+  it("Vault: removeStrategy", async function () {
     const strategy = addresses.MarginTradingStrategy;
 
     await this.vault.addStrategy(strategy);

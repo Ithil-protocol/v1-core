@@ -2,18 +2,13 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { fundVault, changeSwapRate } from "../utils";
+import { marginTokenLiquidity, marginTokenMargin, investmentTokenLiquidity, leverage } from "../constants";
 
 export function checkLiquidate(): void {
-  it("check computeLiquidationScore & liquidate", async function () {
-    const marginToken = this.mockTaxedToken;
+  it("MarginTradingStrategy: computeLiquidationScore, liquidate", async function () {
+    const { investor, trader, liquidator } = this.signers;
     const investmentToken = this.mockWETH;
-    const investor = this.signers.investor;
-    const trader = this.signers.trader;
-    const liquidator = this.signers.liquidator;
-    const marginTokenLiquidity = ethers.utils.parseUnits("2000.0", 18);
-    const marginTokenMargin = ethers.utils.parseUnits("100.0", 18);
-    const investmentTokenLiquidity = ethers.utils.parseUnits("500.0", 18);
-    const leverage = 10;
+    const marginToken = this.mockTaxedToken;
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
     await this.vault.whitelistToken(marginToken.address, 10, 10);

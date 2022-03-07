@@ -1,16 +1,13 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { fundVault, changeSwapRate } from "../utils";
+import { marginTokenLiquidity, marginTokenMargin, leverage } from "../constants";
 
 export function checkPosition(): void {
-  it("check openPosition & closePosition", async function () {
+  it("MarginTradingStrategy: openPosition, closePosition", async function () {
     const marginToken = this.mockTaxedToken;
     const investmentToken = this.mockWETH;
-    const investor = this.signers.investor;
-    const trader = this.signers.trader;
-    const marginTokenLiquidity = ethers.utils.parseUnits("2000.0", 18);
-    const marginTokenMargin = ethers.utils.parseUnits("100.0", 18);
-    const leverage = 10;
+    const { investor, trader } = this.signers;
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
     await this.vault.whitelistToken(marginToken.address, 10, 10);

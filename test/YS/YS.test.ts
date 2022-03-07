@@ -25,7 +25,7 @@ describe("Unit tests", function () {
     this.signers.liquidator = signers[3];
   });
 
-  describe("MTS", function () {
+  describe("YearnStrategy", function () {
     beforeEach(async function () {
       const kyberArtifact: Artifact = await artifacts.readArtifact("MockKyberNetworkProxy");
       this.mockKyberNetworkProxy = <MockKyberNetworkProxy>(
