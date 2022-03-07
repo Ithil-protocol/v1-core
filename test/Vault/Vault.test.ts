@@ -6,10 +6,10 @@ import { Signers } from "../types";
 import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../src/types/MockWETH";
 
-import { checkWhiteList } from "./Vault.whiteList.test";
-import { checkStake } from "./Vault.stake.test";
-import { checkBorrow } from "./Vault.borrow.test";
-import { checkAddStrategy } from "./Vault.addStrategy.test";
+import { checkWhiteList } from "./Vault.whiteList";
+import { checkStake } from "./Vault.stake";
+import { checkBorrow } from "./Vault.borrow";
+import { checkAddStrategy } from "./Vault.addStrategy";
 
 describe("Unit tests", function () {
   before(async function () {

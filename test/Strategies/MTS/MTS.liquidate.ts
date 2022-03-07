@@ -1,14 +1,14 @@
 import { expect } from "chai";
-import { BigNumber, Signer } from "ethers";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { fundVault, changeSwapRate } from "../utils";
-import { marginTokenLiquidity, marginTokenMargin, investmentTokenLiquidity, leverage } from "../constants";
+import { fundVault, changeSwapRate } from "../../utils";
+import { marginTokenLiquidity, marginTokenMargin, investmentTokenLiquidity, leverage } from "../../constants";
 
 export function checkLiquidate(): void {
-  it("YearnStrategy: computeLiquidationScore, liquidate", async function () {
+  it("MarginTradingStrategy: computeLiquidationScore, liquidate", async function () {
     const { investor, trader, liquidator } = this.signers;
-    const marginToken = this.mockTaxedToken;
     const investmentToken = this.mockWETH;
+    const marginToken = this.mockTaxedToken;
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
     await this.vault.whitelistToken(marginToken.address, 10, 10);
@@ -18,8 +18,8 @@ export function checkLiquidate(): void {
     await investmentToken.mintTo(investor.address, investmentTokenLiquidity);
     await marginToken.mintTo(trader.address, marginTokenLiquidity);
 
-    await this.yearnStrategy.setRiskFactor(marginToken.address, 5000);
-    await this.yearnStrategy.setRiskFactor(investmentToken.address, 5000);
+    await this.marginTradingStrategy.setRiskFactor(marginToken.address, 5000);
+    await this.marginTradingStrategy.setRiskFactor(investmentToken.address, 5000);
 
     await fundVault(investor, this.vault, marginToken, marginTokenLiquidity);
     await fundVault(investor, this.vault, investmentToken, investmentTokenLiquidity);
@@ -31,7 +31,7 @@ export function checkLiquidate(): void {
       vault_inv: await investmentToken.balanceOf(this.vault.address),
     };
 
-    await marginToken.connect(trader).approve(this.yearnStrategy.address, marginTokenMargin);
+    await marginToken.connect(trader).approve(this.marginTradingStrategy.address, marginTokenMargin);
 
     const order = {
       spentToken: marginToken.address,
@@ -45,29 +45,28 @@ export function checkLiquidate(): void {
 
     // step 1. open position
     await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 1, 10);
-    await this.yearnStrategy.connect(trader).openPosition(order);
+    await this.marginTradingStrategy.connect(trader).openPosition(order);
 
-    let position0 = await this.yearnStrategy.positions(1);
-    let liquidationScore0 = await this.liquidator.connect(liquidator).computeLiquidationScore(position0);
+    let position0 = await this.marginTradingStrategy.positions(1);
+    let liquidationScore0 = await this.marginTradingStrategy.connect(liquidator).computeLiquidationScore(position0);
 
     // step 2. try to liquidate
     await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 10, 98);
-    let liquidationScore1 = await this.liquidator
+    let liquidationScore1 = await this.marginTradingStrategy
       .connect(liquidator)
-      .computeLiquidationScore(await this.yearnStrategy.positions(1));
-    await this.liquidator.connect(liquidator).liquidate(this.yearnStrategy.address, 1);
-
-    let position1 = await this.yearnStrategy.positions(1);
+      .computeLiquidationScore(await this.marginTradingStrategy.positions(1));
+    await this.liquidatorContract.connect(liquidator).liquidateSingle(this.marginTradingStrategy.address, 1);
+    let position1 = await this.marginTradingStrategy.positions(1);
     expect(position1.principal).to.equal(position0.principal);
 
     // step 3. liquidate
     await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 10, 95);
-    let liquidationScore2 = await this.liquidator
+    let liquidationScore2 = await this.marginTradingStrategy
       .connect(liquidator)
-      .computeLiquidationScore(await this.yearnStrategy.positions(1));
-    await this.liquidator.connect(liquidator).liquidate(this.yearnStrategy.address, 1);
+      .computeLiquidationScore(await this.marginTradingStrategy.positions(1));
+    await this.liquidatorContract.connect(liquidator).liquidateSingle(this.marginTradingStrategy.address, 1);
 
-    let position2 = await this.yearnStrategy.positions(1);
+    let position2 = await this.marginTradingStrategy.positions(1);
     expect(position2.principal).to.equal(0);
 
     const finalState = {

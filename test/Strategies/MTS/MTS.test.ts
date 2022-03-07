@@ -1,17 +1,17 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import type { Artifact } from "hardhat/types";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import type { Vault } from "../../src/types/Vault";
-import { Signers } from "../types";
-import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
-import { MockWETH } from "../../src/types/MockWETH";
-import { MarginTradingStrategy } from "../../src/types/MarginTradingStrategy";
-import { Liquidator } from "../../src/types/Liquidator";
+import type { Vault } from "../../../src/types/Vault";
+import { Signers } from "../../types";
+import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
+import { MockWETH } from "../../../src/types/MockWETH";
+import { MarginTradingStrategy } from "../../../src/types/MarginTradingStrategy";
+import { Liquidator } from "../../../src/types/Liquidator";
 
-import { checkRiskFactor } from "./MTS.riskFactor.test";
-import { checkPosition } from "./MTS.position.test";
-import { checkLiquidate } from "./MTS.liquidate.test";
-import { MockTaxedToken } from "../../src/types/MockTaxedToken";
+import { checkRiskFactor } from "./MTS.riskFactor";
+import { checkPosition } from "./MTS.position";
+import { checkLiquidate } from "./MTS.liquidate";
+import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
 import { Console } from "console";
 
 describe("Unit tests", function () {

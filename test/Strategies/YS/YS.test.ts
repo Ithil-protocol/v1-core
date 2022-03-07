@@ -1,18 +1,18 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import type { Artifact } from "hardhat/types";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import type { Vault } from "../../src/types/Vault";
-import { Signers } from "../types";
-import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
-import { MockWETH } from "../../src/types/MockWETH";
-import { YearnStrategy } from "../../src/types/YearnStrategy";
+import type { Vault } from "../../../src/types/Vault";
+import { Signers } from "../../types";
+import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
+import { MockWETH } from "../../../src/types/MockWETH";
+import { YearnStrategy } from "../../../src/types/YearnStrategy";
 
-import { checkRiskFactor } from "./YS.riskFactor.test";
-import { checkPosition } from "./YS.position.test";
-import { checkLiquidate } from "./YS.liquidate.test";
-import { MockTaxedToken } from "../../src/types/MockTaxedToken";
-import { MockYearnRegistry } from "../../src/types/MockYearnRegistry";
-import { Liquidator } from "../../src/types/Liquidator";
+import { checkRiskFactor } from "./YS.riskFactor";
+import { checkPosition } from "./YS.position";
+import { checkLiquidate } from "./YS.liquidate";
+import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
+import { MockYearnRegistry } from "../../../src/types/MockYearnRegistry";
+import { Liquidator } from "../../../src/types/Liquidator";
 
 describe("Unit tests", function () {
   before(async function () {
