@@ -19,12 +19,14 @@ abstract contract BaseStrategy is Liquidable {
     error Obtained_Insufficient_Amount(uint256);
     error Opened_Liquidable_Position(uint256);
     error Loan_Not_Repaid(uint256, uint256);
+    error Expired();
 
     constructor(address _vault, address _liquidator) Liquidable(_liquidator, _vault) {
         id = 0;
     }
 
     modifier validOrder(Order memory order) {
+        if (block.timestamp > order.deadline) revert Expired();
         if (order.spentToken == order.obtainedToken) revert Source_Eq_Dest(order.spentToken);
         if (order.collateral == 0)
             // @todo should add minimum margin check here
