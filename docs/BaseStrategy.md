@@ -426,6 +426,12 @@ Emitted when a new position has been opened
 
 ## Errors
 
+### Expired
+
+```solidity
+error Expired()
+```
+
 ### Insufficient_Collateral
 
 ```solidity
