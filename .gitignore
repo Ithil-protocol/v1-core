@@ -15,6 +15,7 @@
 **/dist
 **/node_modules
 /docs
+.vscode
 
 # files
 .DS_Store
