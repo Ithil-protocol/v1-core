@@ -7,12 +7,11 @@ import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../src/types/MockWETH";
 import { MarginTradingStrategy } from "../../src/types/MarginTradingStrategy";
 import { Liquidator } from "../../src/types/Liquidator";
-
 import { checkRiskFactor } from "./MTS.riskFactor";
 import { checkPosition } from "./MTS.position";
 import { checkLiquidate } from "./MTS.liquidate";
 import { MockTaxedToken } from "../../src/types/MockTaxedToken";
-import { Console } from "console";
+import { checkDeadline } from "./MTS.deadline";
 
 describe("Unit tests", function () {
   before(async function () {
@@ -64,6 +63,7 @@ describe("Unit tests", function () {
       await this.vault.addStrategy(this.marginTradingStrategy.address);
     });
 
+    checkDeadline();
     checkRiskFactor(); // setRiskFactor, computePairRiskFactor
     checkPosition(); // openPosition, closePosition, editPosition
     checkLiquidate(); // computeLiquidationScore, liquidate
