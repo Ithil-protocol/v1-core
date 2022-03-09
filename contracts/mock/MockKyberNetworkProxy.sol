@@ -3,14 +3,15 @@ pragma solidity >=0.8.6;
 pragma experimental ABIEncoderV2;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IKyberNetworkProxy } from "../interfaces/IKyberNetworkProxy.sol";
 
 contract MockKyberNetworkProxy is IKyberNetworkProxy {
     using SafeERC20 for IERC20;
 
-    mapping(IERC20 => mapping(IERC20 => Rate)) internal rates;
+    mapping(IERC20 => uint256) internal rates;
 
-    event PriceWasChanged(address indexed token0, address indexed token1, Rate oldRate, Rate newRate);
+    event PriceWasChanged(address indexed token, uint256 oldRate, uint256 newRate);
 
     function trade(
         IERC20 src,
@@ -46,21 +47,20 @@ contract MockKyberNetworkProxy is IKyberNetworkProxy {
         IERC20 dest,
         uint256 srcAmount
     ) public view override returns (uint256, uint256) {
-        Rate memory rate = rates[src][dest];
-        if (rate.denominator == 0) return (0, 0);
+        uint256 srcDec = IERC20Metadata(address(src)).decimals();
+        uint256 destDec = IERC20Metadata(address(dest)).decimals();
+        uint256 rate1 = rates[src] * destDec;
+        uint256 rate2 = rates[dest] * srcDec;
+        if (rate2 == 0) return (0, 0);
 
-        uint256 res = (srcAmount * rate.numerator) / rate.denominator;
+        uint256 res = (srcAmount * rate1) / rate2;
 
         return (res, res);
     }
 
-    function setRate(
-        IERC20 src,
-        IERC20 dest,
-        Rate calldata rate
-    ) external {
-        emit PriceWasChanged(address(src), address(dest), rates[src][dest], rate);
+    function setRate(IERC20 token, uint256 rate) external {
+        emit PriceWasChanged(address(token), rates[token], rate);
 
-        rates[src][dest] = rate;
+        rates[token] = rate;
     }
 }

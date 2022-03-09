@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
-import { fundVault, changeSwapRate } from "../common/utils";
+import { fundVault, changeRate } from "../common/utils";
 
 export function checkLiquidate(): void {
   it("check computeLiquidationScore & liquidate", async function () {
@@ -49,14 +49,12 @@ export function checkLiquidate(): void {
     };
 
     // step 1. open position
-    await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 1, 10);
     await this.yearnStrategy.connect(trader).openPosition(order);
 
     let position0 = await this.yearnStrategy.positions(1);
     let liquidationScore0 = await this.liquidator.connect(liquidator).computeLiquidationScore(position0);
 
     // step 2. try to liquidate
-    await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 10, 98);
     let liquidationScore1 = await this.liquidator
       .connect(liquidator)
       .computeLiquidationScore(await this.yearnStrategy.positions(1));
@@ -66,7 +64,6 @@ export function checkLiquidate(): void {
     expect(position1.principal).to.equal(position0.principal);
 
     // step 3. liquidate
-    await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 10, 95);
     let liquidationScore2 = await this.liquidator
       .connect(liquidator)
       .computeLiquidationScore(await this.yearnStrategy.positions(1));
