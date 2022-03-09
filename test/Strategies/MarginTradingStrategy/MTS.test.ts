@@ -10,6 +10,7 @@ import { Liquidator } from "../../../src/types/Liquidator";
 
 import { checkRiskFactor } from "./MTS.riskFactor";
 import { checkPosition } from "./MTS.position";
+import { checkDeadline } from "./MTS.deadline";
 import { checkLiquidate } from "./MTS.liquidate";
 import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
 import { Console } from "console";
@@ -41,14 +42,14 @@ describe("Unit tests", function () {
       this.vault = <Vault>await waffle.deployContract(this.signers.admin, vaultArtifact, [this.mockWETH.address]);
 
       const liquidatorArtifact: Artifact = await artifacts.readArtifact("Liquidator");
-      this.liquidatorContract = <Liquidator>await waffle.deployContract(this.signers.admin, liquidatorArtifact);
+      this.liquidator = <Liquidator>await waffle.deployContract(this.signers.admin, liquidatorArtifact);
 
       const mtsArtifact: Artifact = await artifacts.readArtifact("MarginTradingStrategy");
       this.marginTradingStrategy = <MarginTradingStrategy>(
         await waffle.deployContract(this.signers.admin, mtsArtifact, [
           this.mockKyberNetworkProxy.address,
           this.vault.address,
-          this.liquidatorContract.address,
+          this.liquidator.address,
         ])
       );
 

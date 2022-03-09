@@ -55,7 +55,7 @@ export function checkLiquidate(): void {
     let liquidationScore1 = await this.marginTradingStrategy
       .connect(liquidator)
       .computeLiquidationScore(await this.marginTradingStrategy.positions(1));
-    await this.liquidatorContract.connect(liquidator).liquidateSingle(this.marginTradingStrategy.address, 1);
+    await this.liquidator.connect(liquidator).liquidateSingle(this.marginTradingStrategy.address, 1);
     let position1 = await this.marginTradingStrategy.positions(1);
     expect(position1.principal).to.equal(position0.principal);
 
@@ -64,7 +64,7 @@ export function checkLiquidate(): void {
     let liquidationScore2 = await this.marginTradingStrategy
       .connect(liquidator)
       .computeLiquidationScore(await this.marginTradingStrategy.positions(1));
-    await this.liquidatorContract.connect(liquidator).liquidateSingle(this.marginTradingStrategy.address, 1);
+    await this.liquidator.connect(liquidator).liquidateSingle(this.marginTradingStrategy.address, 1);
 
     let position2 = await this.marginTradingStrategy.positions(1);
     expect(position2.principal).to.equal(0);

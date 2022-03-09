@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { fundVault, changeSwapRate } from "../common/utils";
+import { fundVault, changeSwapRate } from "../../common/utils";
 
 export function checkDeadline(): void {
   it("check openPosition & closePosition", async function () {
