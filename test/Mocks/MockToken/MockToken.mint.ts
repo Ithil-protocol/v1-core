@@ -2,6 +2,8 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
-export function checkAddStrategy(): void {
-  it("Vault: addStrategy", async function () {});
+export function checkMint(): void {
+  it("MockToken: mint", async function () {
+    await this.mockToken.mint();
+  });
 }

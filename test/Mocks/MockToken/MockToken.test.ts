@@ -5,6 +5,11 @@ import { Artifact } from "hardhat/types";
 import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
 import { MockToken } from "../../../src/types/MockToken";
 
+import { checkToggleBlock } from "./MockToken.toggleBlock";
+import { checkSetThrottlingPeriod } from "./MockToken.setThrottlingPeriod";
+import { checkMintTo } from "./MockToken.mintTo";
+import { checkMint } from "./MockToken.mint";
+
 describe("Unit tests", function () {
   before(async function () {
     this.signers = {} as Signers;
@@ -32,5 +37,9 @@ describe("Unit tests", function () {
         ])
       );
     });
+    checkToggleBlock();
+    checkSetThrottlingPeriod();
+    checkMintTo();
+    checkMint();
   });
 });
