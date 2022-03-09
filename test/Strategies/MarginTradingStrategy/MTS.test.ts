@@ -64,6 +64,7 @@ describe("Unit tests", function () {
       await this.vault.addStrategy(this.marginTradingStrategy.address);
     });
 
+    checkDeadline();
     checkRiskFactor(); // setRiskFactor, computePairRiskFactor
     checkPosition(); // openPosition, closePosition, editPosition
     checkLiquidate(); // computeLiquidationScore, liquidate

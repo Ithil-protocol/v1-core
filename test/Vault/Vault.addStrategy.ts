@@ -1,6 +1,4 @@
 import { expect } from "chai";
-import { BigNumber } from "ethers";
-import { ethers } from "hardhat";
 import { addresses } from "../../deployments/addresses.json";
 
 export function checkAddStrategy(): void {
