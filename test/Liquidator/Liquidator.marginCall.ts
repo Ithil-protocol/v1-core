@@ -32,6 +32,6 @@ export function checkMarginCall(): void {
     await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 1, 10);
     await this.marginTradingStrategy.connect(trader).openPosition(order);
 
-    this.liquidator.marginCall(this.marginTradingStrategy.address, 1, 100);
+    await this.liquidator.marginCall(this.marginTradingStrategy.address, 1, 100);
   });
 }

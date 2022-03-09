@@ -84,7 +84,7 @@ const config: HardhatUserConfig = {
     artifacts: "./artifacts",
     cache: "./cache",
     sources: "./contracts",
-    tests: "./test/Liquidator",
+    tests: "./test/Mocks/MockKyberNetworkProxy",
   },
   solidity: {
     version: "0.8.6",

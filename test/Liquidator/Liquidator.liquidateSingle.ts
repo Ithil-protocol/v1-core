@@ -32,6 +32,6 @@ export function checkLiquidateSingle(): void {
     await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 1, 10);
     await this.marginTradingStrategy.connect(trader).openPosition(order);
 
-    this.liquidator.liquidateSingle(this.marginTradingStrategy.address, 1);
+    await this.liquidator.liquidateSingle(this.marginTradingStrategy.address, 1);
   });
 }
