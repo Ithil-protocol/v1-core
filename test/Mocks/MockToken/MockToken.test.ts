@@ -1,6 +1,9 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { Signers } from "../../types";
+import { Artifact } from "hardhat/types";
+import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
+import { MockToken } from "../../../src/types/MockToken";
 
 describe("Unit tests", function () {
   before(async function () {
@@ -14,6 +17,20 @@ describe("Unit tests", function () {
   });
 
   describe("MockToken", function () {
-    beforeEach(async function () {});
+    beforeEach(async function () {
+      const kyberArtifact: Artifact = await artifacts.readArtifact("MockKyberNetworkProxy");
+      this.mockKyberNetworkProxy = <MockKyberNetworkProxy>(
+        await waffle.deployContract(this.signers.admin, kyberArtifact, [])
+      );
+
+      const tknArtifact: Artifact = await artifacts.readArtifact("MockToken");
+      this.mockToken = <MockToken>(
+        await waffle.deployContract(this.signers.admin, tknArtifact, [
+          "Dai Stablecoin",
+          "DAI",
+          this.mockKyberNetworkProxy.address,
+        ])
+      );
+    });
   });
 });
