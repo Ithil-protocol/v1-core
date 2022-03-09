@@ -26,23 +26,9 @@ describe("Unit tests", function () {
       this.mockKyberNetworkProxy = <MockKyberNetworkProxy>(
         await waffle.deployContract(this.signers.admin, kyberArtifact, [])
       );
-
-      const wethArtifact: Artifact = await artifacts.readArtifact("MockWETH");
-      this.mockWETH = <MockWETH>(
-        await waffle.deployContract(this.signers.admin, wethArtifact, [this.mockKyberNetworkProxy.address])
-      );
-
-      const tknArtifact: Artifact = await artifacts.readArtifact("MockTaxedToken");
-      this.mockTaxedToken = <MockTaxedToken>(
-        await waffle.deployContract(this.signers.admin, tknArtifact, [
-          "Dai Stablecoin",
-          "DAI",
-          this.mockKyberNetworkProxy.address,
-        ])
-      );
     });
 
     checkRate(); // setRate, getExpectedRate
-    // checkTrade();
+    checkTrade();
   });
 });
