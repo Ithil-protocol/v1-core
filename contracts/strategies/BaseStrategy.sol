@@ -44,7 +44,7 @@ abstract contract BaseStrategy is Liquidable {
         riskFactors[token] = riskFactor;
     }
 
-    function getPosition(uint256 positionId) public view override returns (Position memory) {
+    function getPosition(uint256 positionId) external view override returns (Position memory) {
         return positions[positionId];
     }
 
