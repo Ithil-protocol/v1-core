@@ -11,13 +11,6 @@ export const fundVault = async (user: string | Signer | Provider, vault: Vault, 
   await vault.connect(user).stake(token.address, liquidity);
 };
 
-export const changeSwapRate = async (
-  kyber: MockKyberNetworkProxy,
-  token0: any,
-  token1: any,
-  num: number,
-  den: number,
-) => {
-  await kyber.setRate(token0.address, token1.address, { numerator: num, denominator: den });
-  await kyber.setRate(token1.address, token0.address, { numerator: den, denominator: num });
+export const changeRate = async (kyber: MockKyberNetworkProxy, token: any, rate: number) => {
+  await kyber.setRate(token.address, rate);
 };
