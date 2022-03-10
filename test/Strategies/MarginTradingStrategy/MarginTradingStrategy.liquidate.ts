@@ -1,8 +1,8 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { fundVault, changeSwapRate } from "../../common/utils";
-import { marginTokenLiquidity, marginTokenMargin, investmentTokenLiquidity, leverage } from "../../common/constants";
+import { fundVault, changeRate } from "../../common/utils";
+import { marginTokenLiquidity, investmentTokenLiquidity, marginTokenMargin, leverage } from "../../common/constants";
 
 export function checkLiquidate(): void {
   it("MarginTradingStrategy: computeLiquidationScore, liquidate", async function () {
@@ -44,14 +44,15 @@ export function checkLiquidate(): void {
     };
 
     // step 1. open position
-    await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 1, 10);
+    await changeRate(this.mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
+    await changeRate(this.mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
     await this.marginTradingStrategy.connect(trader).openPosition(order);
 
     let position0 = await this.marginTradingStrategy.positions(1);
     let liquidationScore0 = await this.marginTradingStrategy.connect(liquidator).computeLiquidationScore(position0);
 
     // step 2. try to liquidate
-    await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 10, 98);
+    await changeRate(this.mockKyberNetworkProxy, investmentToken, 98 * 10 ** 9);
     let liquidationScore1 = await this.marginTradingStrategy
       .connect(liquidator)
       .computeLiquidationScore(await this.marginTradingStrategy.positions(1));
@@ -60,7 +61,7 @@ export function checkLiquidate(): void {
     expect(position1.principal).to.equal(position0.principal);
 
     // step 3. liquidate
-    await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 10, 95);
+    await changeRate(this.mockKyberNetworkProxy, investmentToken, 95 * 10 ** 9);
     let liquidationScore2 = await this.marginTradingStrategy
       .connect(liquidator)
       .computeLiquidationScore(await this.marginTradingStrategy.positions(1));

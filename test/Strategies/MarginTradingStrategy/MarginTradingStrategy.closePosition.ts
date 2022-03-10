@@ -1,5 +1,6 @@
 import { expect } from "chai";
-import { fundVault, changeSwapRate } from "../../common/utils";
+import { ethers } from "hardhat";
+import { fundVault, changeRate } from "../../common/utils";
 import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../common/constants";
 
 export function checkClosePosition(): void {
@@ -34,10 +35,11 @@ export function checkClosePosition(): void {
       deadline: deadline,
     };
 
-    await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 1, 10);
+    await changeRate(this.mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
+    await changeRate(this.mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
     await this.marginTradingStrategy.connect(trader).openPosition(order);
 
-    await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 1, 11);
+    await changeRate(this.mockKyberNetworkProxy, investmentToken, 11 * 10 ** 10);
     await this.marginTradingStrategy.connect(trader).closePosition(1);
 
     const finalState = {

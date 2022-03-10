@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { fundVault, changeSwapRate } from "../../common/utils";
+import { fundVault, changeRate } from "../../common/utils";
 import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../common/constants";
 
 export function checkOpenPosition(): void {
@@ -39,7 +39,11 @@ export function checkOpenPosition(): void {
       deadline: deadline,
     };
 
-    await changeSwapRate(this.mockKyberNetworkProxy, marginToken, investmentToken, 1, 10);
+    await changeRate(this.mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
+    await changeRate(this.mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
+    await this.marginTradingStrategy.connect(trader).openPosition(order);
+
+    await changeRate(this.mockKyberNetworkProxy, investmentToken, 11 * 10 ** 10);
     await this.yearnStrategy.connect(trader).openPosition(order);
 
     const finalState = {
