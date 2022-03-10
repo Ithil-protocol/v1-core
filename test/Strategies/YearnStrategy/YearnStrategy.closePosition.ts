@@ -1,10 +1,11 @@
 import { expect } from "chai";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { fundVault, changeSwapRate } from "../../utils";
 import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../constants";
 
-export function checkPosition(): void {
-  it("YearnStrategy: openPosition, closePosition", async function () {
+export function checkClosePosition(): void {
+  it("YearnStrategy: closePosition", async function () {
     const { investor, trader } = this.signers;
     const marginToken = this.mockTaxedToken;
     const investmentToken = this.mockWETH;
@@ -51,8 +52,4 @@ export function checkPosition(): void {
     expect(initialState.trader_margin).to.lt(finalState.trader_margin);
     expect(initialState.vault_margin).to.lt(finalState.vault_margin);
   });
-
-  // TODO: editPosition is not implemented yet
-  // it("check editPosition", async function () {
-  // });
 }

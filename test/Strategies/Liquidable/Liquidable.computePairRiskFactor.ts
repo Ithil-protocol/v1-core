@@ -2,6 +2,6 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
-export function checkAddStrategy(): void {
-  it("Vault: addStrategy", async function () {});
+export function checkComputePairRiskFactor(): void {
+  it("Liquidable: computePairRiskFactor", async function () {});
 }

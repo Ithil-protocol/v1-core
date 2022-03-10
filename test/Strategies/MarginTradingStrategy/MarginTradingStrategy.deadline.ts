@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { fundVault, changeSwapRate } from "../../common/utils";
 
 export function checkDeadline(): void {
-  it("check openPosition & closePosition", async function () {
+  it("MarginTradingStrategy: deadline", async function () {
     const marginToken = this.mockTaxedToken;
     const investmentToken = this.mockWETH;
     const investor = this.signers.investor;

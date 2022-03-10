@@ -6,13 +6,13 @@ import { Signers } from "../../types";
 import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../../src/types/MockWETH";
 import { YearnStrategy } from "../../../src/types/YearnStrategy";
-
-import { checkRiskFactor } from "./YS.riskFactor";
-import { checkPosition } from "./YS.position";
-import { checkLiquidate } from "./YS.liquidate";
 import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
 import { MockYearnRegistry } from "../../../src/types/MockYearnRegistry";
 import { Liquidator } from "../../../src/types/Liquidator";
+
+import { checkClosePosition } from "./YearnStrategy.closePosition";
+import { checkEditPosition } from "./YearnStrategy.editPosition";
+import { checkOpenPosition } from "./YearnStrategy.openPosition";
 
 describe("Unit tests", function () {
   before(async function () {
@@ -43,9 +43,12 @@ describe("Unit tests", function () {
       const yearnArtifact: Artifact = await artifacts.readArtifact("MockYearnRegistry");
       this.mockYearnRegistry = <MockYearnRegistry>await waffle.deployContract(this.signers.admin, yearnArtifact, []);
 
+      //TODO: should deploy mockYearnRegistry, first
+
       const ysArtifact: Artifact = await artifacts.readArtifact("YearnStrategy");
       this.yearnStrategy = <YearnStrategy>(
         await waffle.deployContract(this.signers.admin, ysArtifact, [
+          this.mockYearnRegistry,
           this.mockKyberNetworkProxy.address,
           this.vault.address,
         ])
@@ -63,8 +66,8 @@ describe("Unit tests", function () {
       await this.vault.addStrategy(this.yearnStrategy.address);
     });
 
-    // checkRiskFactor(); // setRiskFactor, computePairRiskFactor
-    // checkPosition(); // openPosition, closePosition, editPosition
-    // checkLiquidate(); // computeLiquidationScore, liquidate
+    // checkOpenPosition();
+    // checkClosePosition();
+    // checkEditPosition(); TODO:
   });
 });

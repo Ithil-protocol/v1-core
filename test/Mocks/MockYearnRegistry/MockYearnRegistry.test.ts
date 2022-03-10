@@ -2,6 +2,10 @@ import { artifacts, ethers, waffle } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { Signers } from "../../types";
 
+import { checkLatestVault } from "./MockYearnRegistry.latestVault";
+import { checkNewVault } from "./MockYearnRegistry.newVault";
+import { checkSetSharePrice } from "./MockYearnRegistry.setSharePrice";
+
 describe("Unit tests", function () {
   before(async function () {
     this.signers = {} as Signers;
@@ -13,7 +17,12 @@ describe("Unit tests", function () {
     this.signers.liquidator = signers[3];
   });
 
+  // TODO: currently, I can't deploy MockYearnRegistry
   describe("MockYearnRegistry", function () {
     beforeEach(async function () {});
+
+    // checkLatestVault();
+    // checkNewVault();
+    // checkSetSharePrice();
   });
 });
