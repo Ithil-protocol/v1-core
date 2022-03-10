@@ -15,7 +15,7 @@ import { Liquidable } from "../../../src/types/Liquidable";
 import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../../src/types/MockWETH";
 
-describe("Unit tests", function () {
+describe("Strategy tests", function () {
   before(async function () {
     this.signers = {} as Signers;
 

@@ -17,7 +17,7 @@ import { checkEditPosition } from "./MarginTradingStrategy.editPosition";
 import { checkDeadline } from "./MarginTradingStrategy.deadline";
 import { checkLiquidate } from "./MarginTradingStrategy.liquidate";
 
-describe("Unit tests", function () {
+describe("Strategy tests", function () {
   before(async function () {
     this.signers = {} as Signers;
 

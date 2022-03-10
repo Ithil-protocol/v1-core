@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { amount } from "../../constants";
+import { amount } from "../../common/constants";
 
 export function checkQuote(): void {
   it("UniversalStrategy: quote", async function () {

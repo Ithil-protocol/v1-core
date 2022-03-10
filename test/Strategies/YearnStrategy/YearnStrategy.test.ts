@@ -14,7 +14,7 @@ import { checkClosePosition } from "./YearnStrategy.closePosition";
 import { checkEditPosition } from "./YearnStrategy.editPosition";
 import { checkOpenPosition } from "./YearnStrategy.openPosition";
 
-describe("Unit tests", function () {
+describe("Strategy tests", function () {
   before(async function () {
     this.signers = {} as Signers;
 

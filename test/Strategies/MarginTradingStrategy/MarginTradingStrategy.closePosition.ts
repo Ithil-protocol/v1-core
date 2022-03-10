@@ -1,7 +1,6 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
-import { fundVault, changeSwapRate } from "../../utils";
-import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../constants";
+import { fundVault, changeSwapRate } from "../../common/utils";
+import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../common/constants";
 
 export function checkClosePosition(): void {
   it("MarginTradingStrategy: closePosition", async function () {

@@ -12,7 +12,7 @@ import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
 import { MockTaxedToken } from "../../src/types/MockTaxedToken";
 import { MarginTradingStrategy } from "../../src/types/MarginTradingStrategy";
 
-describe("Unit tests", function () {
+describe("Liquidation tests", function () {
   before(async function () {
     this.signers = {} as Signers;
 

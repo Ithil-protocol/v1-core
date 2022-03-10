@@ -19,7 +19,7 @@ import { checkQuote } from "./UniversalStrategy.quote";
 import { checkArbitraryBorrow } from "./UniversalStrategy.arbitraryBorrow";
 import { checkArbitraryRepay } from "./UniversalStrategy.arbitraryRepay";
 
-describe("Unit tests", function () {
+describe("Strategy tests", function () {
   before(async function () {
     this.signers = {} as Signers;
 
