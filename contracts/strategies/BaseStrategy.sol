@@ -52,7 +52,7 @@ abstract contract BaseStrategy is Liquidable {
         return totalAllowances[token];
     }
 
-    function vaultAddress() public view override returns (address) {
+    function vaultAddress() external view override returns (address) {
         return address(vault);
     }
 
