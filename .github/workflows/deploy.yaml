@@ -50,5 +50,5 @@ jobs:
       - name: Prepare release files
         run: |
           git add .
-          git commit -am "New testnet deployment"
+          git commit -am "feat: new testnet deployment"
           git push
