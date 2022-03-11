@@ -14,7 +14,6 @@
 **/.coverage_contracts
 **/dist
 **/node_modules
-/docs
 
 # files
 .DS_Store

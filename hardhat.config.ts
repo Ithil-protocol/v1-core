@@ -1,6 +1,5 @@
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-etherscan";
-import "@primitivefi/hardhat-dodoc";
 import "@tenderly/hardhat-tenderly";
 import "@typechain/hardhat";
 import "hardhat-abi-exporter";
@@ -113,18 +112,6 @@ const config: HardhatUserConfig = {
   tenderly: {
     project: process.env.TENDERLY_PROJECT || "",
     username: process.env.TENDERLY_USERNAME || "",
-  },
-  dodoc: {
-    runOnCompile: process.env.GENERATE_DOCS ? true : false,
-    include: [
-      "IVault",
-      "BaseStrategy",
-      "IMarginTradingStrategy",
-      "IWrappedToken",
-      "VaultMath",
-      "TraderMath",
-      "TransferHelper",
-    ],
   },
 };
 
