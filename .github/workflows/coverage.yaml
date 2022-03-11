@@ -25,3 +25,11 @@ jobs:
       # Run coverage
       - name: Run coverage analysis
         run: yarn coverage
+        env:
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+          FORK_URL: ${{ secrets.FORK_URL }}
+          REPORT_GAS: false
+          FORKING: true
+          GENERATE_DOCS: false
+          INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
+          MNEMONIC: ${{ secrets.MNEMONIC }}
