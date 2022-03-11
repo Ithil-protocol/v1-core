@@ -31,7 +31,6 @@ export function checkPurchaseAssets(): void {
     await this.marginTradingStrategy.connect(trader).openPosition(order);
 
     await changeRate(this.mockKyberNetworkProxy, investmentToken, 11 * 10 ** 10);
-    await this.marginTradingStrategy.connect(trader).closePosition(1);
 
     await this.liquidator.purchaseAssets(this.marginTradingStrategy.address, 1, 10);
   });
