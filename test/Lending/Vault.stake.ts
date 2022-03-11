@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 export function checkStake(): void {
-  it("check stake", async function () {
+  it("Vault: stake", async function () {
     const baseFee = 10;
     const fixedFee = 11;
     const token = this.mockWETH;
@@ -32,7 +32,7 @@ export function checkStake(): void {
     expect(validEvents?.length).equal(1);
   });
 
-  it("check stake & unstake", async function () {
+  it("Vault: unstake", async function () {
     const baseFee = 10;
     const fixedFee = 11;
     const token = this.mockWETH;

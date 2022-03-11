@@ -1,17 +1,18 @@
 import { expect } from "chai";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { fundVault, changeRate } from "../common/utils";
+import { fundVault, changeRate } from "../../common/utils";
+import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../common/constants";
 
-export function checkPosition(): void {
-  it("check openPosition & closePosition", async function () {
+export function checkOpenPosition(): void {
+  it("YearnStrategy: openPosition", async function () {
+    const { investor, trader } = this.signers;
     const marginToken = this.mockTaxedToken;
     const investmentToken = this.mockWETH;
-    const investor = this.signers.investor;
-    const trader = this.signers.trader;
-    const marginTokenLiquidity = ethers.utils.parseUnits("2000.0", 18);
-    const marginTokenMargin = ethers.utils.parseUnits("100.0", 18);
-    const leverage = 10;
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
+
+    const borrowed = marginTokenMargin.div(2);
+    const collateralReceived = marginTokenMargin.div(2);
 
     await this.vault.whitelistToken(marginToken.address, 10, 10);
     await this.vault.whitelistToken(investmentToken.address, 10, 10);
@@ -19,7 +20,7 @@ export function checkPosition(): void {
     await marginToken.mintTo(trader.address, marginTokenLiquidity);
 
     await fundVault(investor, this.vault, marginToken, marginTokenLiquidity);
-    await marginToken.connect(trader).approve(this.marginTradingStrategy.address, marginTokenMargin);
+    await marginToken.connect(trader).approve(this.yearnStrategy.address, marginTokenMargin);
 
     const initialState = {
       trader_margin: await marginToken.balanceOf(trader.address),
@@ -43,7 +44,7 @@ export function checkPosition(): void {
     await this.marginTradingStrategy.connect(trader).openPosition(order);
 
     await changeRate(this.mockKyberNetworkProxy, investmentToken, 11 * 10 ** 10);
-    await this.marginTradingStrategy.connect(trader).closePosition(1);
+    await this.yearnStrategy.connect(trader).openPosition(order);
 
     const finalState = {
       trader_margin: await marginToken.balanceOf(trader.address),
@@ -55,8 +56,4 @@ export function checkPosition(): void {
     expect(initialState.trader_margin).to.lt(finalState.trader_margin);
     expect(initialState.vault_margin).to.lt(finalState.vault_margin);
   });
-
-  // TODO: editPosition is not implemented yet
-  // it("check editPosition", async function () {
-  // });
 }

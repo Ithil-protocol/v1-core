@@ -1,27 +1,33 @@
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import type { Fixture } from "ethereum-waffle";
 
-import type { MarginTradingStrategy } from "../src/types/MarginTradingStrategy";
+import type { Liquidator } from "../src/types/Liquidator";
+import type { MockToken } from "../src/types/MockToken";
 import type { MockKyberNetworkProxy } from "../src/types/MockKyberNetworkProxy";
 import type { MockTaxedToken } from "../src/types/MockTaxedToken";
 import type { MockWETH } from "../src/types/MockWETH";
 import type { MockYearnRegistry } from "../src/types/MockYearnRegistry";
 import type { MockYearnVault } from "../src/types/MockYearnVault";
-import type { Vault } from "../src/types/Vault";
+import type { Liquidable } from "../src/types/Liquidable";
+import type { UniversalStrategy } from "../src/types/UniversalStrategy";
 import type { YearnStrategy } from "../src/types/YearnStrategy";
-import type { BaseStrategy } from "../src/types/BaseStrategy";
+import type { MarginTradingStrategy } from "../src/types/MarginTradingStrategy";
+import type { Vault } from "../src/types/Vault";
 
 declare module "mocha" {
   export interface Context {
-    marginTradingStrategy: MarginTradingStrategy;
+    liquidator: Liquidator;
     mockKyberNetworkProxy: MockKyberNetworkProxy;
     mockTaxedToken: MockTaxedToken;
+    mockToken: MockToken;
     mockWETH: MockWETH;
     mockYearnRegistry: MockYearnRegistry;
     mockYearnVault: MockYearnVault;
-    vault: Vault;
+    liquidable: Liquidable;
     yearnStrategy: YearnStrategy;
-    baseStrategy: BaseStrategy;
+    marginTradingStrategy: MarginTradingStrategy;
+    universalStrategy: UniversalStrategy;
+    vault: Vault;
     loadFixture: <T>(fixture: Fixture<T>) => Promise<T>;
     signers: Signers;
   }

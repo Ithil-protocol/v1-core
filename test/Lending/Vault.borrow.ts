@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 export function checkBorrow(): void {
-  it("check borrow", async function () {
+  it("Vault: borrow", async function () {
     const baseFee = 10;
     const fixedFee = 11;
     const token = this.mockWETH;
@@ -40,5 +40,5 @@ export function checkBorrow(): void {
     );
     expect(validEvents?.length).equal(1);
   });
-  it("check repay", async function () {});
+  it("Vault: repay", async function () {});
 }

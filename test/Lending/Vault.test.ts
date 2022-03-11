@@ -11,7 +11,7 @@ import { checkStake } from "./Vault.stake";
 import { checkBorrow } from "./Vault.borrow";
 import { checkAddStrategy } from "./Vault.addStrategy";
 
-describe("Unit tests", function () {
+describe("Lending tests", function () {
   before(async function () {
     this.signers = {} as Signers;
 

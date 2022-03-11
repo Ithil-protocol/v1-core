@@ -1,17 +1,12 @@
-import { expect } from "chai";
-import { ethers } from "hardhat";
 import { fundVault, changeRate } from "../common/utils";
+import { marginTokenLiquidity, marginTokenMargin, leverage } from "../common/constants";
 
-export function checkDeadline(): void {
-  it("check openPosition & closePosition", async function () {
+export function checkMarginCall(): void {
+  it("Liquidator: marginCall", async function () {
     const marginToken = this.mockTaxedToken;
     const investmentToken = this.mockWETH;
-    const investor = this.signers.investor;
-    const trader = this.signers.trader;
-    const marginTokenLiquidity = ethers.utils.parseUnits("2000.0", 18);
-    const marginTokenMargin = ethers.utils.parseUnits("100.0", 18);
-    const leverage = 10;
-    const deadline = 0;
+    const { investor, trader } = this.signers;
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
     await this.vault.whitelistToken(marginToken.address, 10, 10);
     await this.vault.whitelistToken(investmentToken.address, 10, 10);
@@ -31,9 +26,12 @@ export function checkDeadline(): void {
       deadline: deadline,
     };
 
-    try {
-      await this.marginTradingStrategy.connect(trader).openPosition(order);
-      expect.fail("Expected deadline exception");
-    } catch (e) {} // eslint-disable-line no-empty
+    await changeRate(this.mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
+    await changeRate(this.mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
+    await this.marginTradingStrategy.connect(trader).openPosition(order);
+
+    await changeRate(this.mockKyberNetworkProxy, investmentToken, 11 * 10 ** 10);
+
+    await this.liquidator.marginCall(this.marginTradingStrategy.address, 1, 100);
   });
 }

@@ -1,19 +1,23 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import type { Artifact } from "hardhat/types";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import type { Vault } from "../../src/types/Vault";
-import { Signers } from "../types";
-import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
-import { MockWETH } from "../../src/types/MockWETH";
-import { MarginTradingStrategy } from "../../src/types/MarginTradingStrategy";
-import { Liquidator } from "../../src/types/Liquidator";
-import { checkRiskFactor } from "./MTS.riskFactor";
-import { checkPosition } from "./MTS.position";
-import { checkLiquidate } from "./MTS.liquidate";
-import { MockTaxedToken } from "../../src/types/MockTaxedToken";
-import { checkDeadline } from "./MTS.deadline";
+import type { Vault } from "../../../src/types/Vault";
+import { Signers } from "../../types";
+import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
+import { MockWETH } from "../../../src/types/MockWETH";
+import { MarginTradingStrategy } from "../../../src/types/MarginTradingStrategy";
+import { Liquidator } from "../../../src/types/Liquidator";
+import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
+import { Console } from "console";
 
-describe("Unit tests", function () {
+import { checkRiskFactor } from "./MarginTradingStrategy.riskFactor";
+import { checkOpenPosition } from "./MarginTradingStrategy.openPosition";
+import { checkClosePosition } from "./MarginTradingStrategy.closePosition";
+import { checkEditPosition } from "./MarginTradingStrategy.editPosition";
+import { checkDeadline } from "./MarginTradingStrategy.deadline";
+import { checkLiquidate } from "./MarginTradingStrategy.liquidate";
+
+describe("Strategy tests", function () {
   before(async function () {
     this.signers = {} as Signers;
 
@@ -24,7 +28,7 @@ describe("Unit tests", function () {
     this.signers.liquidator = signers[3];
   });
 
-  describe("MTS", function () {
+  describe("MarginTradingStrategy", function () {
     beforeEach(async function () {
       const kyberArtifact: Artifact = await artifacts.readArtifact("MockKyberNetworkProxy");
       this.mockKyberNetworkProxy = <MockKyberNetworkProxy>(
@@ -40,14 +44,14 @@ describe("Unit tests", function () {
       this.vault = <Vault>await waffle.deployContract(this.signers.admin, vaultArtifact, [this.mockWETH.address]);
 
       const liquidatorArtifact: Artifact = await artifacts.readArtifact("Liquidator");
-      this.liquidatorContract = <Liquidator>await waffle.deployContract(this.signers.admin, liquidatorArtifact);
+      this.liquidator = <Liquidator>await waffle.deployContract(this.signers.admin, liquidatorArtifact);
 
       const mtsArtifact: Artifact = await artifacts.readArtifact("MarginTradingStrategy");
       this.marginTradingStrategy = <MarginTradingStrategy>(
         await waffle.deployContract(this.signers.admin, mtsArtifact, [
           this.mockKyberNetworkProxy.address,
           this.vault.address,
-          this.liquidatorContract.address,
+          this.liquidator.address,
         ])
       );
 
@@ -63,9 +67,11 @@ describe("Unit tests", function () {
       await this.vault.addStrategy(this.marginTradingStrategy.address);
     });
 
+    checkRiskFactor();
+    checkOpenPosition();
+    checkClosePosition();
+    // checkEditPosition(); // TODO: not completed
     checkDeadline();
-    checkRiskFactor(); // setRiskFactor, computePairRiskFactor
-    checkPosition(); // openPosition, closePosition, editPosition
-    checkLiquidate(); // computeLiquidationScore, liquidate
+    checkLiquidate();
   });
 });
