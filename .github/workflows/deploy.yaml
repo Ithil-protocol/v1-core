@@ -37,7 +37,7 @@ jobs:
       # Deploy smart contracts to Rinkeby testnet
       - name: Deploy
         env:
-          INFURA_API_KEY: ${{ secrets.INFURA_KEY }}
+          INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           MNEMONIC: ${{ secrets.MNEMONIC }}
           REPORT_GAS: false
