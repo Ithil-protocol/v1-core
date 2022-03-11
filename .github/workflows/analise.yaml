@@ -16,55 +16,24 @@ jobs:
           - VaultMathEchidnaTest
 
     steps:
-      # Checkout source code
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      # Setup Nodejs
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
-
-      # Setup yarn
-      - name: Install yarn
-        run: npm install -g yarn
-
-      # Cache dependencies for faster build time in future
-      - name: Cache dependencies
-        uses: actions/cache@v2
-        with:
-          path: |
-            ./node_modules
-            ./.yarn
-          key: ${{ runner.os }}-modules-${{ hashFiles('./yarn.lock') }}
-
-      # Install GYP as build dependencies
-      - name: Install GYP
-        run: |
-          npm install node-gyp -g
-          npm install node-gyp-build -g
-
-      # Install project dependencies
-      - name: Install dependencies
-        run: |
-          yarn install --prefer-offline  --cache-folder .yarn --modules-folder node_modules
-
-      # Compile smart contracts
+          cache: "yarn"
+      - run: yarn install
       - name: Compile
         env:
           FORK_URL: ${{ secrets.FORK_URL }}
           REPORT_GAS: false
           FORKING: true
-          GENERATE_DOCS: false
+          INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
+          MNEMONIC: ${{ secrets.MNEMONIC }}
         run: yarn compile
-
       - name: Set up Python 3.8
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
-
       # Install pip
       - name: Install pip3
         run: |

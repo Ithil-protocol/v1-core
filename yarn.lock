@@ -923,7 +923,6 @@ __metadata:
     "@nomiclabs/hardhat-waffle": ^2.0.2
     "@openzeppelin/contracts": ^4.5.0
     "@pooltogether/v4-core": ^1.2.0
-    "@primitivefi/hardhat-dodoc": ^0.1.3
     "@tenderly/hardhat-tenderly": ^1.0.13
     "@typechain/ethers-v5": ^9.0.0
     "@typechain/hardhat": ^4.0.0
@@ -1121,18 +1120,6 @@ __metadata:
   version: 1.3.0
   resolution: "@pooltogether/yield-source-interface@npm:1.3.0"
   checksum: f681126b3a53a88c58d5a377f9e2fce43c8b3ba15f9748ad1b2bc0e2a9ab2f15af4e94ecc60eefa2fd8f8e6e6e1415da8d107837dd25b8a13327f53e266e3d06
-  languageName: node
-  linkType: hard
-
-"@primitivefi/hardhat-dodoc@npm:^0.1.3":
-  version: 0.1.3
-  resolution: "@primitivefi/hardhat-dodoc@npm:0.1.3"
-  dependencies:
-    squirrelly: ^8.0.8
-  peerDependencies:
-    hardhat: ^2.6.4
-    squirrelly: ^8.0.8
-  checksum: d90854a6cdaff04906494a4cbe4dd393f4fb2f30ac1bb248f70c9d851cfb014f6c1c0730c47f391ad598c0e4e707831f26ca0a22c67b1d977f8576d2b865bf1c
   languageName: node
   linkType: hard
 
@@ -12971,13 +12958,6 @@ __metadata:
   version: 1.0.3
   resolution: "sprintf-js@npm:1.0.3"
   checksum: 19d79aec211f09b99ec3099b5b2ae2f6e9cdefe50bc91ac4c69144b6d3928a640bb6ae5b3def70c2e85a2c3d9f5ec2719921e3a59d3ca3ef4b2fd1a4656a0df3
-  languageName: node
-  linkType: hard
-
-"squirrelly@npm:^8.0.8":
-  version: 8.0.8
-  resolution: "squirrelly@npm:8.0.8"
-  checksum: 0ee76512b88ee38be0a91886bedf01b96aa6a557aaf7cee5d6d2b5ab3903ae32898007447805e3ef46a03f9dde7483d678e1ee433e7882c4b7a110b4c58f4f9f
   languageName: node
   linkType: hard
 
