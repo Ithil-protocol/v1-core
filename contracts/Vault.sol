@@ -6,7 +6,6 @@ import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/Saf
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
-import { IWETH } from "./interfaces/IWETH.sol";
 import { IVault } from "./interfaces/IVault.sol";
 import { IWrappedToken } from "./interfaces/IWrappedToken.sol";
 import { VaultMath } from "./libraries/VaultMath.sol";
@@ -26,14 +25,12 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     using GeneralMath for VaultState.VaultData;
     using VaultMath for VaultState.VaultData;
 
-    IWETH internal immutable weth;
-    address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
+    address public immutable override WETH;
     mapping(address => VaultState.VaultData) public vaults;
     mapping(address => bool) public strategies;
 
     constructor(address _weth) {
-        weth = IWETH(_weth);
+        WETH = _weth;
     }
 
     modifier isValidAmount(uint256 amount) {
@@ -47,18 +44,13 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     }
 
     modifier whitelisted(address token) {
-        if (!vaults[token].supported && token != ETH) revert Vault__Unsupported_Token(token);
+        if (!vaults[token].supported) revert Vault__Unsupported_Token(token);
         _;
     }
 
     modifier onlyStrategy() {
         if (!strategies[msg.sender]) revert Vault__Restricted_Access();
         _;
-    }
-
-    // only accept ETH via fallback from the WETH contract
-    receive() external payable {
-        if (msg.sender != address(weth)) revert Vault__ETH_Transfer_Failed();
     }
 
     function balance(address token) public view override returns (uint256) {

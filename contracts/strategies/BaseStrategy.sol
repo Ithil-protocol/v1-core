@@ -83,7 +83,7 @@ abstract contract BaseStrategy is Liquidable {
         return (collateralReceived, collateralPlaced, address(collateralToken));
     }
 
-    function openPosition(Order memory order) external returns (uint256) {
+    function openPosition(Order memory order) external payable returns (uint256) {
         uint256 riskFactor = computePairRiskFactor(order.spentToken, order.obtainedToken);
 
         (uint256 collateralReceived, uint256 collateralPlaced, address collateralToken) = _transferCollateral(order);

@@ -5,6 +5,9 @@ pragma experimental ABIEncoderV2;
 /// @title    Interface of Vault contract
 /// @author   Ithil
 interface IVault {
+    /// ==== PUBLIC CONST ==== ///
+    function WETH() external view returns (address);
+
     /// ==== STAKING ==== ///
 
     /// @notice Gets the amount of tokens a user can get back when unstaking
