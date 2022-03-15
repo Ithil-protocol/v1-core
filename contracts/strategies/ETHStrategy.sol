@@ -5,7 +5,8 @@ pragma experimental ABIEncoderV2;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IWETH } from "../interfaces/IWETH.sol";
 import { IStETH } from "../interfaces/IStETH.sol";
-import { IConvex } from "../interfaces/IConvex.sol";
+import { ICurve } from "../interfaces/ICurve.sol";
+import { IYearnVault } from "../interfaces/IYearnVault.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 import "hardhat/console.sol";
@@ -16,22 +17,21 @@ contract ETHStrategy is BaseStrategy {
     error ETHStrategy__ETH_Transfer_Failed();
     error ETHStrategy__Token_Not_Supported();
     error ETHStrategy__Not_Enough_Liquidity();
-    error ETHStrategy__Generic_Error();
 
     IStETH internal immutable stETH;
-    IConvex internal immutable convex;
-    uint24 internal immutable pid;
+    IYearnVault internal immutable yvault;
+    ICurve internal immutable crvPool;
 
     constructor(
         address _stETH,
-        address _convex,
-        uint24 _pid,
+        address _yvault,
+        address _crvPool,
         address _vault,
         address _liquidator
     ) BaseStrategy(_vault, _liquidator) {
         stETH = IStETH(_stETH);
-        convex = IConvex(_convex);
-        pid = _pid;
+        yvault = IYearnVault(_yvault);
+        crvPool = ICurve(_crvPool);
     }
 
     function name() external pure override returns (string memory) {
@@ -39,7 +39,6 @@ contract ETHStrategy is BaseStrategy {
     }
 
     receive() external payable {
-        console.log("Receiving...");
         if (msg.sender != vault.WETH()) revert ETHStrategy__ETH_Transfer_Failed();
     }
 
@@ -49,7 +48,8 @@ contract ETHStrategy is BaseStrategy {
         uint256 collateralReceived
     ) internal override returns (uint256 amountIn) {
         if (order.spentToken != vault.WETH()) revert ETHStrategy__Token_Not_Supported();
-        IWETH weth = IWETH(order.spentToken);
+
+        IWETH weth = IWETH(vault.WETH());
         uint256 amount = borrowed + collateralReceived;
 
         if (weth.balanceOf(address(this)) < amount) revert ETHStrategy__Not_Enough_Liquidity();
@@ -60,13 +60,14 @@ contract ETHStrategy is BaseStrategy {
         // stake ETH on Lido and get stETH
         uint256 stETHAmount = stETH.submit{ value: amount }(address(this));
 
-        if (stETH.allowance(address(this), address(convex)) == 0) {
-            stETH.safeApprove(address(convex), type(uint256).max);
+        // Deposit the stETH on Curve stETH-ETH pool
+        if (stETH.allowance(address(this), address(crvPool)) == 0) {
+            stETH.safeApprove(address(crvPool), type(uint256).max);
         }
+        uint256 lpTokens = crvPool.add_liquidity([uint256(0), uint256(1)], stETHAmount);
 
-        // Stake stETH on Curve via Convex
-        bool success = convex.deposit(pid, stETHAmount, true);
-        if (!success) revert ETHStrategy__Generic_Error();
+        // Stake crvstETH on Yearn using the Convex autocompounding stratey
+        amountIn = yvault.deposit(lpTokens, address(this));
     }
 
     function _closePosition(Position memory position, uint256 expectedCost)
@@ -74,23 +75,18 @@ contract ETHStrategy is BaseStrategy {
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
-        bool success = convex.withdraw(pid, position.allowance);
-        if (!success) revert ETHStrategy__Generic_Error();
+        // Unstake crvstETH from Yearn
+        uint256 amount = yvault.withdraw(position.allowance, address(this), 1);
+
+        // Remove liquidity from Curve
+        crvPool.remove_liquidity(amount, [uint256(0), uint256(0)]);
+
+        // Swap stETH to ETH
+        amountIn = crvPool.exchange(0, int128(int256(amount)), 0, 0);
 
         // Wrap ETH to WETH
         IWETH weth = IWETH(vault.WETH());
-        weth.deposit{ value: position.allowance }();
-
-        /*
-        (bool success, bytes memory return_data) = address(registry).call(
-            abi.encodePacked(registry.latestVault.selector, abi.encode(position.owedToken))
-        );
-
-        if (!success) revert YearnStrategy__Inexistent_Pool(position.owedToken);
-
-        address yvault = abi.decode(return_data, (address));
-        amountIn = IYearnVault(yvault).withdraw(position.allowance, address(this), 1);
-        */
+        weth.deposit{ value: amountIn }();
     }
 
     function quote(
@@ -98,6 +94,8 @@ contract ETHStrategy is BaseStrategy {
         address dst,
         uint256 amount
     ) public view override returns (uint256, uint256) {
-        // TBD
+        uint256 obtained = yvault.pricePerShare();
+        obtained *= amount * crvPool.get_virtual_price(); // TODO check math
+        return (obtained, obtained);
     }
 }

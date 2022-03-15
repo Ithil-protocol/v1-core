@@ -52,8 +52,8 @@ describe("Strategy tests", function () {
       const ethArtifact: Artifact = await artifacts.readArtifact("ETHStrategy");
       this.ethStrategy = <ETHStrategy>await waffle.deployContract(this.signers.admin, ethArtifact, [
         "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", // stETH
-        "0xF403C135812408BFbE8713b5A23a04b3D48AAE31", // Convex booster
-        23, // stETH-ETH Curve pool ID
+        "0xdCD90C7f6324cfa40d7169ef80b12031770B4325", // Yearn crvstETH vault
+        "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022", // stETH-ETH Curve pool
         this.vault.address,
         this.liquidator.address,
       ]);
