@@ -16,6 +16,9 @@ import { MarginTradingStrategy__factory } from "../src/types/factories/MarginTra
 import { YearnStrategy } from "../src/types/YearnStrategy";
 import { YearnStrategy__factory } from "../src/types/factories/YearnStrategy__factory";
 
+import { SynthetixStrategy } from "../src/types/SynthetixStrategy";
+import { SynthetixStrategy__factory } from "../src/types/factories/SynthetixStrategy__factory";
+
 import { MockKyberNetworkProxy } from "../src/types/MockKyberNetworkProxy";
 import { MockKyberNetworkProxy__factory } from "../src/types/factories/MockKyberNetworkProxy__factory";
 
@@ -91,6 +94,16 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   await ys.deployed();
   console.log("YearnStrategy deployed to address: ", ys.address);
 
+  // SynthetixStrategy
+  const synthsFactory: SynthetixStrategy__factory = <SynthetixStrategy__factory>(
+    await hre.ethers.getContractFactory("SynthetixStrategy")
+  );
+  const synths: SynthetixStrategy = <
+    SynthetixStrategy //TODO: change synths address
+  >await synthsFactory.deploy("0x84f87E3636Aa9cC1080c07E6C61aDfDCc23c0db6", vault.address, liquidatorContract.address);
+  await synths.deployed();
+  console.log("SynthetixStrategy deployed to address: ", synths.address);
+
   // write addresses to a file
   const addresses = {
     name: "Deployed Contracts",
@@ -105,6 +118,7 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
       Vault: vault.address,
       MarginTradingStrategy: mts.address,
       YearnStrategy: ys.address,
+      synthetixStrategy: synths.address,
     },
   };
   const str = JSON.stringify(addresses, null, 4);
