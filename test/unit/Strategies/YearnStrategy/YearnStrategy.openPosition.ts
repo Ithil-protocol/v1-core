@@ -1,15 +1,18 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { fundVault, changeRate } from "../../common/utils";
-import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../common/constants";
+import { fundVault } from "../../../common/utils";
+import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
 
-export function checkClosePosition(): void {
-  it("YearnStrategy: closePosition", async function () {
+export function checkOpenPosition(): void {
+  it("YearnStrategy: openPosition", async function () {
     const { investor, trader } = this.signers;
     const marginToken = this.mockTaxedToken;
     const investmentToken = this.mockWETH;
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
+
+    const borrowed = marginTokenMargin.div(2);
+    const collateralReceived = marginTokenMargin.div(2);
 
     await this.vault.whitelistToken(marginToken.address, 10, 10);
     await this.vault.whitelistToken(investmentToken.address, 10, 10);
@@ -36,9 +39,8 @@ export function checkClosePosition(): void {
       deadline: deadline,
     };
 
+    await this.mockYearnRegistry.setSharePrice(1);
     await this.yearnStrategy.connect(trader).openPosition(order);
-
-    await this.yearnStrategy.connect(trader).closePosition(1);
 
     const finalState = {
       trader_margin: await marginToken.balanceOf(trader.address),
@@ -47,7 +49,7 @@ export function checkClosePosition(): void {
       vault_inv: await investmentToken.balanceOf(this.vault.address),
     };
 
-    expect(initialState.trader_margin).to.lt(finalState.trader_margin);
-    expect(initialState.vault_margin).to.lt(finalState.vault_margin);
+    expect(initialState.trader_margin).to.gt(finalState.trader_margin);
+    expect(initialState.vault_margin).to.gt(finalState.vault_margin);
   });
 }

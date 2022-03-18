@@ -79,19 +79,18 @@ contract MarginTradingStrategy is BaseStrategy {
         IERC20 tokenToBuy = IERC20(dstToken);
 
         uint256 initialSrcBalance = tokenToSell.balanceOf(address(this));
-
+        uint256 initialDstBalance = tokenToBuy.balanceOf(recipient);
         _maxApprove(tokenToSell, address(kyberProxy));
-
         amountIn = kyberProxy.trade(
             tokenToSell,
             maxSourceAmount,
             tokenToBuy,
             payable(recipient),
-            maxSourceAmount,
+            type(uint256).max,
             minDestinationAmount / maxSourceAmount,
             payable(address(this))
         );
-
+        amountIn = tokenToBuy.balanceOf(recipient) - initialDstBalance;
         amountOut = initialSrcBalance - tokenToSell.balanceOf(address(this));
     }
 

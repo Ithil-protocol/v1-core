@@ -72,7 +72,7 @@ contract YearnStrategy is BaseStrategy {
         if (!success) revert YearnStrategy__Inexistent_Pool(position.owedToken);
 
         address yvault = abi.decode(return_data, (address));
-        amountIn = IYearnVault(yvault).withdraw(position.allowance, address(this), 1);
+        amountIn = IYearnVault(yvault).withdraw(position.allowance, address(vault), 1);
         /// @todo check maxLoss=1 (0.01%) parameter
     }
 
