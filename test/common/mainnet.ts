@@ -11,6 +11,12 @@ export const tokens = {
     decimals: 18,
     whale: "0x503828976D22510aad0201ac7EC88293211D23Da",
   },
+  USDC: {
+    symbol: "USDC",
+    address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    decimals: 18,
+    whale: "0x7abE0cE388281d2aCF297Cb089caef3819b13448",
+  },
   WETH: {
     symbol: "WETH",
     address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",

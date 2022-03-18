@@ -66,6 +66,10 @@ describe("Strategy tests", function () {
         ])
       );
 
+      const bigAmount = ethers.utils.parseUnits("1000000000", 18);
+      const yvault = await this.mockYearnRegistry.latestVault(this.mockTaxedToken.address);
+      await this.mockTaxedToken.mintTo(yvault, bigAmount);
+
       await this.vault.addStrategy(this.yearnStrategy.address);
     });
 

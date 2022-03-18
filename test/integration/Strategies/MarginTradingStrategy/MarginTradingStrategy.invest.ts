@@ -24,12 +24,18 @@ export function checkPerformInvestment(): void {
       vault_inv: await investmentToken.balanceOf(this.vault.address),
     };
 
+    const [price] = await this.marginTradingStrategy.quote(
+      marginToken.address,
+      investmentToken.address,
+      marginTokenMargin.mul(leverage),
+    );
+
     const order = {
       spentToken: marginToken.address,
       obtainedToken: investmentToken.address,
       collateral: marginTokenMargin,
       collateralIsSpentToken: true,
-      minObtained: marginTokenMargin.div(10), // real slippage
+      minObtained: price.mul(99).div(100), // 1% slippage
       maxSpent: marginTokenMargin.mul(leverage),
       deadline: deadline,
     };
