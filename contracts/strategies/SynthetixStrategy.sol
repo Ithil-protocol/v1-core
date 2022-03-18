@@ -6,8 +6,6 @@ import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/Saf
 import { IAddressResolver } from "synthetix/contracts/interfaces/IAddressResolver.sol";
 import { ISynthetix } from "synthetix/contracts/interfaces/ISynthetix.sol";
 import { IExchangeRates } from "synthetix/contracts/interfaces/IExchangeRates.sol";
-import { IKyberNetworkProxy } from "../interfaces/IKyberNetworkProxy.sol";
-import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
 
