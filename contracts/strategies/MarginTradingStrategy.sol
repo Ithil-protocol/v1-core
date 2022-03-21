@@ -34,9 +34,7 @@ contract MarginTradingStrategy is BaseStrategy {
         uint256 borrowed,
         uint256 collateralReceived
     ) internal override returns (uint256 amountIn) {
-        if (order.collateralIsSpentToken) borrowed += collateralReceived;
         (amountIn, ) = _swap(order.spentToken, order.obtainedToken, borrowed, order.minObtained, address(this));
-        if (!order.collateralIsSpentToken) amountIn += collateralReceived;
         totalAllowances[order.obtainedToken] += amountIn;
     }
 

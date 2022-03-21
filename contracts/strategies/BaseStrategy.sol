@@ -103,7 +103,9 @@ abstract contract BaseStrategy is Liquidable {
         );
 
         toSpend = IERC20(spentToken).balanceOf(address(this)) - toSpend;
+        if (order.collateralIsSpentToken) toSpend += collateralReceived;
         uint256 amountIn = _openPosition(order, toSpend, collateralReceived);
+        if (!order.collateralIsSpentToken) amountIn += collateralReceived;
 
         if (amountIn < order.minObtained) revert Obtained_Insufficient_Amount(amountIn);
 

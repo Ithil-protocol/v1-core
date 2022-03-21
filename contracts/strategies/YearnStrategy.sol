@@ -37,9 +37,8 @@ contract YearnStrategy is BaseStrategy {
         uint256 collateralReceived
     ) internal override returns (uint256 amountIn) {
         IERC20 tkn = IERC20(order.spentToken);
-        uint256 amount = borrowed + collateralReceived;
 
-        if (tkn.balanceOf(address(this)) < amount) revert YearnStrategy__Not_Enough_Liquidity();
+        if (tkn.balanceOf(address(this)) < borrowed) revert YearnStrategy__Not_Enough_Liquidity();
 
         (bool success, bytes memory return_data) = address(registry).call( // This creates a low level call to the token
             abi.encodePacked( // This encodes the function to call and the parameters to pass to that function
@@ -57,7 +56,7 @@ contract YearnStrategy is BaseStrategy {
             tkn.safeApprove(vaultAddress, type(uint256).max);
         }
 
-        amountIn = yvault.deposit(amount, address(this));
+        amountIn = yvault.deposit(borrowed, address(this));
     }
 
     function _closePosition(Position memory position, uint256 expectedCost)
