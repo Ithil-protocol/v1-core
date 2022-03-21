@@ -73,6 +73,7 @@ abstract contract Liquidable is AbstractStrategy {
             bool collateralInHeldTokens = position.collateralToken != position.owedToken;
             if (collateralInHeldTokens)
                 (expectedCost, ) = quote(position.owedToken, position.heldToken, position.principal + position.fees);
+            else expectedCost = position.allowance;
             if (totalAllowances[position.heldToken] > 0) totalAllowances[position.heldToken] -= position.allowance;
             _closePosition(position, expectedCost);
             emit PositionWasLiquidated(_id);

@@ -7,6 +7,8 @@ import { VaultMath } from "../libraries/VaultMath.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
 import { Liquidable } from "./Liquidable.sol";
 
+import "hardhat/console.sol";
+
 /// @title    BaseStrategy contract
 /// @author   Ithil
 /// @notice   Base contract to inherit to keep status updates consistent
@@ -162,6 +164,7 @@ abstract contract BaseStrategy is Liquidable {
 
         if (collateralInHeldTokens)
             (expectedCost, ) = quote(position.owedToken, position.heldToken, position.principal + position.fees);
+        else expectedCost = position.allowance;
 
         uint256 vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault));
         (uint256 amountIn, uint256 amountOut) = _closePosition(position, expectedCost);

@@ -36,9 +36,7 @@ contract MarginTradingStrategy is BaseStrategy {
     ) internal override returns (uint256 amountIn) {
         if (order.collateralIsSpentToken) borrowed += collateralReceived;
         (amountIn, ) = _swap(order.spentToken, order.obtainedToken, borrowed, order.minObtained, address(this));
-
         if (!order.collateralIsSpentToken) amountIn += collateralReceived;
-
         totalAllowances[order.obtainedToken] += amountIn;
     }
 
@@ -48,8 +46,6 @@ contract MarginTradingStrategy is BaseStrategy {
         returns (uint256 amountIn, uint256 amountOut)
     {
         _maxApprove(IERC20(position.owedToken), address(vault));
-
-        if (position.collateralToken != position.heldToken) expectedCost = position.allowance;
 
         (amountIn, amountOut) = _swap(
             position.heldToken,
