@@ -84,47 +84,48 @@ abstract contract BaseStrategy is Liquidable {
     }
 
     function openPosition(Order memory order) external returns (uint256) {
-        uint256 riskFactor = computePairRiskFactor(order.spentToken, order.obtainedToken);
+        address spentToken = order.spentToken;
+        address obtainedToken = order.obtainedToken;
+        uint256 riskFactor = computePairRiskFactor(spentToken, obtainedToken);
 
         (uint256 collateralReceived, uint256 collateralPlaced, address collateralToken) = _transferCollateral(order);
+        uint256 toBorrow = order.maxSpent;
+        uint256 toSpend = IERC20(spentToken).balanceOf(address(this));
 
-        (uint256 interestRate, uint256 fees, uint256 debt, uint256 borrowed) = vault.borrow(
-            order.spentToken,
-            order.maxSpent,
+        (uint256 interestRate, uint256 fees) = vault.borrow(
+            spentToken,
+            toBorrow,
             collateralPlaced,
             riskFactor,
             msg.sender
         );
 
-        uint256 amountIn = _openPosition(order, borrowed, collateralReceived);
+        toSpend = IERC20(spentToken).balanceOf(address(this)) - toSpend;
+        uint256 amountIn = _openPosition(order, toSpend, collateralReceived);
 
         if (amountIn < order.minObtained) revert Obtained_Insufficient_Amount(amountIn);
 
         positions[++id] = Position({
             owner: msg.sender,
-            owedToken: order.spentToken,
-            heldToken: order.obtainedToken,
+            owedToken: spentToken,
+            heldToken: obtainedToken,
             collateralToken: collateralToken,
             collateral: collateralReceived,
-            principal: debt,
+            principal: order.maxSpent,
             allowance: amountIn,
             interestRate: interestRate,
             fees: fees,
             createdAt: block.timestamp
         });
 
-        (int256 score, ) = computeLiquidationScore(positions[id]);
-
-        if (score > 0) revert Opened_Liquidable_Position(amountIn);
-
         emit PositionWasOpened(
             id,
             msg.sender,
-            order.spentToken,
-            order.obtainedToken,
+            spentToken,
+            obtainedToken,
             collateralToken,
             collateralReceived,
-            debt,
+            toBorrow,
             amountIn,
             interestRate,
             block.timestamp

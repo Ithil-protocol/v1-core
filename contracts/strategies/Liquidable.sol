@@ -13,6 +13,7 @@ import { VaultMath } from "../libraries/VaultMath.sol";
 
 abstract contract Liquidable is AbstractStrategy {
     using TransferHelper for IERC20;
+    using SafeERC20 for IERC20;
 
     address public immutable liquidator;
 
@@ -91,7 +92,7 @@ abstract contract Liquidable is AbstractStrategy {
             (, uint256 received) = IERC20(position.owedToken).transferTokens(purchaser, address(vault), price);
             //todo: calculate fees!
             if (received < position.principal + position.fees) revert Insufficient_Price(price);
-            else IERC20(position.heldToken).sendTokens(purchaser, position.allowance);
+            else IERC20(position.heldToken).safeTransfer(purchaser, position.allowance);
 
             if (totalAllowances[position.heldToken] > 0) totalAllowances[position.heldToken] -= position.allowance;
             emit PositionWasLiquidated(positionId);
