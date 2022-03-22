@@ -75,8 +75,6 @@ interface IStrategy {
 
     function getPosition(uint256 positionId) external view returns (Position memory);
 
-    function totalAllowance(address token) external view returns (uint256);
-
     function vaultAddress() external view returns (address);
 
     /// @notice Emitted when a new position has been opened

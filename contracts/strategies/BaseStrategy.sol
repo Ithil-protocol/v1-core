@@ -50,10 +50,6 @@ abstract contract BaseStrategy is Liquidable {
         return positions[positionId];
     }
 
-    function totalAllowance(address token) external view override returns (uint256) {
-        return totalAllowances[token];
-    }
-
     function vaultAddress() external view override returns (address) {
         return address(vault);
     }
@@ -164,13 +160,6 @@ abstract contract BaseStrategy is Liquidable {
         );
 
         position.fees += timeFees;
-
-        if (totalAllowances[position.heldToken] > 0) {
-            uint256 nominalAllowance = position.allowance;
-            totalAllowances[position.heldToken] -= nominalAllowance;
-            position.allowance *= IERC20(position.heldToken).balanceOf(address(this));
-            position.allowance /= (totalAllowances[position.heldToken] + nominalAllowance);
-        }
 
         uint256 expectedCost = 0;
         bool collateralInHeldTokens = position.collateralToken != position.owedToken;

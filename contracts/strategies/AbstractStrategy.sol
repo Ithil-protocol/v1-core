@@ -12,7 +12,6 @@ import { IStrategy } from "../interfaces/IStrategy.sol";
 abstract contract AbstractStrategy is IStrategy, Ownable {
     IVault public immutable vault;
     mapping(uint256 => Position) public positions;
-    mapping(address => uint256) public totalAllowances;
 
     constructor(address _vault) {
         vault = IVault(_vault);

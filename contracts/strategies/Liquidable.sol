@@ -60,12 +60,7 @@ abstract contract Liquidable is AbstractStrategy {
 
     function forcefullyClose(uint256 _id) external override onlyLiquidator {
         Position memory position = positions[_id];
-        uint256 totalAll = totalAllowances[position.heldToken];
 
-        if (totalAll > 0) {
-            position.allowance *= IERC20(position.heldToken).balanceOf(address(this));
-            position.allowance /= totalAll;
-        }
         (int256 score, ) = computeLiquidationScore(position);
         if (score > 0) {
             delete positions[_id];
@@ -74,7 +69,6 @@ abstract contract Liquidable is AbstractStrategy {
             if (collateralInHeldTokens)
                 (expectedCost, ) = quote(position.owedToken, position.heldToken, position.principal + position.fees);
             else expectedCost = position.allowance;
-            if (totalAllowances[position.heldToken] > 0) totalAllowances[position.heldToken] -= position.allowance;
             _closePosition(position, expectedCost);
             emit PositionWasLiquidated(_id);
         }
@@ -95,7 +89,6 @@ abstract contract Liquidable is AbstractStrategy {
             if (received < position.principal + position.fees) revert Insufficient_Price(price);
             else IERC20(position.heldToken).safeTransfer(purchaser, position.allowance);
 
-            if (totalAllowances[position.heldToken] > 0) totalAllowances[position.heldToken] -= position.allowance;
             emit PositionWasLiquidated(positionId);
         }
     }

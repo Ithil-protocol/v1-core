@@ -31,7 +31,6 @@ contract MarginTradingStrategy is BaseStrategy {
 
     function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
         (amountIn, ) = _swap(order.spentToken, order.obtainedToken, order.maxSpent, order.minObtained, address(this));
-        totalAllowances[order.obtainedToken] += amountIn;
     }
 
     function _closePosition(Position memory position, uint256 expectedCost)
