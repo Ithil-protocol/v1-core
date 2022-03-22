@@ -9,18 +9,23 @@ import { MockSynthetix } from "./MockSynthetix.sol";
 
 contract MockAddressResolver is IAddressResolver {
     IKyberNetworkProxy kyber;
-    address exchangeRates;
-    address synthetix;
+    MockSynthetix synthetix;
+    MockExchangeRates exchangeRates;
 
-    constructor(address _kyber) {
+    constructor(address _kyber, address _baseToken) {
         kyber = IKyberNetworkProxy(_kyber);
-        synthetix = address(new MockSynthetix(_kyber));
-        exchangeRates = address(new MockExchangeRates(_kyber));
+        synthetix = new MockSynthetix(_kyber);
+        exchangeRates = new MockExchangeRates(_kyber, _baseToken);
+    }
+
+    function registerToken(bytes32 name, address token) public {
+        synthetix.registerToken(name, token);
+        exchangeRates.registerToken(name, token);
     }
 
     function getAddress(bytes32 name) external view override returns (address) {
-        if (name == bytes32("Synthetix")) return synthetix;
-        if (name == bytes32("ExchangeRates")) return exchangeRates;
+        if (name == bytes32("Synthetix")) return address(synthetix);
+        if (name == bytes32("ExchangeRates")) return address(exchangeRates);
         return address(0);
     }
 

@@ -69,7 +69,7 @@ contract SynthetixStrategy is BaseStrategy {
         require(isRegisteredCurrency(position.heldToken), "not registered currency");
         require(isRegisteredCurrency(position.owedToken), "not registered currency");
 
-        _maxApprove(IERC20(position.owedToken), address(vault));
+        IERC20(position.owedToken).maxApprove(address(vault));
 
         (amountIn, amountOut) = _swap(
             position.heldToken,
@@ -107,15 +107,10 @@ contract SynthetixStrategy is BaseStrategy {
 
         uint256 initialSrcBalance = tokenToSell.balanceOf(address(this));
 
-        _maxApprove(tokenToSell, address(synthetix));
+        tokenToSell.maxApprove(address(synthetix));
 
         amountIn = synthetix.exchange(sellCurrencyKey, amount, buyCurrencyKey);
 
         amountOut = initialSrcBalance - tokenToSell.balanceOf(address(this));
-    }
-
-    function _maxApprove(IERC20 token, address receiver) internal {
-        uint256 tokenAllowance = token.allowance(address(this), address(receiver));
-        if (!(tokenAllowance > 0)) token.safeApprove(address(receiver), type(uint256).max);
     }
 }

@@ -16,6 +16,9 @@ import { MarginTradingStrategy__factory } from "../src/types/factories/MarginTra
 import { YearnStrategy } from "../src/types/YearnStrategy";
 import { YearnStrategy__factory } from "../src/types/factories/YearnStrategy__factory";
 
+import { MockAddressResolver } from "../src/types/MockAddressResolver";
+import { MockAddressResolver__factory } from "../src/types/factories/MockAddressResolver__factory";
+
 import { SynthetixStrategy } from "../src/types/SynthetixStrategy";
 import { SynthetixStrategy__factory } from "../src/types/factories/SynthetixStrategy__factory";
 
@@ -62,6 +65,16 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   await tkn.deployed();
   console.log("MockTaxedToken deployed to address: ", tkn.address);
 
+  // MockAddressResolver
+  const snxResolverFactory: MockAddressResolver__factory = <MockAddressResolver__factory>(
+    await hre.ethers.getContractFactory("MockAddressResolver")
+  );
+  const snxResolver: MockAddressResolver = <MockAddressResolver>(
+    await snxResolverFactory.deploy(kyber.address, tkn.address)
+  );
+  await snxResolver.deployed();
+  console.log("MockAddressResolver deployed to address: ", snxResolver.address);
+
   // Vault
   const vaultFactory: Vault__factory = <Vault__factory>await hre.ethers.getContractFactory("Vault");
   const vault: Vault = <Vault>await vaultFactory.deploy(weth.address);
@@ -98,9 +111,9 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   const synthsFactory: SynthetixStrategy__factory = <SynthetixStrategy__factory>(
     await hre.ethers.getContractFactory("SynthetixStrategy")
   );
-  const synths: SynthetixStrategy = <
-    SynthetixStrategy //TODO: change synths address
-  >await synthsFactory.deploy("0x84f87E3636Aa9cC1080c07E6C61aDfDCc23c0db6", vault.address, liquidatorContract.address);
+  const synths: SynthetixStrategy = <SynthetixStrategy>(
+    await synthsFactory.deploy(snxResolver.address, vault.address, liquidatorContract.address)
+  );
   await synths.deployed();
   console.log("SynthetixStrategy deployed to address: ", synths.address);
 
@@ -115,6 +128,7 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
       MockYearnRegistry: yearn.address,
       MockWETH: weth.address,
       MockTaxedToken: tkn.address,
+      MockAddressResolver: snxResolver.address,
       Vault: vault.address,
       MarginTradingStrategy: mts.address,
       YearnStrategy: ys.address,

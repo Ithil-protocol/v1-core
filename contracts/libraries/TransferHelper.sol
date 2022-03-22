@@ -60,4 +60,9 @@ library TransferHelper {
         (sent, received) = sendTokens(token, to, amount);
         state.netLoans += sent;
     }
+
+    function maxApprove(IERC20 token, address receiver) internal {
+        uint256 tokenAllowance = token.allowance(address(this), address(receiver));
+        if (!(tokenAllowance > 0)) token.safeApprove(address(receiver), type(uint256).max);
+    }
 }

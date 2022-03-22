@@ -14,6 +14,7 @@ import type { SyntheticStrategy } from "../src/types/SyntheticStrategy";
 import type { YearnStrategy } from "../src/types/YearnStrategy";
 import type { MarginTradingStrategy } from "../src/types/MarginTradingStrategy";
 import type { Vault } from "../src/types/Vault";
+import { MockAddressResolver } from "../src/types/MockAddressResolver";
 
 declare module "mocha" {
   export interface Context {
@@ -24,6 +25,7 @@ declare module "mocha" {
     mockWETH: MockWETH;
     mockYearnRegistry: MockYearnRegistry;
     mockYearnVault: MockYearnVault;
+    snxResolver: MockAddressResolver;
     liquidable: Liquidable;
     yearnStrategy: YearnStrategy;
     marginTradingStrategy: MarginTradingStrategy;

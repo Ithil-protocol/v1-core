@@ -6,11 +6,13 @@ import { Liquidator } from "../../../src/types/Liquidator";
 import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../../src/types/MockWETH";
 import { Vault } from "../../../src/types/Vault";
-import { SyntheticStrategy } from "../../../src/types/SyntheticStrategy";
+import { SynthetixStrategy } from "../../../src/types/SynthetixStrategy";
 
-import { checkOpenPosition } from "./SyntheticStrategy.openPosition";
-import { checkClosePosition } from "./SyntheticStrategy.closePosition";
-import { checkQuote } from "./SyntheticStrategy.quote";
+import { checkOpenPosition } from "./SynthetixStrategy.openPosition";
+import { checkClosePosition } from "./SynthetixStrategy.closePosition";
+import { checkQuote } from "./SynthetixStrategy.quote";
+import { MockAddressResolver } from "../../../src/types/MockAddressResolver";
+import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
 
 describe("Strategy tests", function () {
   before(async function () {
@@ -23,7 +25,7 @@ describe("Strategy tests", function () {
     this.signers.liquidator = signers[3];
   });
 
-  describe("SyntheticStrategy", function () {
+  describe("SynthetixStrategy", function () {
     beforeEach(async function () {
       const liquidatorArtifact: Artifact = await artifacts.readArtifact("Liquidator");
       this.liquidator = <Liquidator>await waffle.deployContract(this.signers.admin, liquidatorArtifact, []);
@@ -38,14 +40,35 @@ describe("Strategy tests", function () {
         await waffle.deployContract(this.signers.admin, wethArtifact, [this.mockKyberNetworkProxy.address])
       );
 
+      const tknArtifact: Artifact = await artifacts.readArtifact("MockTaxedToken");
+      this.mockTaxedToken = <MockTaxedToken>(
+        await waffle.deployContract(this.signers.admin, tknArtifact, [
+          "Dai Stablecoin",
+          "DAI",
+          this.mockKyberNetworkProxy.address,
+        ])
+      );
+
       const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
       this.vault = <Vault>await waffle.deployContract(this.signers.admin, vaultArtifact, [this.mockWETH.address]);
 
-      const ssArtifact: Artifact = await artifacts.readArtifact("SyntheticStrategy");
-      this.syntheticStrategy = <SyntheticStrategy>(
-        await waffle.deployContract(this.signers.admin, ssArtifact, [this.vault.address, this.liquidator.address])
+      const snxResolverArtifact: Artifact = await artifacts.readArtifact("MockAddressResolver");
+      this.snxResolver = <MockAddressResolver>(
+        await waffle.deployContract(this.signers.admin, snxResolverArtifact, [
+          this.mockKyberNetworkProxy.address,
+          this.mockWETH.address,
+        ])
       );
-      await this.vault.addStrategy(this.syntheticStrategy.address);
+
+      const ssArtifact: Artifact = await artifacts.readArtifact("SynthetixStrategy");
+      this.synthetixStrategy = <SynthetixStrategy>(
+        await waffle.deployContract(this.signers.admin, ssArtifact, [
+          this.snxResolver.address,
+          this.vault.address,
+          this.liquidator.address,
+        ])
+      );
+      await this.vault.addStrategy(this.synthetixStrategy.address);
     });
 
     checkOpenPosition();

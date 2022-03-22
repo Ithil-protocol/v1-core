@@ -8,9 +8,16 @@ import { IKyberNetworkProxy } from "../../interfaces/IKyberNetworkProxy.sol";
 
 contract MockExchangeRates is IExchangeRates {
     IKyberNetworkProxy kyber;
+    address baseToken;
+    mapping(bytes32 => address) public tokenMap;
 
-    constructor(address _kyber) {
+    constructor(address _kyber, address _baseToken) {
         kyber = IKyberNetworkProxy(_kyber);
+        baseToken = _baseToken;
+    }
+
+    function registerToken(bytes32 name, address token) public {
+        tokenMap[name] = token;
     }
 
     // Views
@@ -148,7 +155,7 @@ contract MockExchangeRates is IExchangeRates {
 
     function rateForCurrency(bytes32 currencyKey) external view override returns (uint256) {
         //TODO:
-        (uint256 a, ) = kyber.getExpectedRate(IERC20(address(0)), IERC20(address(0)), 1);
+        (uint256 a, ) = kyber.getExpectedRate(IERC20(address(0)), IERC20(baseToken), 1);
         return a;
     }
 

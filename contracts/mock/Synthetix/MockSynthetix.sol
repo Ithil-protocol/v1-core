@@ -10,9 +10,14 @@ import { IKyberNetworkProxy } from "../../interfaces/IKyberNetworkProxy.sol";
 
 contract MockSynthetix is ISynthetix {
     IKyberNetworkProxy kyber;
+    mapping(bytes32 => address) public tokenMap;
 
     constructor(address _kyber) {
         kyber = IKyberNetworkProxy(_kyber);
+    }
+
+    function registerToken(bytes32 name, address token) public {
+        tokenMap[name] = token;
     }
 
     // Views
