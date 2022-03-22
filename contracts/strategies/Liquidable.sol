@@ -90,7 +90,7 @@ abstract contract Liquidable is AbstractStrategy {
         if (score > 0) {
             //todo: properly repay the vault
             delete positions[positionId];
-            uint256 received = IERC20(position.owedToken).transferTokens(purchaser, address(vault), price);
+            (, uint256 received) = IERC20(position.owedToken).transferTokens(purchaser, address(vault), price);
             //todo: calculate fees!
             if (received < position.principal + position.fees) revert Insufficient_Price(price);
             else IERC20(position.heldToken).safeTransfer(purchaser, position.allowance);
@@ -109,7 +109,11 @@ abstract contract Liquidable is AbstractStrategy {
         (int256 score, ) = computeLiquidationScore(position);
         if (score > 0) {
             positions[_id].owner = newOwner;
-            uint256 received = IERC20(position.collateralToken).transferTokens(newOwner, address(this), newCollateral);
+            (, uint256 received) = IERC20(position.collateralToken).transferTokens(
+                newOwner,
+                address(this),
+                newCollateral
+            );
             positions[_id].collateral += received;
             (int256 newScore, ) = computeLiquidationScore(position);
             if (newScore > 0) revert Insufficient_Margin_Call(received);

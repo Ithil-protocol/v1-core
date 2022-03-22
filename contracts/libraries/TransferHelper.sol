@@ -19,16 +19,16 @@ library TransferHelper {
         address from,
         address to,
         uint256 amount
-    ) internal returns (uint256 received) {
+    ) internal returns (uint256 originalBalance, uint256 received) {
         if (token.balanceOf(from) < amount) revert TransferHelper__Insufficient_Token_Balance(address(token));
 
         if (token.allowance(from, address(this)) < amount)
             revert TransferHelper__Insufficient_Token_Allowance(address(token));
 
         // computes transferred balance for tokens with tax on transfers
-        uint256 prevAmountThis = token.balanceOf(to);
+        originalBalance = token.balanceOf(to);
         token.safeTransferFrom(from, to, amount);
 
-        received = token.balanceOf(to) - prevAmountThis;
+        received = token.balanceOf(to) - originalBalance;
     }
 }

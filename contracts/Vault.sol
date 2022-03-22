@@ -129,7 +129,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         IERC20 tkn = IERC20(token);
 
         uint256 totalWealth = balance(token);
-        amount = tkn.transferTokens(msg.sender, address(this), amount);
+        (, amount) = tkn.transferTokens(msg.sender, address(this), amount);
 
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
         uint256 oldCp = wToken.balanceOf(msg.sender);

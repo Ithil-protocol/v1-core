@@ -64,17 +64,26 @@ abstract contract BaseStrategy is Liquidable {
         returns (
             uint256 collateralReceived,
             uint256 toBorrow,
-            address collateralToken
+            address collateralToken,
+            uint256 originalCollBal
         )
     {
         toBorrow = order.maxSpent;
         if (order.collateralIsSpentToken) {
             collateralToken = order.spentToken;
-            collateralReceived = IERC20(collateralToken).transferTokens(msg.sender, address(this), order.collateral);
+            (originalCollBal, collateralReceived) = IERC20(collateralToken).transferTokens(
+                msg.sender,
+                address(this),
+                order.collateral
+            );
             toBorrow -= collateralReceived;
         } else {
             collateralToken = order.obtainedToken;
-            collateralReceived = IERC20(collateralToken).transferTokens(msg.sender, address(this), order.collateral);
+            (originalCollBal, collateralReceived) = IERC20(collateralToken).transferTokens(
+                msg.sender,
+                address(this),
+                order.collateral
+            );
         }
     }
 
@@ -83,8 +92,16 @@ abstract contract BaseStrategy is Liquidable {
         address obtainedToken = order.obtainedToken;
         uint256 riskFactor = computePairRiskFactor(spentToken, obtainedToken);
 
-        (uint256 collateralReceived, uint256 toBorrow, address collateralToken) = _transferCollateral(order);
-        uint256 toSpend = IERC20(spentToken).balanceOf(address(this));
+        (
+            uint256 collateralReceived,
+            uint256 toBorrow,
+            address collateralToken,
+            uint256 originalCollBal
+        ) = _transferCollateral(order);
+        uint256 toSpend = originalCollBal + collateralReceived;
+        if (!order.collateralIsSpentToken) {
+            toSpend = IERC20(spentToken).balanceOf(address(this));
+        }
 
         (uint256 interestRate, uint256 fees) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
 
