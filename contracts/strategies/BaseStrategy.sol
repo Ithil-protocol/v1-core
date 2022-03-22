@@ -82,10 +82,10 @@ abstract contract BaseStrategy is Liquidable {
 
         toSpend = IERC20(spentToken).balanceOf(address(this)) - toSpend;
         if (order.collateralIsSpentToken) {
-            toSpend += collateralReceived;
+            order.maxSpent = toSpend + collateralReceived;
             interestRate *= toBorrow / collateralReceived;
         }
-        uint256 amountIn = _openPosition(order, toSpend, collateralReceived);
+        uint256 amountIn = _openPosition(order);
         if (!order.collateralIsSpentToken) {
             amountIn += collateralReceived;
             interestRate *= amountIn / collateralReceived;

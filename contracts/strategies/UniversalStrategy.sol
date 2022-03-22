@@ -21,11 +21,7 @@ contract UniversalStrategy is BaseStrategy {
         return "UniversalStrategy";
     }
 
-    function _openPosition(
-        Order memory order,
-        uint256 borrowed,
-        uint256 collateralReceived
-    ) internal override returns (uint256 amountIn) {}
+    function _openPosition(Order memory order) internal override returns (uint256 amountIn) {}
 
     function _closePosition(Position memory position, uint256 expectedCost)
         internal

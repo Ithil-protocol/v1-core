@@ -29,12 +29,8 @@ contract MarginTradingStrategy is BaseStrategy {
         return "MarginTradingStrategy";
     }
 
-    function _openPosition(
-        Order memory order,
-        uint256 borrowed,
-        uint256 collateralReceived
-    ) internal override returns (uint256 amountIn) {
-        (amountIn, ) = _swap(order.spentToken, order.obtainedToken, borrowed, order.minObtained, address(this));
+    function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
+        (amountIn, ) = _swap(order.spentToken, order.obtainedToken, order.maxSpent, order.minObtained, address(this));
         totalAllowances[order.obtainedToken] += amountIn;
     }
 
