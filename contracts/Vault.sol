@@ -129,7 +129,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         IERC20 tkn = IERC20(token);
 
         uint256 totalWealth = balance(token);
-        (, amount) = tkn.transferTokens(msg.sender, address(this), amount);
+        amount = tkn.transferTokens(msg.sender, address(this), amount);
 
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
         uint256 oldCp = wToken.balanceOf(msg.sender);
@@ -162,21 +162,25 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     function borrow(
         address token,
         uint256 amount,
-        uint256 collateral,
         uint256 riskFactor,
         address borrower
-    ) external override whitelisted(token) unlocked(token) onlyStrategy returns (uint256 interestRate, uint256 fees) {
+    )
+        external
+        override
+        whitelisted(token)
+        unlocked(token)
+        onlyStrategy
+        returns (uint256 baseInterestRate, uint256 fees)
+    {
         VaultState.VaultData storage vaultData = vaults[token];
         uint256 freeLiquidity = IERC20(token).balanceOf(address(this)) - vaultData.insuranceReserveBalance;
 
         if (amount > freeLiquidity) revert Vault__Insufficient_Funds_Available(token, amount);
 
-        interestRate = VaultMath.computeInterestRate(vaultData, freeLiquidity, amount, collateral, riskFactor);
+        baseInterestRate = VaultMath.computeInterestRateNoLeverage(vaultData, freeLiquidity, riskFactor);
         vaultData.netLoans += amount;
 
         fees = VaultMath.computeFees(amount, vaultData.fixedFee);
-
-        if (interestRate > VaultMath.MAX_RATE) revert Vault__Maximum_Leverage_Exceeded();
 
         IERC20 tkn = IERC20(token);
         tkn.safeTransfer(msg.sender, amount);

@@ -44,11 +44,10 @@ contract UniversalStrategy is BaseStrategy {
     function arbitraryBorrow(
         address token,
         uint256 amount,
-        uint256 collateral,
         uint256 riskFactor,
         address borrower
     ) external {
-        vault.borrow(token, amount, collateral, riskFactor, borrower);
+        vault.borrow(token, amount, riskFactor, borrower);
     }
 
     function arbitraryRepay(

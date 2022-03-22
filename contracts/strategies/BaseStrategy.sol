@@ -58,31 +58,14 @@ abstract contract BaseStrategy is Liquidable {
         return address(vault);
     }
 
-    function _transferCollateral(Order memory order)
-        internal
-        validOrder(order)
-        returns (
-            uint256,
-            uint256,
-            address
-        )
-    {
-        uint256 collateralPlaced = 0;
+    function _transferCollateral(Order memory order) internal validOrder(order) returns (uint256, address) {
         IERC20 collateralToken;
         if (order.collateralIsSpentToken) collateralToken = IERC20(order.spentToken);
         else collateralToken = IERC20(order.obtainedToken);
 
-        (, uint256 collateralReceived) = collateralToken.transferTokens(msg.sender, address(this), order.collateral);
+        uint256 collateralReceived = collateralToken.transferTokens(msg.sender, address(this), order.collateral);
 
-        if (!order.collateralIsSpentToken)
-            (collateralPlaced, ) = quote(order.spentToken, order.obtainedToken, collateralReceived);
-
-        if (order.collateralIsSpentToken) {
-            order.maxSpent -= collateralReceived;
-            collateralPlaced = collateralReceived;
-        }
-
-        return (collateralReceived, collateralPlaced, address(collateralToken));
+        return (collateralReceived, address(collateralToken));
     }
 
     function openPosition(Order memory order) external returns (uint256) {
@@ -90,22 +73,25 @@ abstract contract BaseStrategy is Liquidable {
         address obtainedToken = order.obtainedToken;
         uint256 riskFactor = computePairRiskFactor(spentToken, obtainedToken);
 
-        (uint256 collateralReceived, uint256 collateralPlaced, address collateralToken) = _transferCollateral(order);
+        (uint256 collateralReceived, address collateralToken) = _transferCollateral(order);
         uint256 toBorrow = order.maxSpent;
+        if (order.collateralIsSpentToken) toBorrow -= collateralReceived;
         uint256 toSpend = IERC20(spentToken).balanceOf(address(this));
 
-        (uint256 interestRate, uint256 fees) = vault.borrow(
-            spentToken,
-            toBorrow,
-            collateralPlaced,
-            riskFactor,
-            msg.sender
-        );
+        (uint256 interestRate, uint256 fees) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
 
         toSpend = IERC20(spentToken).balanceOf(address(this)) - toSpend;
-        if (order.collateralIsSpentToken) toSpend += collateralReceived;
+        if (order.collateralIsSpentToken) {
+            toSpend += collateralReceived;
+            interestRate *= toBorrow / collateralReceived;
+        }
         uint256 amountIn = _openPosition(order, toSpend, collateralReceived);
-        if (!order.collateralIsSpentToken) amountIn += collateralReceived;
+        if (!order.collateralIsSpentToken) {
+            amountIn += collateralReceived;
+            interestRate *= amountIn / collateralReceived;
+        }
+
+        if (interestRate > VaultMath.MAX_RATE) revert Maximum_Leverage_Exceeded();
 
         if (amountIn < order.minObtained) revert Obtained_Insufficient_Amount(amountIn);
 
@@ -115,7 +101,7 @@ abstract contract BaseStrategy is Liquidable {
             heldToken: obtainedToken,
             collateralToken: collateralToken,
             collateral: collateralReceived,
-            principal: order.maxSpent,
+            principal: toBorrow,
             allowance: amountIn,
             interestRate: interestRate,
             fees: fees,
