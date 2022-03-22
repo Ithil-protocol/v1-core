@@ -58,14 +58,24 @@ abstract contract BaseStrategy is Liquidable {
         return address(vault);
     }
 
-    function _transferCollateral(Order memory order) internal validOrder(order) returns (uint256, address) {
-        IERC20 collateralToken;
-        if (order.collateralIsSpentToken) collateralToken = IERC20(order.spentToken);
-        else collateralToken = IERC20(order.obtainedToken);
-
-        uint256 collateralReceived = collateralToken.transferTokens(msg.sender, address(this), order.collateral);
-
-        return (collateralReceived, address(collateralToken));
+    function _transferCollateral(Order memory order)
+        internal
+        validOrder(order)
+        returns (
+            uint256 collateralReceived,
+            uint256 toBorrow,
+            address collateralToken
+        )
+    {
+        toBorrow = order.maxSpent;
+        if (order.collateralIsSpentToken) {
+            collateralToken = order.spentToken;
+            collateralReceived = IERC20(collateralToken).transferTokens(msg.sender, address(this), order.collateral);
+            toBorrow -= collateralReceived;
+        } else {
+            collateralToken = order.obtainedToken;
+            collateralReceived = IERC20(collateralToken).transferTokens(msg.sender, address(this), order.collateral);
+        }
     }
 
     function openPosition(Order memory order) external returns (uint256) {
@@ -73,9 +83,7 @@ abstract contract BaseStrategy is Liquidable {
         address obtainedToken = order.obtainedToken;
         uint256 riskFactor = computePairRiskFactor(spentToken, obtainedToken);
 
-        (uint256 collateralReceived, address collateralToken) = _transferCollateral(order);
-        uint256 toBorrow = order.maxSpent;
-        if (order.collateralIsSpentToken) toBorrow -= collateralReceived;
+        (uint256 collateralReceived, uint256 toBorrow, address collateralToken) = _transferCollateral(order);
         uint256 toSpend = IERC20(spentToken).balanceOf(address(this));
 
         (uint256 interestRate, uint256 fees) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
