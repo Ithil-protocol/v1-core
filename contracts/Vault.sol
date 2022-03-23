@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 import { IWETH } from "./interfaces/IWETH.sol";
 import { IVault } from "./interfaces/IVault.sol";
 import { IWrappedToken } from "./interfaces/IWrappedToken.sol";
@@ -96,10 +95,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     ) public override onlyOwner {
         if (vaults[token].supported) revert Vault__Token_Already_Supported(token);
 
-        bytes memory bytecode = abi.encodePacked(type(WrappedToken).creationCode, abi.encode(token));
-        bytes32 salt = keccak256(abi.encodePacked(token));
-
-        vaults[token].wrappedToken = Create2.deploy(0, salt, bytecode);
+        vaults[token].wrappedToken = address(new WrappedToken(token));
         vaults[token].supported = true;
         vaults[token].creationTime = block.timestamp;
         vaults[token].baseFee = baseFee;

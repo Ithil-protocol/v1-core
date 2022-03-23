@@ -109,4 +109,33 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   };
   const str = JSON.stringify(addresses, null, 4);
   fs.writeFileSync("deployments/addresses.json", str, "utf8");
+
+  // write tokens to a file
+  const tokens = {
+    name: "Supported Tokens",
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+    tokens: [
+      {
+        name: "DAI Stablecoin",
+        address: tkn.address,
+        symbol: "DAI",
+        decimals: 18,
+        chainId: chainIds[hre.network.name],
+        logoURI:
+          "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png",
+      },
+      {
+        name: "Wrapped Ether",
+        address: weth.address,
+        symbol: "WETH",
+        decimals: 18,
+        chainId: chainIds[hre.network.name],
+        logoURI:
+          "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png",
+      },
+    ],
+  };
+  const tokensFile = JSON.stringify(tokens, null, 4);
+  fs.writeFileSync("deployments/tokenlist.json", tokensFile, "utf8");
 });

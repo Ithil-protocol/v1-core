@@ -28,7 +28,7 @@ jobs:
           REPORT_GAS: false
           FORKING: true
           INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
-          MNEMONIC: ${{ secrets.MNEMONIC }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         run: yarn compile
       - name: Set up Python 3.8
         uses: actions/setup-python@v2
