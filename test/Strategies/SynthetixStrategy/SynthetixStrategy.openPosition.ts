@@ -8,6 +8,7 @@ export function checkOpenPosition(): void {
   it("SynthetixStrategy: openPosition", async function () {
     const marginToken = this.mockTaxedToken;
     const investmentToken = this.mockWETH;
+
     const { investor, trader } = this.signers;
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 

@@ -13,6 +13,8 @@ import { checkClosePosition } from "./SynthetixStrategy.closePosition";
 import { checkQuote } from "./SynthetixStrategy.quote";
 import { MockAddressResolver } from "../../../src/types/MockAddressResolver";
 import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
+import { MockToken } from "../../../src/types/MockToken";
+import { toUtf8Bytes32 } from "./synth.utils";
 
 describe("Strategy tests", function () {
   before(async function () {
@@ -49,6 +51,15 @@ describe("Strategy tests", function () {
         ])
       );
 
+      const mockTokenArtifact: Artifact = await artifacts.readArtifact("MockToken");
+      this.mockToken = <MockToken>(
+        await waffle.deployContract(this.signers.admin, tknArtifact, [
+          "USD Coin",
+          "USDC",
+          this.mockKyberNetworkProxy.address,
+        ])
+      );
+
       const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
       this.vault = <Vault>await waffle.deployContract(this.signers.admin, vaultArtifact, [this.mockWETH.address]);
 
@@ -56,7 +67,7 @@ describe("Strategy tests", function () {
       this.snxResolver = <MockAddressResolver>(
         await waffle.deployContract(this.signers.admin, snxResolverArtifact, [
           this.mockKyberNetworkProxy.address,
-          this.mockWETH.address,
+          this.mockToken.address,
         ])
       );
 
@@ -69,10 +80,22 @@ describe("Strategy tests", function () {
         ])
       );
       await this.vault.addStrategy(this.synthetixStrategy.address);
+
+      await this.synthetixStrategy.registerCurrency(this.mockToken.address, toUtf8Bytes32("USDC"));
+      await this.synthetixStrategy.registerCurrency(this.mockTaxedToken.address, toUtf8Bytes32("DAI"));
+      await this.synthetixStrategy.registerCurrency(this.mockWETH.address, toUtf8Bytes32("WETH"));
+
+      await this.snxResolver.registerToken(toUtf8Bytes32("USDC"), this.mockToken.address);
+      await this.snxResolver.registerToken(toUtf8Bytes32("DAI"), this.mockTaxedToken.address);
+      await this.snxResolver.registerToken(toUtf8Bytes32("WETH"), this.mockWETH.address);
+
+      console.log(" ", this.synthetixStrategy.address);
+      console.log(" ", this.snxResolver.address);
+      console.log(" ", this.signers.trader.address);
     });
 
     checkOpenPosition();
-    checkClosePosition();
-    checkQuote();
+    // checkClosePosition();
+    // checkQuote();
   });
 });

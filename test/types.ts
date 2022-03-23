@@ -10,11 +10,11 @@ import type { MockYearnRegistry } from "../src/types/MockYearnRegistry";
 import type { MockYearnVault } from "../src/types/MockYearnVault";
 import type { Liquidable } from "../src/types/Liquidable";
 import type { UniversalStrategy } from "../src/types/UniversalStrategy";
-import type { SyntheticStrategy } from "../src/types/SyntheticStrategy";
 import type { YearnStrategy } from "../src/types/YearnStrategy";
 import type { MarginTradingStrategy } from "../src/types/MarginTradingStrategy";
 import type { Vault } from "../src/types/Vault";
 import { MockAddressResolver } from "../src/types/MockAddressResolver";
+import { SynthetixStrategy } from "../src/types/SynthetixStrategy";
 
 declare module "mocha" {
   export interface Context {
@@ -30,7 +30,7 @@ declare module "mocha" {
     yearnStrategy: YearnStrategy;
     marginTradingStrategy: MarginTradingStrategy;
     universalStrategy: UniversalStrategy;
-    syntheticStrategy: SyntheticStrategy;
+    synthetixStrategy: SynthetixStrategy;
     vault: Vault;
     loadFixture: <T>(fixture: Fixture<T>) => Promise<T>;
     signers: Signers;

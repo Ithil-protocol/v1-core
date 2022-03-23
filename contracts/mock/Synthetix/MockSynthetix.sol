@@ -7,6 +7,7 @@ import { ISynth } from "synthetix/contracts/interfaces/ISynth.sol";
 import { IVirtualSynth } from "synthetix/contracts/interfaces/IVirtualSynth.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IKyberNetworkProxy } from "../../interfaces/IKyberNetworkProxy.sol";
+import "hardhat/console.sol";
 
 contract MockSynthetix is ISynthetix {
     IKyberNetworkProxy kyber;
@@ -107,9 +108,34 @@ contract MockSynthetix is ISynthetix {
         uint256 sourceAmount,
         bytes32 destinationCurrencyKey
     ) external override returns (uint256 amountReceived) {
-        //TODO:
-        return
-            kyber.trade(IERC20(address(0)), 0, IERC20(address(0)), payable(address(0)), 0, 0, payable(address(this)));
+        address srcToken = tokenMap[sourceCurrencyKey];
+        address dstToken = tokenMap[destinationCurrencyKey];
+
+        // (bool success, bytes memory data) = (address(kyber)).delegatecall(
+        //     abi.encodeWithSignature("trade(IERC20, uint256, IERC20, address, uint256, uint256, address)",
+        //         IERC20(srcToken),
+        //         sourceAmount,
+        //         IERC20(dstToken),
+        //         payable(msg.sender),
+        //         0,
+        //         0,
+        //         payable(address(this))
+        //     )
+        // );
+        // require(success);
+        // return abi.decode(data, (uint256));
+        // // amountReceived = 0;
+        // // console.log("data = ", amountReceived);
+        console.log("MockSynthetic", address(this));
+        amountReceived = kyber.trade(
+            IERC20(srcToken),
+            sourceAmount,
+            IERC20(dstToken),
+            payable(msg.sender),
+            0,
+            0,
+            payable(address(this))
+        );
     }
 
     function exchangeOnBehalf(

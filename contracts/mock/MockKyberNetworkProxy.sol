@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IKyberNetworkProxy } from "../interfaces/IKyberNetworkProxy.sol";
+import "hardhat/console.sol";
 
 contract MockKyberNetworkProxy is IKyberNetworkProxy {
     using SafeERC20 for IERC20;
@@ -23,11 +24,13 @@ contract MockKyberNetworkProxy is IKyberNetworkProxy {
         address payable platformWallet
     ) external payable override returns (uint256) {
         (uint256 destAmount, ) = getExpectedRate(src, dest, srcAmount);
+        console.log(srcAmount, destAmount, minConversionRate);
         require(destAmount >= minConversionRate, "KyberMock: Tokens obtained below minimum");
         uint256 amountToDest = dest.balanceOf(destAddress);
         uint256 srcTokenAllowance = src.allowance(msg.sender, address(this));
         uint256 srcTokenBalance = src.balanceOf(msg.sender);
 
+        console.log(msg.sender, srcTokenAllowance, srcTokenBalance, srcAmount);
         require(srcTokenAllowance >= srcAmount, "KyberMock: Insufficient src token allowance");
         require(srcTokenBalance >= srcAmount, "KyberMock: Insufficient src token balance");
 
@@ -47,6 +50,7 @@ contract MockKyberNetworkProxy is IKyberNetworkProxy {
         IERC20 dest,
         uint256 srcAmount
     ) public view override returns (uint256, uint256) {
+        if (address(src) == address(dest)) return (1, 1);
         uint256 srcDec = IERC20Metadata(address(src)).decimals();
         uint256 destDec = IERC20Metadata(address(dest)).decimals();
         uint256 rate1 = rates[src] * destDec;
