@@ -3,7 +3,7 @@ const shell = require("shelljs");
 module.exports = {
   istanbulReporter: ["text"],
   providerOptions: {
-    mnemonic: process.env.MNEMONIC,
+    privateKey: process.env.PRIVATE_KEY,
   },
   skipFiles: ["test", "mock"],
 };

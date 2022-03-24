@@ -96,10 +96,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     ) public override onlyOwner {
         if (vaults[token].supported) revert Vault__Token_Already_Supported(token);
 
-        bytes memory bytecode = abi.encodePacked(type(WrappedToken).creationCode, abi.encode(token));
-        bytes32 salt = keccak256(abi.encodePacked(token));
-
-        vaults[token].wrappedToken = Create2.deploy(0, salt, bytecode);
+        vaults[token].wrappedToken = address(new WrappedToken(token));
         vaults[token].supported = true;
         vaults[token].creationTime = block.timestamp;
         vaults[token].baseFee = baseFee;
