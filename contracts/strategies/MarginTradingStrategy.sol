@@ -33,18 +33,18 @@ contract MarginTradingStrategy is BaseStrategy {
         (amountIn, ) = _swap(order.spentToken, order.obtainedToken, order.maxSpent, order.minObtained, address(this));
     }
 
-    function _closePosition(Position memory position, uint256 expectedCost)
+    function _closePosition(Position memory position, uint256 maxOrMin)
         internal
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
         _maxApprove(IERC20(position.owedToken), address(vault));
-
+        bool spendAll = position.collateralToken != position.heldToken;
         (amountIn, amountOut) = _swap(
             position.heldToken,
             position.owedToken,
-            expectedCost,
-            position.principal + position.fees,
+            spendAll ? position.allowance : maxOrMin,
+            spendAll ? maxOrMin : position.principal + position.fees,
             address(vault)
         );
     }

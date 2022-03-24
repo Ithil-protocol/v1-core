@@ -145,7 +145,7 @@ abstract contract BaseStrategy is Liquidable {
         return id;
     }
 
-    function closePosition(uint256 positionId) external validPosition(positionId) {
+    function closePosition(uint256 positionId, uint256 maxOrMin) external validPosition(positionId) {
         if (positions[positionId].owner != msg.sender)
             revert Restricted_Access(positions[positionId].owner, msg.sender);
 
@@ -161,15 +161,10 @@ abstract contract BaseStrategy is Liquidable {
 
         position.fees += timeFees;
 
-        uint256 expectedCost = 0;
         bool collateralInHeldTokens = position.collateralToken != position.owedToken;
 
-        if (collateralInHeldTokens)
-            (expectedCost, ) = quote(position.owedToken, position.heldToken, position.principal + position.fees);
-        else expectedCost = position.allowance;
-
         uint256 vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault));
-        (uint256 amountIn, uint256 amountOut) = _closePosition(position, expectedCost);
+        (uint256 amountIn, uint256 amountOut) = _closePosition(position, maxOrMin);
 
         if (collateralInHeldTokens && amountOut <= position.allowance)
             IERC20(position.heldToken).safeTransfer(position.owner, position.allowance - amountOut);

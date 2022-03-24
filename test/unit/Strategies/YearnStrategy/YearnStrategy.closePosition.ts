@@ -39,7 +39,11 @@ export function checkClosePosition(): void {
     await this.mockYearnRegistry.setSharePrice(1);
     await this.yearnStrategy.connect(trader).openPosition(order);
     await this.mockYearnRegistry.setSharePrice(2);
-    await this.yearnStrategy.connect(trader).closePosition(1);
+
+    const position = await this.yearnStrategy.positions(1);
+    const maxSpent = position.allowance;
+
+    await this.yearnStrategy.connect(trader).closePosition(1, maxSpent);
 
     const finalState = {
       trader_margin: await marginToken.balanceOf(trader.address),
