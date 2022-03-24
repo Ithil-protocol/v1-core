@@ -67,16 +67,16 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
 
   // Liquidator
   const liquidatorFactory: Liquidator__factory = <Liquidator__factory>await hre.ethers.getContractFactory("Liquidator");
-  const liquidatorContract: Liquidator = <Liquidator>await liquidatorFactory.deploy();
-  await liquidatorContract.deployed();
-  console.log("Liquidator deployed to address: ", liquidatorContract.address);
+  const liquidator: Liquidator = <Liquidator>await liquidatorFactory.deploy();
+  await liquidator.deployed();
+  console.log("Liquidator deployed to address: ", liquidator.address);
 
   // MarginTradingStrategy
   const mtsFactory: MarginTradingStrategy__factory = <MarginTradingStrategy__factory>(
     await hre.ethers.getContractFactory("MarginTradingStrategy")
   );
   const mts: MarginTradingStrategy = <MarginTradingStrategy>(
-    await mtsFactory.deploy(kyber.address, vault.address, liquidatorContract.address)
+    await mtsFactory.deploy(kyber.address, vault.address, liquidator.address)
   );
   await mts.deployed();
   console.log("MarginTradingStrategy deployed to address: ", mts.address);
@@ -85,9 +85,7 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   const ysFactory: YearnStrategy__factory = <YearnStrategy__factory>(
     await hre.ethers.getContractFactory("YearnStrategy")
   );
-  const ys: YearnStrategy = <YearnStrategy>(
-    await ysFactory.deploy(yearn.address, vault.address, liquidatorContract.address)
-  );
+  const ys: YearnStrategy = <YearnStrategy>await ysFactory.deploy(yearn.address, vault.address, liquidator.address);
   await ys.deployed();
   console.log("YearnStrategy deployed to address: ", ys.address);
 
@@ -103,6 +101,7 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
       MockWETH: weth.address,
       MockTaxedToken: tkn.address,
       Vault: vault.address,
+      Liquidator: liquidator.address,
       MarginTradingStrategy: mts.address,
       YearnStrategy: ys.address,
     },
