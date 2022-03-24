@@ -23,7 +23,7 @@ jobs:
       - name: Run yarn compile
         env:
           INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
-          MNEMONIC: ${{ secrets.MNEMONIC }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         run: yarn compile
       - name: Run coverage analysis
         run: yarn coverage
@@ -33,4 +33,4 @@ jobs:
           REPORT_GAS: false
           FORKING: true
           INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
-          MNEMONIC: ${{ secrets.MNEMONIC }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
