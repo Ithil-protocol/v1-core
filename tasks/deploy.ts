@@ -92,7 +92,7 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   console.log("YearnStrategy deployed to address: ", ys.address);
 
   // write addresses to a file
-  const addresses = {
+  const addressesFile = {
     name: "Deployed Contracts",
     version: "1.0.0",
     timestamp: new Date().toISOString(),
@@ -107,7 +107,7 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
       YearnStrategy: ys.address,
     },
   };
-  const str = JSON.stringify(addresses, null, 4);
+  const str = JSON.stringify(addressesFile, null, 4);
   fs.writeFileSync("deployments/addresses.json", str, "utf8");
 
   // write tokens to a file
