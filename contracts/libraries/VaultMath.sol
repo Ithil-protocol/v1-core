@@ -85,7 +85,8 @@ library VaultMath {
     ) internal pure returns (uint256 interestRate) {
         uint256 uncovered = data.netLoans.positiveSub(data.insuranceReserveBalance);
         interestRate = (data.netLoans + uncovered) * riskFactor;
-        interestRate += data.baseFee * (data.netLoans + freeLiquidity);
+        interestRate /= (data.netLoans + freeLiquidity);
+        interestRate += data.baseFee;
     }
 
     function subtractLoan(VaultState.VaultData storage self, uint256 b) internal {
