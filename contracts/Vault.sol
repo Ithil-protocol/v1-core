@@ -167,13 +167,19 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         whitelisted(token)
         unlocked(token)
         onlyStrategy
-        returns (uint256 baseInterestRate, uint256 fees)
+        returns (
+            uint256 baseInterestRate,
+            uint256 fees,
+            uint256 freeLiquidity,
+            uint256 netLoans
+        )
     {
         VaultState.VaultData storage vaultData = vaults[token];
-        uint256 freeLiquidity = IERC20(token).balanceOf(address(this)) - vaultData.insuranceReserveBalance;
+        freeLiquidity = IERC20(token).balanceOf(address(this)) - vaultData.insuranceReserveBalance;
 
         if (amount > freeLiquidity) revert Vault__Insufficient_Funds_Available(token, amount);
 
+        netLoans = vaultData.netLoans;
         baseInterestRate = VaultMath.computeInterestRateNoLeverage(vaultData, freeLiquidity, riskFactor);
         vaultData.netLoans += amount;
 

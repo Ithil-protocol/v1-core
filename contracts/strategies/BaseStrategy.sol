@@ -99,17 +99,22 @@ abstract contract BaseStrategy is Liquidable {
             toSpend = IERC20(spentToken).balanceOf(address(this));
         }
 
-        (uint256 interestRate, uint256 fees) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
+        (uint256 interestRate, uint256 fees, uint256 freeLiquidity, uint256 netLoans) = vault.borrow(
+            spentToken,
+            toBorrow,
+            riskFactor,
+            msg.sender
+        );
 
         toSpend = IERC20(spentToken).balanceOf(address(this)) - toSpend;
         if (order.collateralIsSpentToken) {
             order.maxSpent = toSpend + collateralReceived;
-            interestRate *= toBorrow / collateralReceived;
+            interestRate *= toBorrow / (collateralReceived * (freeLiquidity + netLoans));
         }
         uint256 amountIn = _openPosition(order);
         if (!order.collateralIsSpentToken) {
             amountIn += collateralReceived;
-            interestRate *= amountIn / collateralReceived;
+            interestRate *= amountIn / (collateralReceived * (freeLiquidity + netLoans));
         }
 
         if (interestRate > VaultMath.MAX_RATE) revert Maximum_Leverage_Exceeded();
