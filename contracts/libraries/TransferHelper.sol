@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { VaultState } from "./VaultState.sol";
+import { IStrategy } from "../interfaces/IStrategy.sol";
 
 /// @title    TransferHelper library
 /// @author   Ithil
@@ -30,5 +31,16 @@ library TransferHelper {
         token.safeTransferFrom(from, to, amount);
 
         received = token.balanceOf(to) - originalBalance;
+    }
+
+    function topUpCollateral(
+        IERC20 token,
+        IStrategy.Position storage position,
+        address from,
+        address to,
+        uint256 amount
+    ) internal returns (uint256 originalBalance, uint256 received) {
+        (originalBalance, received) = transferTokens(token, from, to, amount);
+        position.collateral += received;
     }
 }

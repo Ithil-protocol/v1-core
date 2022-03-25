@@ -48,7 +48,7 @@ contract YearnStrategy is BaseStrategy {
         address vaultAddress = abi.decode(return_data, (address));
         IYearnVault yvault = IYearnVault(vaultAddress);
 
-        if (tkn.allowance(address(this), vaultAddress) == 0) {
+        if (tkn.allowance(address(this), vaultAddress) <= 0) {
             tkn.safeApprove(vaultAddress, type(uint256).max);
         }
 

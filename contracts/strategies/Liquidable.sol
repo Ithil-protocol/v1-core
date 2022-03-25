@@ -102,12 +102,12 @@ abstract contract Liquidable is AbstractStrategy {
         (int256 score, ) = computeLiquidationScore(position);
         if (score > 0) {
             positions[_id].owner = newOwner;
-            (, uint256 received) = IERC20(position.collateralToken).transferTokens(
+            (, uint256 received) = IERC20(position.collateralToken).topUpCollateral(
+                positions[_id],
                 newOwner,
                 address(this),
                 newCollateral
             );
-            positions[_id].collateral += received;
             (int256 newScore, ) = computeLiquidationScore(position);
             if (newScore > 0) revert Insufficient_Margin_Call(received);
         }
