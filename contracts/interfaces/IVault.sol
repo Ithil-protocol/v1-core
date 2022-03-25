@@ -62,24 +62,15 @@ interface IVault {
     /// @notice updates state to borrow tokens from the vault
     /// @param token the token to borrow
     /// @param amount the total amount to borrow
-    /// @param collateral the collateral locked for this loan
     /// @param riskFactor the riskiness of this loan
     /// @param borrower the ultimate requester of the loan
     /// @return interestRate the interest rate calculated for the loan
     function borrow(
         address token,
         uint256 amount,
-        uint256 collateral,
         uint256 riskFactor,
         address borrower
-    )
-        external
-        returns (
-            uint256 interestRate,
-            uint256 fees,
-            uint256 debt,
-            uint256 borrowed
-        );
+    ) external returns (uint256 interestRate, uint256 fees);
 
     /// @notice repays a loan
     /// @param token the token of the loan
@@ -126,7 +117,6 @@ interface IVault {
     error Vault__Token_Already_Supported(address);
     error Vault__ETH_Transfer_Failed();
     error Vault__Restricted_Access();
-    error Vault__Maximum_Leverage_Exceeded();
     error Vault__Insufficient_Funds_Available(address, uint256);
     error Vault__Insufficient_Margin(address, address);
     error Vault__Locked(address);

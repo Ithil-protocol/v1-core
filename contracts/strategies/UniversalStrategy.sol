@@ -21,11 +21,7 @@ contract UniversalStrategy is BaseStrategy {
         return "UniversalStrategy";
     }
 
-    function _openPosition(
-        Order memory order,
-        uint256 borrowed,
-        uint256 collateralReceived
-    ) internal override returns (uint256 amountIn) {}
+    function _openPosition(Order memory order) internal override returns (uint256 amountIn) {}
 
     function _closePosition(Position memory position, uint256 expectedCost)
         internal
@@ -44,11 +40,10 @@ contract UniversalStrategy is BaseStrategy {
     function arbitraryBorrow(
         address token,
         uint256 amount,
-        uint256 collateral,
         uint256 riskFactor,
         address borrower
     ) external {
-        vault.borrow(token, amount, collateral, riskFactor, borrower);
+        vault.borrow(token, amount, riskFactor, borrower);
     }
 
     function arbitraryRepay(

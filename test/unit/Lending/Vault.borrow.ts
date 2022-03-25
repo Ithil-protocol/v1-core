@@ -21,7 +21,7 @@ export function checkBorrow(): void {
 
     const rsp = await this.vault
       .connect(this.signers.admin)
-      .borrow(token.address, amount, collateral, riskFactor, borrower.address);
+      .borrow(token.address, amount, riskFactor, borrower.address);
     const events = (await rsp.wait()).events;
 
     const finalState = {

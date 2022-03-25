@@ -41,7 +41,11 @@ export function checkPerformInvestment(): void {
     };
 
     await this.marginTradingStrategy.connect(trader).openPosition(order);
-    await this.marginTradingStrategy.connect(trader).closePosition(1);
+
+    const position = await this.marginTradingStrategy.positions(1);
+    const maxSpent = position.allowance;
+
+    await this.marginTradingStrategy.connect(trader).closePosition(1, maxSpent);
 
     const finalState = {
       trader_margin: await marginToken.balanceOf(trader.address),

@@ -12,7 +12,6 @@ import { IStrategy } from "../interfaces/IStrategy.sol";
 abstract contract AbstractStrategy is IStrategy, Ownable {
     IVault public immutable vault;
     mapping(uint256 => Position) public positions;
-    mapping(address => uint256) public totalAllowances;
 
     constructor(address _vault) {
         vault = IVault(_vault);
@@ -20,11 +19,7 @@ abstract contract AbstractStrategy is IStrategy, Ownable {
 
     function name() external pure virtual returns (string memory);
 
-    function _openPosition(
-        Order memory order,
-        uint256 borrowed,
-        uint256 collateralReceived
-    ) internal virtual returns (uint256);
+    function _openPosition(Order memory order) internal virtual returns (uint256);
 
     function _closePosition(Position memory position, uint256 expectedCost)
         internal

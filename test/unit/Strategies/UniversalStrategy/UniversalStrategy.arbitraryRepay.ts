@@ -21,7 +21,7 @@ export function checkArbitraryRepay(): void {
       balance: await token.balanceOf(borrower.address),
     };
 
-    await this.universalStrategy.arbitraryBorrow(token.address, amount, collateral, riskFactor, borrower.address);
+    await this.universalStrategy.arbitraryBorrow(token.address, amount, riskFactor, borrower.address);
 
     const rsp = await this.universalStrategy.arbitraryRepay(
       token.address,
