@@ -14,6 +14,9 @@ import { checkRiskFactor } from "./MarginTradingStrategy.riskFactor";
 import { checkOpenPosition } from "./MarginTradingStrategy.openPosition";
 import { checkClosePosition } from "./MarginTradingStrategy.closePosition";
 import { checkEditPosition } from "./MarginTradingStrategy.editPosition";
+import { checkForcefullyClose } from "./MarginTradingStrategy.forcefullyClose";
+import { checkForcefullyDelete } from "./MarginTradingStrategy.forcefullyDelete";
+import { checkName } from "./MarginTradingStrategy.name";
 import { checkDeadline } from "./MarginTradingStrategy.deadline";
 import { checkLiquidate } from "./MarginTradingStrategy.liquidate";
 
@@ -51,7 +54,7 @@ describe("Strategy tests", function () {
         await waffle.deployContract(this.signers.admin, mtsArtifact, [
           this.mockKyberNetworkProxy.address,
           this.vault.address,
-          this.liquidator.address,
+          this.signers.liquidator.address,
         ])
       );
 
@@ -70,7 +73,10 @@ describe("Strategy tests", function () {
     checkRiskFactor();
     checkOpenPosition();
     checkClosePosition();
-    // checkEditPosition(); // TODO: not completed
+    checkEditPosition();
+    checkForcefullyClose();
+    checkForcefullyDelete();
+    checkName();
     checkDeadline();
     checkLiquidate();
   });

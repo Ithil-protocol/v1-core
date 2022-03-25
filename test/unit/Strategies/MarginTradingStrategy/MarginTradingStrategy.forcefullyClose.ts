@@ -4,8 +4,8 @@ import { ethers } from "hardhat";
 import { fundVault, changeRate } from "../../../common/utils";
 import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
 
-export function checkOpenPosition(): void {
-  it("UniversalStrategy: openPosition", async function () {
+export function checkForcefullyClose(): void {
+  it("MarginTradingStrategy: forcefullyClose", async function () {
     const marginToken = this.mockTaxedToken;
     const investmentToken = this.mockWETH;
     const { investor, trader } = this.signers;
@@ -17,7 +17,7 @@ export function checkOpenPosition(): void {
     await marginToken.mintTo(trader.address, marginTokenLiquidity);
 
     await fundVault(investor, this.vault, marginToken, marginTokenLiquidity);
-    await marginToken.connect(trader).approve(this.universalStrategy.address, marginTokenMargin);
+    await marginToken.connect(trader).approve(this.marginTradingStrategy.address, marginTokenMargin);
 
     const order = {
       spentToken: marginToken.address,
@@ -31,6 +31,8 @@ export function checkOpenPosition(): void {
 
     await changeRate(this.mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
     await changeRate(this.mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
-    await this.universalStrategy.connect(trader).openPosition(order);
+    await this.marginTradingStrategy.connect(trader).openPosition(order);
+
+    await this.marginTradingStrategy.connect(this.signers.liquidator).forcefullyClose(1);
   });
 }

@@ -53,11 +53,11 @@ describe("Strategy tests", function () {
       // this.vault.addStrategy(this.liquidable.address);
     });
 
-    checkRiskFactors();
-    checkComputePairRiskFactor();
-    checkComputeLiquidationScore();
-    checkForcefullyClose();
-    checkForcefullyDelete();
-    checkModifyCollateralAndOwner();
+    // checkRiskFactors();
+    // checkComputePairRiskFactor();
+    // checkComputeLiquidationScore();
+    // checkForcefullyClose();
+    // checkForcefullyDelete();
+    // checkModifyCollateralAndOwner();
   });
 });

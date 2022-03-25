@@ -10,6 +10,7 @@ import { YearnStrategy } from "../../../../src/types/YearnStrategy";
 import { MockYearnRegistry } from "../../../../src/types/MockYearnRegistry";
 import { Liquidator } from "../../../../src/types/Liquidator";
 
+import { checkName } from "./YearnStrategy.name";
 import { checkClosePosition } from "./YearnStrategy.closePosition";
 import { checkEditPosition } from "./YearnStrategy.editPosition";
 import { checkOpenPosition } from "./YearnStrategy.openPosition";
@@ -73,6 +74,7 @@ describe("Strategy tests", function () {
       await this.vault.addStrategy(this.yearnStrategy.address);
     });
 
+    checkName();
     checkOpenPosition();
     checkClosePosition();
     // checkEditPosition(); TODO:

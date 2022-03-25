@@ -26,9 +26,18 @@ export function checkMarginCall(): void {
       deadline: deadline,
     };
 
+    await this.marginTradingStrategy.setRiskFactor(marginToken.address, 50);
+    await this.marginTradingStrategy.setRiskFactor(investmentToken.address, 50);
+
     await changeRate(this.mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
     await changeRate(this.mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
     await this.marginTradingStrategy.connect(trader).openPosition(order);
+
+    const riskFactor = await this.marginTradingStrategy.computePairRiskFactor(
+      marginToken.address,
+      investmentToken.address,
+    );
+    console.log("riskFactor", riskFactor, riskFactor.toString());
 
     await changeRate(this.mockKyberNetworkProxy, investmentToken, 11 * 10 ** 10);
 

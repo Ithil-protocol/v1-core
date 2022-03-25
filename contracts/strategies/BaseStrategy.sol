@@ -85,9 +85,7 @@ abstract contract BaseStrategy is Liquidable {
 
     function openPosition(Order memory order) external returns (uint256) {
         uint256 riskFactor = computePairRiskFactor(order.spentToken, order.obtainedToken);
-
         (uint256 collateralReceived, uint256 collateralPlaced, address collateralToken) = _transferCollateral(order);
-
         (uint256 interestRate, uint256 fees, uint256 debt, uint256 borrowed) = vault.borrow(
             order.spentToken,
             order.maxSpent,

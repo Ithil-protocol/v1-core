@@ -15,6 +15,7 @@ import { checkVaultAddress } from "./UniversalStrategy.vaultAddress";
 import { checkOpenPosition } from "./UniversalStrategy.openPosition";
 import { checkClosePosition } from "./UniversalStrategy.closePosition";
 import { checkEditPosition } from "./UniversalStrategy.editPosition";
+import { checkName } from "./UniversalStrategy.name";
 import { checkQuote } from "./UniversalStrategy.quote";
 import { checkArbitraryBorrow } from "./UniversalStrategy.arbitraryBorrow";
 import { checkArbitraryRepay } from "./UniversalStrategy.arbitraryRepay";
@@ -62,6 +63,7 @@ describe("Strategy tests", function () {
     // checkOpenPosition();
     // checkClosePosition();
     // checkEditPosition();
+    checkName();
     checkQuote();
     checkArbitraryBorrow();
     checkArbitraryRepay();
