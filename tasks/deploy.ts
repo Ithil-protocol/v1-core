@@ -67,16 +67,16 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
 
   // Liquidator
   const liquidatorFactory: Liquidator__factory = <Liquidator__factory>await hre.ethers.getContractFactory("Liquidator");
-  const liquidatorContract: Liquidator = <Liquidator>await liquidatorFactory.deploy();
-  await liquidatorContract.deployed();
-  console.log("Liquidator deployed to address: ", liquidatorContract.address);
+  const liquidator: Liquidator = <Liquidator>await liquidatorFactory.deploy();
+  await liquidator.deployed();
+  console.log("Liquidator deployed to address: ", liquidator.address);
 
   // MarginTradingStrategy
   const mtsFactory: MarginTradingStrategy__factory = <MarginTradingStrategy__factory>(
     await hre.ethers.getContractFactory("MarginTradingStrategy")
   );
   const mts: MarginTradingStrategy = <MarginTradingStrategy>(
-    await mtsFactory.deploy(kyber.address, vault.address, liquidatorContract.address)
+    await mtsFactory.deploy(kyber.address, vault.address, liquidator.address)
   );
   await mts.deployed();
   console.log("MarginTradingStrategy deployed to address: ", mts.address);
@@ -85,14 +85,12 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   const ysFactory: YearnStrategy__factory = <YearnStrategy__factory>(
     await hre.ethers.getContractFactory("YearnStrategy")
   );
-  const ys: YearnStrategy = <YearnStrategy>(
-    await ysFactory.deploy(yearn.address, vault.address, liquidatorContract.address)
-  );
+  const ys: YearnStrategy = <YearnStrategy>await ysFactory.deploy(yearn.address, vault.address, liquidator.address);
   await ys.deployed();
   console.log("YearnStrategy deployed to address: ", ys.address);
 
   // write addresses to a file
-  const addresses = {
+  const addressesFile = {
     name: "Deployed Contracts",
     version: "1.0.0",
     timestamp: new Date().toISOString(),
@@ -103,10 +101,40 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
       MockWETH: weth.address,
       MockTaxedToken: tkn.address,
       Vault: vault.address,
+      Liquidator: liquidator.address,
       MarginTradingStrategy: mts.address,
       YearnStrategy: ys.address,
     },
   };
-  const str = JSON.stringify(addresses, null, 4);
+  const str = JSON.stringify(addressesFile, null, 4);
   fs.writeFileSync("deployments/addresses.json", str, "utf8");
+
+  // write tokens to a file
+  const tokens = {
+    name: "Supported Tokens",
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+    tokens: [
+      {
+        name: "DAI Stablecoin",
+        address: tkn.address,
+        symbol: "DAI",
+        decimals: 18,
+        chainId: chainIds[hre.network.name],
+        logoURI:
+          "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png",
+      },
+      {
+        name: "Wrapped Ether",
+        address: weth.address,
+        symbol: "WETH",
+        decimals: 18,
+        chainId: chainIds[hre.network.name],
+        logoURI:
+          "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png",
+      },
+    ],
+  };
+  const tokensFile = JSON.stringify(tokens, null, 4);
+  fs.writeFileSync("deployments/tokenlist.json", tokensFile, "utf8");
 });

@@ -88,10 +88,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     ) public override onlyOwner {
         if (vaults[token].supported) revert Vault__Token_Already_Supported(token);
 
-        bytes memory bytecode = abi.encodePacked(type(WrappedToken).creationCode, abi.encode(token));
-        bytes32 salt = keccak256(abi.encodePacked(token));
-
-        vaults[token].wrappedToken = Create2.deploy(0, salt, bytecode);
+        vaults[token].wrappedToken = address(new WrappedToken(token));
         vaults[token].supported = true;
         vaults[token].creationTime = block.timestamp;
         vaults[token].baseFee = baseFee;
@@ -146,7 +143,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 toBurn = (senderCp -
             VaultMath.claimingPowerAfterWithdrawal(amount, senderCp, totalClaims, totalWealth));
         wToken.burn(msg.sender, toBurn);
-        (amount, ) = tkn.sendTokens(msg.sender, amount);
+        tkn.safeTransfer(msg.sender, amount);
 
         emit Withdrawal(msg.sender, token, amount, wToken.balanceOf(msg.sender));
     }
@@ -154,7 +151,6 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     function borrow(
         address token,
         uint256 amount,
-        uint256 collateral,
         uint256 riskFactor,
         address borrower
     )
@@ -163,28 +159,22 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         whitelisted(token)
         unlocked(token)
         onlyStrategy
-        returns (
-            uint256 interestRate,
-            uint256 fees,
-            uint256 debt,
-            uint256 borrowed
-        )
+        returns (uint256 baseInterestRate, uint256 fees)
     {
         VaultState.VaultData storage vaultData = vaults[token];
         uint256 freeLiquidity = IERC20(token).balanceOf(address(this)) - vaultData.insuranceReserveBalance;
 
         if (amount > freeLiquidity) revert Vault__Insufficient_Funds_Available(token, amount);
 
-        interestRate = VaultMath.computeInterestRate(vaultData, freeLiquidity, amount, collateral, riskFactor);
+        baseInterestRate = VaultMath.computeInterestRateNoLeverage(vaultData, freeLiquidity, riskFactor);
+        vaultData.netLoans += amount;
 
         fees = VaultMath.computeFees(amount, vaultData.fixedFee);
 
-        if (interestRate > VaultMath.MAX_RATE) revert Vault__Maximum_Leverage_Exceeded();
-
         IERC20 tkn = IERC20(token);
-        (debt, borrowed) = tkn.sendTokensWithEffect(msg.sender, amount, vaultData);
+        tkn.safeTransfer(msg.sender, amount);
 
-        emit LoanTaken(borrower, token, debt);
+        emit LoanTaken(borrower, token, amount);
     }
 
     function repay(

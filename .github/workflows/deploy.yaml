@@ -25,28 +25,21 @@ jobs:
       - name: Run yarn compile
         env:
           INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
-          MNEMONIC: ${{ secrets.MNEMONIC }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         run: yarn compile
-
-      # Configure Git information
       - name: Configure git information
         run: |
           git config --global user.name $GITHUB_ACTOR
           git config --global user.email $GITHUB_ACTOR@users.noreply.github.com
-
-      # Deploy smart contracts to Rinkeby testnet
       - name: Deploy
         env:
           INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-          MNEMONIC: ${{ secrets.MNEMONIC }}
           REPORT_GAS: false
           FORKING: false
         run: |
           yarn deploy --network rinkeby
           yarn export-abi
-
-      # Prepare release files from arifacts
       - name: Prepare release files
         run: |
           git add .

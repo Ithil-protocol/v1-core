@@ -3,7 +3,7 @@ pragma solidity >=0.8.6;
 pragma experimental ABIEncoderV2;
 
 interface ICurve {
-    function add_liquidity(uint256[2] memory amounts, uint256 min_mint_amount) external returns (uint256);
+    function add_liquidity(uint256[2] memory amounts, uint256 deadline) external returns (uint256);
 
     function remove_liquidity(uint256 lpAmount, uint256[2] memory minAmounts) external;
 

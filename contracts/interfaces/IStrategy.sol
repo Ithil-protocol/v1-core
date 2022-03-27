@@ -49,6 +49,7 @@ interface IStrategy {
     error Insufficient_Collateral(uint256);
     error Source_Eq_Dest(address);
     error Only_Liquidator(address, address);
+    error Maximum_Leverage_Exceeded();
 
     function computePairRiskFactor(address token0, address token1) external view returns (uint256);
 
@@ -73,8 +74,6 @@ interface IStrategy {
     ) external;
 
     function getPosition(uint256 positionId) external view returns (Position memory);
-
-    function totalAllowance(address token) external view returns (uint256);
 
     function vaultAddress() external view returns (address);
 

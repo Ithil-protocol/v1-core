@@ -24,14 +24,14 @@ contract ETHStrategy is BaseStrategy {
 
     constructor(
         address _stETH,
-        address _yvault,
         address _crvPool,
+        address _yvault,
         address _vault,
         address _liquidator
     ) BaseStrategy(_vault, _liquidator) {
         stETH = IStETH(_stETH);
-        yvault = IYearnVault(_yvault);
         crvPool = ICurve(_crvPool);
+        yvault = IYearnVault(_yvault);
     }
 
     function name() external pure override returns (string memory) {
@@ -42,32 +42,38 @@ contract ETHStrategy is BaseStrategy {
         if (msg.sender != vault.WETH()) revert ETHStrategy__ETH_Transfer_Failed();
     }
 
-    function _openPosition(
-        Order memory order,
-        uint256 borrowed,
-        uint256 collateralReceived
-    ) internal override returns (uint256 amountIn) {
+    function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
         if (order.spentToken != vault.WETH()) revert ETHStrategy__Token_Not_Supported();
 
         IWETH weth = IWETH(vault.WETH());
-        uint256 amount = borrowed + collateralReceived;
 
-        if (weth.balanceOf(address(this)) < amount) revert ETHStrategy__Not_Enough_Liquidity();
+        if (weth.balanceOf(address(this)) < order.maxSpent) revert ETHStrategy__Not_Enough_Liquidity();
 
         // Unwrap WETH to ETH
-        weth.withdraw(amount);
+        weth.withdraw(order.maxSpent);
+
+        console.log("maxSpent", order.maxSpent);
 
         // stake ETH on Lido and get stETH
-        uint256 stETHAmount = stETH.submit{ value: amount }(address(this));
+        stETH.submit{ value: order.maxSpent }(address(this));
 
         // Deposit the stETH on Curve stETH-ETH pool
         if (stETH.allowance(address(this), address(crvPool)) == 0) {
             stETH.safeApprove(address(crvPool), type(uint256).max);
         }
-        uint256 lpTokens = crvPool.add_liquidity([uint256(0), uint256(1)], stETHAmount);
+
+        console.log("stETH tokens before", IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84).balanceOf(address(this)));
+
+        // The returned stETH amount may be lower of 1 wei, we correct it here
+        uint256 amount = stETH.balanceOf(address(this)); // we could do order.maxSpent - 1 and risk having spare 1 weis
+        uint256 lpTokens = crvPool.add_liquidity([uint256(0), amount], order.deadline); // TODO correct the zero with the slippage (min out?)
+
+        console.log("stETH tokens after", IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84).balanceOf(address(this)));
+        console.log("Curve LP tokens", IERC20(0xdCD90C7f6324cfa40d7169ef80b12031770B4325).balanceOf(address(this)));
+        console.log("lpTokens", lpTokens);
 
         // Stake crvstETH on Yearn using the Convex autocompounding stratey
-        amountIn = yvault.deposit(lpTokens, address(this));
+        amountIn = yvault.deposit(lpTokens, address(this)); // TODO it fails here
     }
 
     function _closePosition(Position memory position, uint256 expectedCost)
@@ -75,14 +81,20 @@ contract ETHStrategy is BaseStrategy {
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
+        console.log("hello");
+
         // Unstake crvstETH from Yearn
         uint256 amount = yvault.withdraw(position.allowance, address(this), 1);
+
+        console.log("amount", amount);
 
         // Remove liquidity from Curve
         crvPool.remove_liquidity(amount, [uint256(0), uint256(0)]);
 
         // Swap stETH to ETH
         amountIn = crvPool.exchange(0, int128(int256(amount)), 0, 0);
+
+        console.log("amountIn", amountIn);
 
         // Wrap ETH to WETH
         IWETH weth = IWETH(vault.WETH());

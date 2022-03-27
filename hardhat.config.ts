@@ -20,9 +20,9 @@ import { NetworkUserConfig } from "hardhat/types";
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
 // Ensure that we have all the environment variables we need.
-const mnemonic: string | undefined = process.env.MNEMONIC;
-if (!mnemonic) {
-  throw new Error("Please set your MNEMONIC in a .env file");
+const privateKey: string | undefined = process.env.PRIVATE_KEY;
+if (!privateKey) {
+  throw new Error("Please set your PRIVATE_KEY in a .env file");
 }
 
 const infuraApiKey: string | undefined = process.env.INFURA_API_KEY;
@@ -33,11 +33,7 @@ if (!infuraApiKey) {
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   const url: string = "https://" + network + ".infura.io/v3/" + infuraApiKey;
   return {
-    accounts: {
-      count: 10,
-      mnemonic,
-      path: "m/44'/60'/0'/0",
-    },
+    accounts: [`${privateKey}`],
     chainId: chainIds[network],
     url,
   };
@@ -64,9 +60,6 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      accounts: {
-        mnemonic,
-      },
       chainId: chainIds.hardhat,
       forking: {
         enabled: process.env.FORKING ? true : false,
@@ -112,6 +105,9 @@ const config: HardhatUserConfig = {
   tenderly: {
     project: process.env.TENDERLY_PROJECT || "",
     username: process.env.TENDERLY_USERNAME || "",
+  },
+  mocha: {
+    timeout: 60000,
   },
 };
 

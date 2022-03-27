@@ -77,19 +77,15 @@ library VaultMath {
     /// @notice Computes the interest rate to apply to a position at its opening
     /// @param data the data containing the current vault state
     /// @param freeLiquidity the free liquidity of the vault
-    /// @param loanAmount the loan taken
-    /// @param collateral the collateral placed for the loan, always in the same token as the considered vault
     /// @param riskFactor the riskiness of the investment
-    function computeInterestRate(
+    function computeInterestRateNoLeverage(
         VaultState.VaultData memory data,
         uint256 freeLiquidity,
-        uint256 loanAmount,
-        uint256 collateral,
         uint256 riskFactor
     ) internal pure returns (uint256 interestRate) {
         uint256 uncovered = data.netLoans.positiveSub(data.insuranceReserveBalance);
-        interestRate = (data.netLoans + uncovered) * loanAmount * riskFactor;
-        interestRate /= (data.netLoans + freeLiquidity) * collateral;
+        interestRate = (data.netLoans + uncovered) * riskFactor;
+        interestRate /= (data.netLoans + freeLiquidity);
         interestRate += data.baseFee;
     }
 

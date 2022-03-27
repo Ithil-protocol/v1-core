@@ -31,15 +31,10 @@ contract YearnStrategy is BaseStrategy {
         return "YearnStrategy";
     }
 
-    function _openPosition(
-        Order memory order,
-        uint256 borrowed,
-        uint256 collateralReceived
-    ) internal override returns (uint256 amountIn) {
+    function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
         IERC20 tkn = IERC20(order.spentToken);
-        uint256 amount = borrowed + collateralReceived;
 
-        if (tkn.balanceOf(address(this)) < amount) revert YearnStrategy__Not_Enough_Liquidity();
+        if (tkn.balanceOf(address(this)) < order.maxSpent) revert YearnStrategy__Not_Enough_Liquidity();
 
         (bool success, bytes memory return_data) = address(registry).call( // This creates a low level call to the token
             abi.encodePacked( // This encodes the function to call and the parameters to pass to that function
@@ -53,11 +48,11 @@ contract YearnStrategy is BaseStrategy {
         address vaultAddress = abi.decode(return_data, (address));
         IYearnVault yvault = IYearnVault(vaultAddress);
 
-        if (tkn.allowance(address(this), vaultAddress) == 0) {
+        if (tkn.allowance(address(this), vaultAddress) <= 0) {
             tkn.safeApprove(vaultAddress, type(uint256).max);
         }
 
-        amountIn = yvault.deposit(amount, address(this));
+        amountIn = yvault.deposit(order.maxSpent, address(this));
     }
 
     function _closePosition(Position memory position, uint256 expectedCost)
@@ -72,7 +67,7 @@ contract YearnStrategy is BaseStrategy {
         if (!success) revert YearnStrategy__Inexistent_Pool(position.owedToken);
 
         address yvault = abi.decode(return_data, (address));
-        amountIn = IYearnVault(yvault).withdraw(position.allowance, address(this), 1);
+        amountIn = IYearnVault(yvault).withdraw(position.allowance, address(vault), 1);
         /// @todo check maxLoss=1 (0.01%) parameter
     }
 
