@@ -55,7 +55,7 @@ contract ETHStrategy is BaseStrategy {
         console.log("maxSpent", order.maxSpent);
 
         // stake ETH on Lido and get stETH
-        stETH.submit{ value: order.maxSpent }(address(this));
+        uint256 shares = stETH.submit{ value: order.maxSpent }(address(this));
 
         // Deposit the stETH on Curve stETH-ETH pool
         if (stETH.allowance(address(this), address(crvPool)) == 0) {
@@ -66,9 +66,12 @@ contract ETHStrategy is BaseStrategy {
 
         // The returned stETH amount may be lower of 1 wei, we correct it here
         uint256 amount = stETH.balanceOf(address(this)); // we could do order.maxSpent - 1 and risk having spare 1 weis
-        uint256 lpTokens = crvPool.add_liquidity([uint256(0), amount], order.deadline); // TODO correct the zero with the slippage (min out?)
+        uint256 lpTokens = crvPool.add_liquidity([uint256(0), stETH.getPooledEthByShares(shares)], order.deadline); // TODO correct the zero with the slippage (min out?)
+
+        console.log("stETH fees", stETH.getFee());
 
         console.log("stETH tokens after", IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84).balanceOf(address(this)));
+        console.log("stETH shares to ETH", stETH.getPooledEthByShares(shares));
         console.log("Curve LP tokens", IERC20(0xdCD90C7f6324cfa40d7169ef80b12031770B4325).balanceOf(address(this)));
         console.log("lpTokens", lpTokens);
 

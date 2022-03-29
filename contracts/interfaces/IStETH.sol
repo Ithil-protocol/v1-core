@@ -11,6 +11,7 @@ interface IStETH is IERC20 {
     // Fee in basis points. 10000 BP corresponding to 100%
     function getFee() external view returns (uint16);
 
-    // Returns the amount of shares owned by _account
-    function sharesOf(address _account) external view returns (uint256);
+    function getPooledEthByShares(uint256 _sharesAmount) external view returns (uint256);
+
+    function getSharesByPooledEth(uint256 _pooledEthAmount) external view returns (uint256);
 }
