@@ -11,6 +11,10 @@ import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 import "hardhat/console.sol";
 
+/// @title    ETHStrategy contract
+/// @author   Ithil
+/// @notice   Stakes ETH on Lido, gets stETH, provides stETH to Curve as liquidity,
+///           then stakes Curve LP tokens on Yearn
 contract ETHStrategy is BaseStrategy {
     using SafeERC20 for IStETH;
 
