@@ -60,8 +60,7 @@ contract MockKyberNetworkProxy is IKyberNetworkProxy {
         if (rate2 == 0) return (0, 0);
 
         uint256 res = (srcAmount * rate1) / rate2;
-
-        res = res - res * slippages[src];
+        res = (res * (10000 - slippages[src])) / 10000;
 
         return (res, res);
     }
