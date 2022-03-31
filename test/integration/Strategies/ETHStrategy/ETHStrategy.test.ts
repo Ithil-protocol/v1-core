@@ -5,7 +5,7 @@ import type { Vault } from "../../../../src/types/Vault";
 import { Signers } from "../../../types";
 import type { ERC20 } from "../../../../src/types/ERC20";
 
-import { tokens, stETH, stETHcrvPool, ycrvETHPool } from "../../../common/mainnet";
+import { tokens, stETH, stETHcrvPool, crvLPtoken, ycrvETHPool } from "../../../common/mainnet";
 import { getTokens } from "../../../common/utils";
 import { marginTokenLiquidity } from "../../../common/params";
 
@@ -46,6 +46,7 @@ describe("Strategy tests", function () {
       this.ethStrategy = <ETHStrategy>await waffle.deployContract(this.signers.admin, ethArtifact, [
         stETH,
         stETHcrvPool, // stETH-ETH Curve pool
+        crvLPtoken, // Curve LP token
         ycrvETHPool, // Yearn crvstETH vault
         this.vault.address,
         this.liquidator.address,

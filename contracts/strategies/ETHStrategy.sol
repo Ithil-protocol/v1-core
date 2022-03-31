@@ -14,8 +14,11 @@ import "hardhat/console.sol";
 /// @title    ETHStrategy contract
 /// @author   Ithil
 /// @notice   Stakes ETH on Lido, gets stETH, provides stETH to Curve as liquidity,
-///           then stakes Curve LP tokens on Yearn
+///           then stakes Curve LP tokens on Yearn.
+///           Curve pool token indexes: ETH = 0, stETH = 1
+
 contract ETHStrategy is BaseStrategy {
+    using SafeERC20 for IERC20;
     using SafeERC20 for IStETH;
 
     error ETHStrategy__ETH_Transfer_Failed();
@@ -25,16 +28,19 @@ contract ETHStrategy is BaseStrategy {
     IStETH internal immutable stETH;
     IYearnVault internal immutable yvault;
     ICurve internal immutable crvPool;
+    IERC20 internal immutable crvLP;
 
     constructor(
         address _stETH,
         address _crvPool,
+        address _crvLP,
         address _yvault,
         address _vault,
         address _liquidator
     ) BaseStrategy(_vault, _liquidator) {
         stETH = IStETH(_stETH);
         crvPool = ICurve(_crvPool);
+        crvLP = IERC20(_crvLP);
         yvault = IYearnVault(_yvault);
     }
 
@@ -43,7 +49,7 @@ contract ETHStrategy is BaseStrategy {
     }
 
     receive() external payable {
-        if (msg.sender != vault.WETH()) revert ETHStrategy__ETH_Transfer_Failed();
+        if (msg.sender != vault.WETH() && msg.sender != address(crvPool)) revert ETHStrategy__ETH_Transfer_Failed();
     }
 
     function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
@@ -56,31 +62,21 @@ contract ETHStrategy is BaseStrategy {
         // Unwrap WETH to ETH
         weth.withdraw(order.maxSpent);
 
-        console.log("maxSpent", order.maxSpent);
-
         // stake ETH on Lido and get stETH
         uint256 shares = stETH.submit{ value: order.maxSpent }(address(this));
 
         // Deposit the stETH on Curve stETH-ETH pool
+        // The returned stETH amount may be lower of 1 wei, we check the correct return value using shares computation
         if (stETH.allowance(address(this), address(crvPool)) == 0) {
             stETH.safeApprove(address(crvPool), type(uint256).max);
         }
-
-        console.log("stETH tokens before", IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84).balanceOf(address(this)));
-
-        // The returned stETH amount may be lower of 1 wei, we correct it here
-        uint256 amount = stETH.balanceOf(address(this)); // we could do order.maxSpent - 1 and risk having spare 1 weis
-        uint256 lpTokens = crvPool.add_liquidity([uint256(0), stETH.getPooledEthByShares(shares)], order.deadline); // TODO correct the zero with the slippage (min out?)
-
-        console.log("stETH fees", stETH.getFee());
-
-        console.log("stETH tokens after", IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84).balanceOf(address(this)));
-        console.log("stETH shares to ETH", stETH.getPooledEthByShares(shares));
-        console.log("Curve LP tokens", IERC20(0xdCD90C7f6324cfa40d7169ef80b12031770B4325).balanceOf(address(this)));
-        console.log("lpTokens", lpTokens);
+        uint256 lpTokens = crvPool.add_liquidity([uint256(0), stETH.getPooledEthByShares(shares)], order.deadline);
 
         // Stake crvstETH on Yearn using the Convex autocompounding stratey
-        amountIn = yvault.deposit(lpTokens, address(this)); // TODO it fails here
+        if (crvLP.allowance(address(this), address(yvault)) == 0) {
+            crvLP.safeApprove(address(yvault), type(uint256).max);
+        }
+        amountIn = yvault.deposit(lpTokens, address(this));
     }
 
     function _closePosition(Position memory position, uint256 expectedCost)
@@ -88,24 +84,24 @@ contract ETHStrategy is BaseStrategy {
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
-        console.log("hello");
-
         // Unstake crvstETH from Yearn
         uint256 amount = yvault.withdraw(position.allowance, address(this), 1);
 
-        console.log("amount", amount);
+        console.log("Curve LP balance", crvLP.balanceOf(address(this)));
 
         // Remove liquidity from Curve
-        crvPool.remove_liquidity(amount, [uint256(0), uint256(0)]);
+        amountIn = crvPool.remove_liquidity_one_coin(amount, 0, 0);
 
-        // Swap stETH to ETH
-        amountIn = crvPool.exchange(0, int128(int256(amount)), 0, 0);
-
-        console.log("amountIn", amountIn);
+        console.log("ETH balance", address(this).balance);
 
         // Wrap ETH to WETH
         IWETH weth = IWETH(vault.WETH());
+
+        console.log("ETH balance", address(this).balance);
+
         weth.deposit{ value: amountIn }();
+
+        console.log("WETH balance", weth.balanceOf(address(this)));
     }
 
     function quote(

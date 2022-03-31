@@ -34,9 +34,10 @@ export function checkClosePosition(): void {
       deadline: deadline,
     };
 
-    await this.ethStrategy.connect(trader).openPosition(order);
+    const position = await this.ethStrategy.connect(trader).openPosition(order);
+    //const maxSpent = position.allowance;
 
-    await this.ethStrategy.connect(trader).closePosition(1);
+    await this.ethStrategy.connect(trader).closePosition(1, 0);
 
     const finalState = {
       trader_margin: await marginToken.balanceOf(trader.address),
