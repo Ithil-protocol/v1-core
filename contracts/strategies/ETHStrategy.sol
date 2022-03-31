@@ -9,7 +9,6 @@ import { ICurve } from "../interfaces/ICurve.sol";
 import { IYearnVault } from "../interfaces/IYearnVault.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
-import "hardhat/console.sol";
 
 /// @title    ETHStrategy contract
 /// @author   Ithil
@@ -88,7 +87,8 @@ contract ETHStrategy is BaseStrategy {
         uint256 amount = yvault.withdraw(position.allowance, address(this), 1);
 
         // Remove liquidity from Curve
-        amountIn = crvPool.remove_liquidity_one_coin(amount, 0, 0);
+        uint256 minAmount = crvPool.calc_token_amount([uint256(0), amount], false); // TODO should we run it off-chain?
+        amountIn = crvPool.remove_liquidity_one_coin(amount, 0, minAmount);
 
         // Wrap ETH to WETH
         IWETH weth = IWETH(vault.WETH());
