@@ -922,7 +922,6 @@ __metadata:
     "@nomiclabs/hardhat-etherscan": ^3.0.1
     "@nomiclabs/hardhat-waffle": ^2.0.2
     "@openzeppelin/contracts": ^4.5.0
-    "@pooltogether/v4-core": ^1.2.0
     "@tenderly/hardhat-tenderly": ^1.0.13
     "@typechain/ethers-v5": ^9.0.0
     "@typechain/hardhat": ^4.0.0
@@ -1067,59 +1066,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openzeppelin/contracts@npm:4.3.1":
-  version: 4.3.1
-  resolution: "@openzeppelin/contracts@npm:4.3.1"
-  checksum: ddfa5bb65f5e645a618e0062c83fa6a44499cece47ef5dd62cc51c0da5f6c3253c9def9fb6c0086cc37a463fb2f8b2d7dc271ab78d876d99134b57baba2e8639
-  languageName: node
-  linkType: hard
-
 "@openzeppelin/contracts@npm:^4.5.0":
   version: 4.5.0
   resolution: "@openzeppelin/contracts@npm:4.5.0"
   checksum: 1c9c5dff041905771d2a83ac29c64dbf0b48603de43f74a34fb1358813d7c7bf259efe2f64e2112b410c5cca7a0b41aaedd882368be5f01a6d50a3ee0740f962
-  languageName: node
-  linkType: hard
-
-"@pooltogether/fixed-point@npm:1.0.0":
-  version: 1.0.0
-  resolution: "@pooltogether/fixed-point@npm:1.0.0"
-  checksum: 5b2a45a8cdd8bbc60a8521a94114a2046489bcfb98ab40eafa4becd355fee49b8479bc555d9caf6c8461a7fc81444d8f85101096cd5bab6460b291da232217a9
-  languageName: node
-  linkType: hard
-
-"@pooltogether/owner-manager-contracts@npm:1.1.0":
-  version: 1.1.0
-  resolution: "@pooltogether/owner-manager-contracts@npm:1.1.0"
-  checksum: fb167f1d1437dc47ffe8c12038198586b155efa7686b4a3d494f0fa98256ca4ad14e517f4689637d1e7d6be89281af8bff57eb3a98c829374600a82cfb5ee167
-  languageName: node
-  linkType: hard
-
-"@pooltogether/pooltogether-rng-contracts@npm:1.4.0":
-  version: 1.4.0
-  resolution: "@pooltogether/pooltogether-rng-contracts@npm:1.4.0"
-  checksum: 7e0a1e4ae2a7670eded117619594edf25205c30738003811be5b023a7b33a22c222739517fbd96c03ad5d1b5bacd6b75dfda7b3a0c9805dab2ffb6740c2e9197
-  languageName: node
-  linkType: hard
-
-"@pooltogether/v4-core@npm:^1.2.0":
-  version: 1.2.0
-  resolution: "@pooltogether/v4-core@npm:1.2.0"
-  dependencies:
-    "@openzeppelin/contracts": 4.3.1
-    "@pooltogether/fixed-point": 1.0.0
-    "@pooltogether/owner-manager-contracts": 1.1.0
-    "@pooltogether/pooltogether-rng-contracts": 1.4.0
-    "@pooltogether/yield-source-interface": 1.3.0
-    deploy-eip-1820: 1.0.0
-  checksum: c44695657c712740378fd1d7b6e016b785b58acff4a22aa84a454da3a32183b40e3d9f7d132eaa23afcd1861ccada3233392734afe2966870725958294778b49
-  languageName: node
-  linkType: hard
-
-"@pooltogether/yield-source-interface@npm:1.3.0":
-  version: 1.3.0
-  resolution: "@pooltogether/yield-source-interface@npm:1.3.0"
-  checksum: f681126b3a53a88c58d5a377f9e2fce43c8b3ba15f9748ad1b2bc0e2a9ab2f15af4e94ecc60eefa2fd8f8e6e6e1415da8d107837dd25b8a13327f53e266e3d06
   languageName: node
   linkType: hard
 
@@ -4812,15 +4762,6 @@ __metadata:
   version: 1.1.2
   resolution: "depd@npm:1.1.2"
   checksum: 6b406620d269619852885ce15965272b829df6f409724415e0002c8632ab6a8c0a08ec1f0bd2add05dc7bd7507606f7e2cc034fa24224ab829580040b835ecd9
-  languageName: node
-  linkType: hard
-
-"deploy-eip-1820@npm:1.0.0":
-  version: 1.0.0
-  resolution: "deploy-eip-1820@npm:1.0.0"
-  peerDependencies:
-    ethers: ^5.0.0
-  checksum: 40947d608d4caca25aecc8947bd0ab4568002729715f6b2200682ea1d76af0cf647c5b26bf01f471d9f9f62917ae41423c8d37c4e5514b47103674b196db8457
   languageName: node
   linkType: hard
 
