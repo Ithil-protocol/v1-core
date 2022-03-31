@@ -87,21 +87,15 @@ contract ETHStrategy is BaseStrategy {
         // Unstake crvstETH from Yearn
         uint256 amount = yvault.withdraw(position.allowance, address(this), 1);
 
-        console.log("Curve LP balance", crvLP.balanceOf(address(this)));
-
         // Remove liquidity from Curve
         amountIn = crvPool.remove_liquidity_one_coin(amount, 0, 0);
 
-        console.log("ETH balance", address(this).balance);
-
         // Wrap ETH to WETH
         IWETH weth = IWETH(vault.WETH());
-
-        console.log("ETH balance", address(this).balance);
-
         weth.deposit{ value: amountIn }();
 
-        console.log("WETH balance", weth.balanceOf(address(this)));
+        // Transfer WETH to the vault
+        weth.transfer(address(vault), amountIn);
     }
 
     function quote(
