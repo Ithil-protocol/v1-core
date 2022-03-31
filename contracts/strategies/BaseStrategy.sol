@@ -189,4 +189,10 @@ abstract contract BaseStrategy is Liquidable {
             tokenToTransfer.safeTransferFrom(msg.sender, address(vault), newCollateral);
         else tokenToTransfer.safeTransferFrom(msg.sender, address(this), newCollateral);
     }
+
+    function _maxApprove(IERC20 token, address receiver) internal {
+        if (token.allowance(address(this), receiver) <= 0) {
+            token.safeApprove(receiver, type(uint256).max);
+        }
+    }
 }
