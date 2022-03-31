@@ -95,7 +95,7 @@ contract ETHStrategy is BaseStrategy {
         weth.deposit{ value: amountIn }();
 
         // Transfer WETH to the vault
-        weth.transfer(address(vault), amountIn);
+        IERC20(address(weth)).safeTransfer(address(vault), amountIn);
     }
 
     function quote(
