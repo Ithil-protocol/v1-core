@@ -38,8 +38,6 @@ contract MarginTradingStrategy is BaseStrategy {
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
-        super._maxApprove(IERC20(position.owedToken), address(vault));
-
         bool spendAll = position.collateralToken != position.heldToken;
         (amountIn, amountOut) = _swap(
             position.heldToken,
