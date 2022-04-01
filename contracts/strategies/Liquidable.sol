@@ -6,6 +6,7 @@ import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/Saf
 import { AbstractStrategy } from "./AbstractStrategy.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
+import { VaultState } from "../libraries/VaultState.sol";
 
 /// @title    Liquidable contract
 /// @author   Ithil
@@ -18,6 +19,7 @@ abstract contract Liquidable is AbstractStrategy {
     address public immutable liquidator;
 
     mapping(address => uint256) public riskFactors;
+    mapping(address => mapping(address => uint256)) internal exposures;
 
     error Position_Not_Liquidable(int256);
     error Insufficient_Margin_Call(uint256);
@@ -33,7 +35,17 @@ abstract contract Liquidable is AbstractStrategy {
     }
 
     function computePairRiskFactor(address token0, address token1) public view override returns (uint256) {
-        return (riskFactors[token0] + riskFactors[token1]) / 2;
+        VaultState.VaultData memory vault0 = vault.state(token0);
+        VaultState.VaultData memory vault1 = vault.state(token1);
+
+        uint256 loans0 = vault0.netLoans + 1;
+        uint256 loans1 = vault1.netLoans + 1;
+
+        return
+            ((exposures[token0][token1] * riskFactors[token0]) /
+                loans0 +
+                (exposures[token1][token0] * riskFactors[token1]) /
+                loans1) / 2;
     }
 
     function computeLiquidationScore(Position memory position) public view returns (int256 score, uint256 dueFees) {

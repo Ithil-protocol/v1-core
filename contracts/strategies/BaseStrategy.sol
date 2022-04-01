@@ -99,6 +99,7 @@ abstract contract BaseStrategy is Liquidable {
             toSpend = IERC20(spentToken).balanceOf(address(this));
         }
 
+        exposures[spentToken][obtainedToken] += toBorrow;
         (uint256 interestRate, uint256 fees) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
 
         toSpend = IERC20(spentToken).balanceOf(address(this)) - toSpend;

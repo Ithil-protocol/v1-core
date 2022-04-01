@@ -2,10 +2,14 @@
 pragma solidity >=0.8.6;
 pragma experimental ABIEncoderV2;
 
+import { VaultState } from "../libraries/VaultState.sol";
+
 /// @title    Interface of Vault contract
 /// @author   Ithil
 interface IVault {
     /// ==== STAKING ==== ///
+
+    function state(address token) external view returns (VaultState.VaultData memory);
 
     /// @notice Gets the amount of tokens a user can get back when unstaking
     /// @param token the token to check the claimable amount against
