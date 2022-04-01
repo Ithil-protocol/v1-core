@@ -38,7 +38,6 @@ contract MarginTradingStrategy is BaseStrategy {
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
-        _maxApprove(IERC20(position.owedToken), address(vault));
         bool spendAll = position.collateralToken != position.heldToken;
         (amountIn, amountOut) = _swap(
             position.heldToken,
@@ -69,7 +68,9 @@ contract MarginTradingStrategy is BaseStrategy {
 
         uint256 initialSrcBalance = tokenToSell.balanceOf(address(this));
         uint256 initialDstBalance = tokenToBuy.balanceOf(recipient);
-        _maxApprove(tokenToSell, address(kyberProxy));
+
+        super._maxApprove(tokenToSell, address(kyberProxy));
+
         kyberProxy.trade(
             tokenToSell,
             maxSourceAmount,
@@ -81,10 +82,5 @@ contract MarginTradingStrategy is BaseStrategy {
         );
         amountIn = tokenToBuy.balanceOf(recipient) - initialDstBalance;
         amountOut = initialSrcBalance - tokenToSell.balanceOf(address(this));
-    }
-
-    function _maxApprove(IERC20 token, address receiver) internal {
-        uint256 tokenAllowance = token.allowance(address(this), address(receiver));
-        if (!(tokenAllowance > 0)) token.safeApprove(address(receiver), type(uint256).max);
     }
 }
