@@ -25,7 +25,6 @@ jobs:
           source-directory: deployments/
           destination-github-username: "Ithil-protocol"
           destination-repository-name: "deployed"
-          user-name: IthilBot
           user-email: info@ithil.fi
           commit-message: Pushed
           target-branch: master
