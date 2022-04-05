@@ -1,0 +1,30 @@
+name: Linting
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  eslint:
+    name: "Push to other repo"
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [lts/*]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Pushes to another repository
+        id: push_directory
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: deployments/
+          destination-github-username: "Ithil-protocol"
+          destination-repository-name: "deployed"
+          user-email: info@ithil.fi
+          commit-message: Pushed
+          target-branch: master
