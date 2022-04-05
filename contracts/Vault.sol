@@ -134,7 +134,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         toMint -= oldCp;
         wToken.mint(msg.sender, toMint);
 
-        emit Deposit(msg.sender, token, amount, wToken.balanceOf(msg.sender));
+        emit Deposit(msg.sender, token, amount, toMint);
     }
 
     function unstake(address token, uint256 amount) external override whitelisted(token) isValidAmount(amount) {
@@ -153,7 +153,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         wToken.burn(msg.sender, toBurn);
         tkn.safeTransfer(msg.sender, amount);
 
-        emit Withdrawal(msg.sender, token, amount, wToken.balanceOf(msg.sender));
+        emit Withdrawal(msg.sender, token, amount, toBurn);
     }
 
     function borrow(
@@ -182,7 +182,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         IERC20 tkn = IERC20(token);
         tkn.safeTransfer(msg.sender, amount);
 
-        emit LoanTaken(borrower, token, amount);
+        emit LoanTaken(borrower, token, amount, baseInterestRate);
     }
 
     function repay(

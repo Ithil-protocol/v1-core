@@ -88,10 +88,10 @@ interface IVault {
     /// ==== EVENTS ==== ///
 
     /// @notice Emitted when a deposit has been performed
-    event Deposit(address indexed user, address indexed token, uint256 amount, uint256 claimingPower);
+    event Deposit(address indexed user, address indexed token, uint256 amount, uint256 minted);
 
     /// @notice Emitted when a withdrawal has been performed
-    event Withdrawal(address indexed user, address indexed token, uint256 amount, uint256 claimingPower);
+    event Withdrawal(address indexed user, address indexed token, uint256 amount, uint256 burned);
 
     /// @notice Emitted when the vault has been locked or unlocked
     event VaultLockWasToggled(bool status, address indexed token);
@@ -106,10 +106,10 @@ interface IVault {
     event TokenWasWhitelisted(address indexed token);
 
     /// @notice Emitted when a loan is opened and issued
-    event LoanTaken(address indexed borrower, address indexed token, uint256 amount);
+    event LoanTaken(address indexed user, address indexed token, uint256 amount, uint256 baseInterestRate);
 
     /// @notice Emitted when a loan gets repaid and closed
-    event LoanRepaid(address indexed borrower, address indexed token, uint256 amount);
+    event LoanRepaid(address indexed user, address indexed token, uint256 amount);
 
     /// ==== ERRORS ==== ///
 
