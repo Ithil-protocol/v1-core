@@ -1,4 +1,4 @@
-name: Linting
+name: Push
 
 on:
   push:
@@ -20,11 +20,12 @@ jobs:
         id: push_directory
         uses: cpina/github-action-push-to-another-repository@main
         env:
-          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+          API_TOKEN_GITHUB: ${{ secrets.BOT_GITHUB_TOKEN }}
         with:
           source-directory: deployments/
           destination-github-username: "Ithil-protocol"
           destination-repository-name: "deployed"
+          user-name: IthilBot
           user-email: info@ithil.fi
           commit-message: Pushed
           target-branch: master
