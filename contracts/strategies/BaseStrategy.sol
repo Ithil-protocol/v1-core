@@ -170,8 +170,6 @@ abstract contract BaseStrategy is Liquidable {
 
         bool collateralInHeldTokens = position.collateralToken != position.owedToken;
 
-        exposures[position.owedToken][position.heldToken] -= position.principal;
-
         uint256 vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault));
         (uint256 amountIn, uint256 amountOut) = _closePosition(position, maxOrMin);
 
