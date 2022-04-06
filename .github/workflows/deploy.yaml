@@ -58,3 +58,4 @@ jobs:
           user-email: info@ithil.fi
           commit-message: "new deployment"
           target-branch: master
+          target-directory: latest
