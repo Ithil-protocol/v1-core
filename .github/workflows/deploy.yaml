@@ -45,3 +45,15 @@ jobs:
           git add .
           git commit -am "feat: new testnet deployment"
           git push
+      - name: Pushes to another repository
+        id: push_directory
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.BOT_GITHUB_TOKEN }}
+        with:
+          source-directory: deployments/
+          destination-github-username: "Ithil-protocol"
+          destination-repository-name: "deployed"
+          user-email: info@ithil.fi
+          commit-message: "new deployment"
+          target-branch: master
