@@ -99,14 +99,7 @@ abstract contract BaseStrategy is Liquidable {
             toSpend = IERC20(spentToken).balanceOf(address(this));
         }
 
-        (uint256 interestRate, uint256 fees, uint256 netLoans) = vault.borrow(
-            spentToken,
-            toBorrow,
-            riskFactor,
-            msg.sender
-        );
-
-        riskFactors[obtainedToken] += (riskFactors[obtainedToken] * toBorrow) / netLoans;
+        (uint256 interestRate, uint256 fees) = _borrow(spentToken, obtainedToken, toBorrow, riskFactor);
 
         toSpend = IERC20(spentToken).balanceOf(address(this)) - toSpend;
         if (order.collateralIsSpentToken) {
@@ -172,15 +165,10 @@ abstract contract BaseStrategy is Liquidable {
 
         uint256 vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault));
         (uint256 amountIn, uint256 amountOut) = _closePosition(position, maxOrMin);
+        _repay(position, amountIn);
 
         if (collateralInHeldTokens && amountOut <= position.allowance)
             IERC20(position.heldToken).safeTransfer(position.owner, position.allowance - amountOut);
-
-        uint256 netLoans = vault.repay(position.owedToken, amountIn, position.principal, position.fees, position.owner);
-
-        riskFactors[position.heldToken] -=
-            (riskFactors[position.heldToken] * position.principal) /
-            (netLoans + position.principal);
 
         vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault)) - vaultRepaid;
 
@@ -205,5 +193,25 @@ abstract contract BaseStrategy is Liquidable {
         if (token.allowance(address(this), receiver) <= 0) {
             token.safeApprove(receiver, type(uint256).max);
         }
+    }
+
+    function _borrow(
+        address spentToken,
+        address obtainedToken,
+        uint256 toBorrow,
+        uint256 riskFactor
+    ) internal returns (uint256 interestRate, uint256 fees) {
+        uint256 netLoans = 0;
+        (interestRate, fees, netLoans) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
+
+        riskFactors[obtainedToken] += (riskFactors[obtainedToken] * toBorrow) / netLoans;
+    }
+
+    function _repay(Position memory position, uint256 amountIn) internal {
+        uint256 netLoans = vault.repay(position.owedToken, amountIn, position.principal, position.fees, position.owner);
+
+        riskFactors[position.heldToken] -=
+            (riskFactors[position.heldToken] * position.principal) /
+            (netLoans + position.principal);
     }
 }
