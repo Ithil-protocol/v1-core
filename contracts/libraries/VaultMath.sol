@@ -89,9 +89,10 @@ library VaultMath {
         interestRate += data.baseFee;
     }
 
-    function subtractLoan(VaultState.VaultData storage self, uint256 b) internal {
+    function subtractLoan(VaultState.VaultData storage self, uint256 b) internal returns (uint256) {
         if (self.netLoans > b) self.netLoans -= b;
         else self.netLoans = 0;
+        return self.netLoans;
     }
 
     function subtractInsuranceReserve(VaultState.VaultData storage self, uint256 b) internal {

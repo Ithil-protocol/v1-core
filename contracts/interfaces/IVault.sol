@@ -74,7 +74,13 @@ interface IVault {
         uint256 amount,
         uint256 riskFactor,
         address borrower
-    ) external returns (uint256 interestRate, uint256 fees);
+    )
+        external
+        returns (
+            uint256 interestRate,
+            uint256 fees,
+            uint256 netLoans
+        );
 
     /// @notice repays a loan
     /// @param token the token of the loan
@@ -87,7 +93,7 @@ interface IVault {
         uint256 debt,
         uint256 fees,
         address borrower
-    ) external;
+    ) external returns (uint256 netLoans);
 
     /// ==== EVENTS ==== ///
 

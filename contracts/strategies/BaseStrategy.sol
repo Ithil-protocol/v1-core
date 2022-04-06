@@ -99,8 +99,14 @@ abstract contract BaseStrategy is Liquidable {
             toSpend = IERC20(spentToken).balanceOf(address(this));
         }
 
-        exposures[spentToken][obtainedToken] += toBorrow;
-        (uint256 interestRate, uint256 fees) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
+        (uint256 interestRate, uint256 fees, uint256 netLoans) = vault.borrow(
+            spentToken,
+            toBorrow,
+            riskFactor,
+            msg.sender
+        );
+
+        riskFactors[obtainedToken] += (riskFactors[obtainedToken] * toBorrow) / netLoans;
 
         toSpend = IERC20(spentToken).balanceOf(address(this)) - toSpend;
         if (order.collateralIsSpentToken) {
@@ -172,7 +178,11 @@ abstract contract BaseStrategy is Liquidable {
         if (collateralInHeldTokens && amountOut <= position.allowance)
             IERC20(position.heldToken).safeTransfer(position.owner, position.allowance - amountOut);
 
-        vault.repay(position.owedToken, amountIn, position.principal, position.fees, position.owner);
+        uint256 netLoans = vault.repay(position.owedToken, amountIn, position.principal, position.fees, position.owner);
+
+        riskFactors[position.heldToken] -=
+            (riskFactors[position.heldToken] * position.principal) /
+            (netLoans + position.principal);
 
         vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault)) - vaultRepaid;
 
