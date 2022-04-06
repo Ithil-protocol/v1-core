@@ -48,9 +48,7 @@ contract YearnStrategy is BaseStrategy {
         address vaultAddress = abi.decode(return_data, (address));
         IYearnVault yvault = IYearnVault(vaultAddress);
 
-        if (tkn.allowance(address(this), vaultAddress) <= 0) {
-            tkn.safeApprove(vaultAddress, type(uint256).max);
-        }
+        super._maxApprove(tkn, vaultAddress);
 
         amountIn = yvault.deposit(order.maxSpent, address(this));
     }
@@ -67,7 +65,11 @@ contract YearnStrategy is BaseStrategy {
         if (!success) revert YearnStrategy__Inexistent_Pool(position.owedToken);
 
         address yvault = abi.decode(return_data, (address));
-        amountIn = IYearnVault(yvault).withdraw(position.allowance, address(vault), 1);
+        uint256 pricePerShare = IYearnVault(yvault).pricePerShare();
+        uint256 maxLoss = ((position.allowance * pricePerShare - expectedCost) * 10000) /
+            (position.allowance * pricePerShare);
+
+        amountIn = IYearnVault(yvault).withdraw(position.allowance, address(vault), maxLoss);
         /// @todo check maxLoss=1 (0.01%) parameter
     }
 
