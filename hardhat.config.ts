@@ -9,6 +9,7 @@ import "solidity-coverage";
 
 import "./tasks/accounts";
 import "./tasks/deploy";
+import "./tasks/publish";
 
 import { chainIds } from "./constants";
 import { resolve } from "path";
