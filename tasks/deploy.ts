@@ -137,4 +137,28 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   };
   const tokensFile = JSON.stringify(tokens, null, 4);
   fs.writeFileSync("deployments/tokenlist.json", tokensFile, "utf8");
+
+  // verify Vault
+  await hre.run("verify:verify", {
+    address: vault.address,
+    constructorArguments: [weth.address],
+  });
+
+  // verify Liquidator
+  await hre.run("verify:verify", {
+    address: liquidator.address,
+    constructorArguments: [],
+  });
+
+  // verify MarginTradingStrategy
+  await hre.run("verify:verify", {
+    address: mts.address,
+    constructorArguments: [kyber.address, vault.address, liquidator.address],
+  });
+
+  // verify YearnStrategy
+  await hre.run("verify:verify", {
+    address: ys.address,
+    constructorArguments: [yearn.address, vault.address, liquidator.address],
+  });
 });
