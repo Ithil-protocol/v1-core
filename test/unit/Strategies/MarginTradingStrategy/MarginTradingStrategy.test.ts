@@ -65,6 +65,8 @@ describe("Strategy tests", function () {
       );
 
       await this.vault.addStrategy(this.marginTradingStrategy.address);
+      await this.marginTradingStrategy.setRiskFactor(this.mockTaxedToken.address, 3000);
+      await this.marginTradingStrategy.setRiskFactor(this.mockWETH.address, 4000);
     });
 
     checkRiskFactor();

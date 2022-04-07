@@ -36,10 +36,15 @@ export function checkOpenPosition(): void {
       deadline: deadline,
     };
 
+    const initialRiskFactor = await this.marginTradingStrategy.riskFactors(investmentToken.address);
+    console.log("Initial risk factor " + ethers.utils.formatUnits(initialRiskFactor, 2) + "%");
+
     await changeRate(this.mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
     await changeRate(this.mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
     await this.marginTradingStrategy.connect(trader).openPosition(order);
 
+    const finalRiskFactor = await this.marginTradingStrategy.riskFactors(investmentToken.address);
+    console.log("Final risk factor " + ethers.utils.formatUnits(finalRiskFactor, 2) + "%");
     const finalState = {
       trader_margin: await marginToken.balanceOf(trader.address),
       trader_inv: await investmentToken.balanceOf(trader.address),

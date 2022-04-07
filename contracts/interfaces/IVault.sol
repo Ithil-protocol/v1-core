@@ -9,8 +9,6 @@ import { VaultState } from "../libraries/VaultState.sol";
 interface IVault {
     /// ==== STAKING ==== ///
 
-    function state(address token) external view returns (VaultState.VaultData memory);
-
     /// @notice Gets the amount of tokens a user can get back when unstaking
     /// @param token the token to check the claimable amount against
     function claimable(address token) external view returns (uint256);

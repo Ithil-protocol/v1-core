@@ -61,10 +61,6 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (msg.sender != address(weth)) revert Vault__ETH_Transfer_Failed();
     }
 
-    function state(address token) external view override returns (VaultState.VaultData memory) {
-        return vaults[token];
-    }
-
     function balance(address token) public view override returns (uint256) {
         return IERC20(token).balanceOf(address(this)) + vaults[token].netLoans - vaults[token].insuranceReserveBalance;
     }

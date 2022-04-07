@@ -35,9 +35,14 @@ export function checkClosePosition(): void {
       deadline: deadline,
     };
 
+    const riskFactor1 = await this.marginTradingStrategy.riskFactors(investmentToken.address);
+    console.log("riskFactor1 " + ethers.utils.formatUnits(riskFactor1, 2) + "%");
     await changeRate(this.mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
     await changeRate(this.mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
     await this.marginTradingStrategy.connect(trader).openPosition(order);
+
+    const riskFactor2 = await this.marginTradingStrategy.riskFactors(investmentToken.address);
+    console.log("riskFactor2 " + ethers.utils.formatUnits(riskFactor2, 2) + "%");
 
     await changeRate(this.mockKyberNetworkProxy, investmentToken, 11 * 10 ** 10);
 
@@ -45,6 +50,9 @@ export function checkClosePosition(): void {
     const maxSpent = position.allowance;
 
     await this.marginTradingStrategy.connect(trader).closePosition(1, maxSpent);
+
+    const riskFactor3 = await this.marginTradingStrategy.riskFactors(investmentToken.address);
+    console.log("riskFactor3 " + ethers.utils.formatUnits(riskFactor3, 2) + "%");
 
     const finalState = {
       trader_margin: await marginToken.balanceOf(trader.address),

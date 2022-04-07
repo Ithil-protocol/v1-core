@@ -201,11 +201,17 @@ abstract contract BaseStrategy is Liquidable {
         uint256 riskFactor = computePairRiskFactor(spentToken, obtainedToken);
         uint256 originalCollBal = 0;
 
-        uint256 netLoans = vault.state(spentToken).netLoans;
+        uint256 vaultBalance = vault.balance(spentToken);
 
-        riskFactors[obtainedToken] +=
-            ((VaultMath.RESOLUTION - riskFactors[obtainedToken]) * order.maxSpent) /
-            (netLoans + order.maxSpent);
+        if (order.collateralIsSpentToken) {
+            riskFactors[obtainedToken] +=
+                ((VaultMath.RESOLUTION - riskFactors[obtainedToken]) * (order.maxSpent - order.collateral)) /
+                vaultBalance;
+        } else {
+            riskFactors[obtainedToken] +=
+                ((VaultMath.RESOLUTION - riskFactors[obtainedToken]) * order.maxSpent) /
+                vaultBalance;
+        }
 
         (collateralReceived, toBorrow, collateralToken, originalCollBal) = _transferCollateral(order);
         toSpend = originalCollBal + collateralReceived;
@@ -217,9 +223,11 @@ abstract contract BaseStrategy is Liquidable {
     }
 
     function _repay(Position memory position, uint256 amountIn) internal {
-        uint256 netLoans = vault.state(position.owedToken).netLoans;
+        uint256 vaultBalance = vault.balance(position.owedToken);
 
-        riskFactors[position.heldToken] -= (riskFactors[position.heldToken] * position.principal) / netLoans;
+        riskFactors[position.heldToken] -=
+            (riskFactors[position.heldToken] * position.principal) /
+            (vaultBalance + position.principal);
 
         vault.repay(position.owedToken, amountIn, position.principal, position.fees, position.owner);
     }
