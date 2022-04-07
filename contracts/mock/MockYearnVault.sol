@@ -42,7 +42,6 @@ contract MockYearnVault is IYearnVault, ERC20, Ownable {
         require(maxShares <= balanceOf(msg.sender), "MockYearnVault: not enough shares");
         _burn(msg.sender, maxShares);
         uint256 assets = maxShares * _pricePerShare();
-
         require(assets >= (maxShares * (10000 - maxLoss)) / 10000, "MockYearnVault: max loss constraint fails");
 
         nativeToken.safeTransfer(recipient, assets);

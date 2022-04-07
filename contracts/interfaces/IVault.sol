@@ -2,6 +2,8 @@
 pragma solidity >=0.8.6;
 pragma experimental ABIEncoderV2;
 
+import { VaultState } from "../libraries/VaultState.sol";
+
 /// @title    Interface of Vault contract
 /// @author   Ithil
 interface IVault {

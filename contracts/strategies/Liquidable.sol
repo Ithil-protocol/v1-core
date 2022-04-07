@@ -6,6 +6,7 @@ import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/Saf
 import { AbstractStrategy } from "./AbstractStrategy.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
+import { VaultState } from "../libraries/VaultState.sol";
 
 /// @title    Liquidable contract
 /// @author   Ithil

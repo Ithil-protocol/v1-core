@@ -7,8 +7,6 @@ import { VaultMath } from "../libraries/VaultMath.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
 import { Liquidable } from "./Liquidable.sol";
 
-import "hardhat/console.sol";
-
 /// @title    BaseStrategy contract
 /// @author   Ithil
 /// @notice   Base contract to inherit to keep status updates consistent
@@ -84,24 +82,16 @@ abstract contract BaseStrategy is Liquidable {
     }
 
     function openPosition(Order memory order) external returns (uint256) {
-        address spentToken = order.spentToken;
-        address obtainedToken = order.obtainedToken;
-        uint256 riskFactor = computePairRiskFactor(spentToken, obtainedToken);
-
         (
+            uint256 interestRate,
+            uint256 fees,
+            uint256 toSpend,
             uint256 collateralReceived,
             uint256 toBorrow,
-            address collateralToken,
-            uint256 originalCollBal
-        ) = _transferCollateral(order);
-        uint256 toSpend = originalCollBal + collateralReceived;
-        if (!order.collateralIsSpentToken) {
-            toSpend = IERC20(spentToken).balanceOf(address(this));
-        }
+            address collateralToken
+        ) = _borrow(order);
 
-        (uint256 interestRate, uint256 fees) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
-
-        toSpend = IERC20(spentToken).balanceOf(address(this)) - toSpend;
+        toSpend = IERC20(order.spentToken).balanceOf(address(this)) - toSpend;
         if (order.collateralIsSpentToken) {
             order.maxSpent = toSpend + collateralReceived;
             interestRate *= toBorrow / collateralReceived;
@@ -118,8 +108,8 @@ abstract contract BaseStrategy is Liquidable {
 
         positions[++id] = Position({
             owner: msg.sender,
-            owedToken: spentToken,
-            heldToken: obtainedToken,
+            owedToken: order.spentToken,
+            heldToken: order.obtainedToken,
             collateralToken: collateralToken,
             collateral: collateralReceived,
             principal: toBorrow,
@@ -132,8 +122,8 @@ abstract contract BaseStrategy is Liquidable {
         emit PositionWasOpened(
             id,
             msg.sender,
-            spentToken,
-            obtainedToken,
+            order.spentToken,
+            order.obtainedToken,
             collateralToken,
             collateralReceived,
             toBorrow,
@@ -165,11 +155,10 @@ abstract contract BaseStrategy is Liquidable {
 
         uint256 vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault));
         (uint256 amountIn, uint256 amountOut) = _closePosition(position, maxOrMin);
+        _repay(position, amountIn);
 
         if (collateralInHeldTokens && amountOut <= position.allowance)
             IERC20(position.heldToken).safeTransfer(position.owner, position.allowance - amountOut);
-
-        vault.repay(position.owedToken, amountIn, position.principal, position.fees, position.owner);
 
         vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault)) - vaultRepaid;
 
@@ -194,5 +183,52 @@ abstract contract BaseStrategy is Liquidable {
         if (token.allowance(address(this), receiver) <= 0) {
             token.safeApprove(receiver, type(uint256).max);
         }
+    }
+
+    function _borrow(Order memory order)
+        internal
+        returns (
+            uint256 interestRate,
+            uint256 fees,
+            uint256 toSpend,
+            uint256 collateralReceived,
+            uint256 toBorrow,
+            address collateralToken
+        )
+    {
+        address spentToken = order.spentToken;
+        address obtainedToken = order.obtainedToken;
+        uint256 riskFactor = computePairRiskFactor(spentToken, obtainedToken);
+        uint256 originalCollBal = 0;
+
+        uint256 vaultBalance = vault.balance(spentToken);
+
+        if (order.collateralIsSpentToken) {
+            riskFactors[obtainedToken] +=
+                ((VaultMath.RESOLUTION - riskFactors[obtainedToken]) * (order.maxSpent - order.collateral)) /
+                vaultBalance;
+        } else {
+            riskFactors[obtainedToken] +=
+                ((VaultMath.RESOLUTION - riskFactors[obtainedToken]) * order.maxSpent) /
+                vaultBalance;
+        }
+
+        (collateralReceived, toBorrow, collateralToken, originalCollBal) = _transferCollateral(order);
+        toSpend = originalCollBal + collateralReceived;
+        if (!order.collateralIsSpentToken) {
+            toSpend = IERC20(spentToken).balanceOf(address(this));
+        }
+
+        (interestRate, fees) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
+    }
+
+    function _repay(Position memory position, uint256 amountIn) internal {
+        uint256 vaultBalance = vault.balance(position.owedToken);
+
+        riskFactors[position.heldToken] -=
+            (riskFactors[position.heldToken] * position.principal) /
+            (vaultBalance + position.principal);
+
+        vault.repay(position.owedToken, amountIn, position.principal, position.fees, position.owner);
     }
 }

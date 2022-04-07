@@ -87,7 +87,7 @@ interface IStrategy {
         uint256 collateral,
         uint256 principal,
         uint256 allowance,
-        uint256 fees,
+        uint256 interestRtae,
         uint256 createdAt
     );
 

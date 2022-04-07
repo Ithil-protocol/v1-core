@@ -107,6 +107,9 @@ const config: HardhatUserConfig = {
     project: process.env.TENDERLY_PROJECT || "",
     username: process.env.TENDERLY_USERNAME || "",
   },
+  mocha: {
+    timeout: 60000,
+  },
 };
 
 export default config;
