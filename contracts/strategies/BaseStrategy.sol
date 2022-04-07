@@ -203,7 +203,9 @@ abstract contract BaseStrategy is Liquidable {
 
         uint256 netLoans = vault.state(spentToken).netLoans;
 
-        riskFactors[obtainedToken] += (riskFactors[obtainedToken] * order.maxSpent) / (netLoans + order.maxSpent);
+        riskFactors[obtainedToken] +=
+            ((VaultMath.RESOLUTION - riskFactors[obtainedToken]) * order.maxSpent) /
+            (netLoans + order.maxSpent);
 
         (collateralReceived, toBorrow, collateralToken, originalCollBal) = _transferCollateral(order);
         toSpend = originalCollBal + collateralReceived;
