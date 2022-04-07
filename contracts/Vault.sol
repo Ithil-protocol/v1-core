@@ -61,6 +61,10 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (msg.sender != address(weth)) revert Vault__ETH_Transfer_Failed();
     }
 
+    function state(address token) public view override returns (VaultState.VaultData memory) {
+        return vaults[token];
+    }
+
     function balance(address token) public view override returns (uint256) {
         return IERC20(token).balanceOf(address(this)) + vaults[token].netLoans - vaults[token].insuranceReserveBalance;
     }
@@ -167,11 +171,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         whitelisted(token)
         unlocked(token)
         onlyStrategy
-        returns (
-            uint256 baseInterestRate,
-            uint256 fees,
-            uint256 netLoans
-        )
+        returns (uint256 baseInterestRate, uint256 fees)
     {
         VaultState.VaultData storage vaultData = vaults[token];
         uint256 freeLiquidity = IERC20(token).balanceOf(address(this)) - vaultData.insuranceReserveBalance;
@@ -179,7 +179,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (amount > freeLiquidity) revert Vault__Insufficient_Funds_Available(token, amount);
 
         baseInterestRate = VaultMath.computeInterestRateNoLeverage(vaultData, freeLiquidity, riskFactor);
-        netLoans = (vaultData.netLoans += amount);
+        vaultData.netLoans += amount;
 
         fees = VaultMath.computeFees(amount, vaultData.fixedFee);
 
@@ -195,10 +195,10 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 debt,
         uint256 fees,
         address borrower
-    ) external override whitelisted(token) onlyStrategy returns (uint256 netLoans) {
+    ) external override whitelisted(token) onlyStrategy {
         VaultState.VaultData storage vaultData = vaults[token];
 
-        netLoans = vaultData.subtractLoan(debt);
+        vaultData.subtractLoan(debt);
 
         if (amount >= debt + fees) {
             IERC20 tkn = IERC20(token);

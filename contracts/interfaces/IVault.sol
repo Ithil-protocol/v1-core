@@ -9,6 +9,8 @@ import { VaultState } from "../libraries/VaultState.sol";
 interface IVault {
     /// ==== STAKING ==== ///
 
+    function state(address token) external view returns (VaultState.VaultData memory);
+
     /// @notice Gets the amount of tokens a user can get back when unstaking
     /// @param token the token to check the claimable amount against
     function claimable(address token) external view returns (uint256);
@@ -72,13 +74,7 @@ interface IVault {
         uint256 amount,
         uint256 riskFactor,
         address borrower
-    )
-        external
-        returns (
-            uint256 interestRate,
-            uint256 fees,
-            uint256 netLoans
-        );
+    ) external returns (uint256 interestRate, uint256 fees);
 
     /// @notice repays a loan
     /// @param token the token of the loan
@@ -91,7 +87,7 @@ interface IVault {
         uint256 debt,
         uint256 fees,
         address borrower
-    ) external returns (uint256 netLoans);
+    ) external;
 
     /// ==== EVENTS ==== ///
 

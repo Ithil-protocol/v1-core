@@ -7,8 +7,6 @@ import { VaultMath } from "../libraries/VaultMath.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
 import { Liquidable } from "./Liquidable.sol";
 
-import "hardhat/console.sol";
-
 /// @title    BaseStrategy contract
 /// @author   Ithil
 /// @notice   Base contract to inherit to keep status updates consistent
@@ -208,17 +206,18 @@ abstract contract BaseStrategy is Liquidable {
             toSpend = IERC20(spentToken).balanceOf(address(this));
         }
 
-        uint256 netLoans = 0;
-        (interestRate, fees, netLoans) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
+        uint256 netLoans = vault.state(spentToken).netLoans;
 
-        riskFactors[obtainedToken] += (riskFactors[obtainedToken] * toBorrow) / netLoans;
+        riskFactors[obtainedToken] += (riskFactors[obtainedToken] * toBorrow) / (netLoans + toBorrow);
+
+        (interestRate, fees) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
     }
 
     function _repay(Position memory position, uint256 amountIn) internal {
-        uint256 netLoans = vault.repay(position.owedToken, amountIn, position.principal, position.fees, position.owner);
+        uint256 netLoans = vault.state(position.owedToken).netLoans;
 
-        riskFactors[position.heldToken] -=
-            (riskFactors[position.heldToken] * position.principal) /
-            (netLoans + position.principal);
+        riskFactors[position.heldToken] -= (riskFactors[position.heldToken] * position.principal) / netLoans;
+
+        vault.repay(position.owedToken, amountIn, position.principal, position.fees, position.owner);
     }
 }
