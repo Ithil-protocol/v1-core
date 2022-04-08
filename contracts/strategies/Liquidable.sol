@@ -20,9 +20,9 @@ abstract contract Liquidable is AbstractStrategy {
 
     mapping(address => uint256) public riskFactors;
 
-    error Position_Not_Liquidable(int256);
-    error Insufficient_Margin_Call(uint256);
-    error Insufficient_Price(uint256);
+    error Position_Not_Liquidable(int256 liquidationScore);
+    error Insufficient_Margin_Call(uint256 received);
+    error Insufficient_Price(uint256 price);
 
     constructor(address _liquidator, address _vault) AbstractStrategy(_vault) {
         liquidator = _liquidator;

@@ -52,7 +52,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     }
 
     modifier onlyStrategy() {
-        if (!strategies[msg.sender]) revert Vault__Restricted_Access();
+        if (!strategies[msg.sender]) revert Vault__Restricted_Access(msg.sender);
         _;
     }
 

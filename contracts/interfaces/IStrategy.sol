@@ -43,12 +43,11 @@ interface IStrategy {
         uint256 createdAt;
     }
 
-    error Invalid_Position(uint256, address);
-    error Restricted_Access(address, address);
-    error No_Withdraw(uint256);
-    error Insufficient_Collateral(uint256);
-    error Source_Eq_Dest(address);
-    error Only_Liquidator(address, address);
+    error Invalid_Position(uint256 id, address strategy);
+    error Restricted_Access(address owner, address sender);
+    error Insufficient_Collateral(uint256 collateral);
+    error Source_Eq_Dest(address source);
+    error Only_Liquidator(address sender, address liquidator);
     error Maximum_Leverage_Exceeded();
 
     function computePairRiskFactor(address token0, address token1) external view returns (uint256);

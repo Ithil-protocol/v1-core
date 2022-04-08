@@ -16,9 +16,8 @@ abstract contract BaseStrategy is Liquidable {
 
     uint256 public id;
 
-    error Obtained_Insufficient_Amount(uint256);
-    error Opened_Liquidable_Position(uint256);
-    error Loan_Not_Repaid(uint256, uint256);
+    error Obtained_Insufficient_Amount(uint256 amountIn);
+    error Loan_Not_Repaid(uint256 repaid, uint256 principal);
     error Expired();
 
     constructor(address _vault, address _liquidator) Liquidable(_liquidator, _vault) {

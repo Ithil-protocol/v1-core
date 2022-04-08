@@ -115,13 +115,12 @@ interface IVault {
 
     /// ==== ERRORS ==== ///
 
-    error Vault__Unsupported_Token(address);
-    error Vault__Token_Already_Supported(address);
+    error Vault__Unsupported_Token(address token);
+    error Vault__Token_Already_Supported(address token);
     error Vault__ETH_Transfer_Failed();
-    error Vault__Restricted_Access();
-    error Vault__Insufficient_Funds_Available(address, uint256);
-    error Vault__Insufficient_Margin(address, address);
-    error Vault__Locked(address);
-    error Vault__Max_Withdrawal(address, address);
+    error Vault__Restricted_Access(address sender);
+    error Vault__Insufficient_Funds_Available(address token, uint256 requested);
+    error Vault__Locked(address token);
+    error Vault__Max_Withdrawal(address withdrawer, address token);
     error Vault__Null_Amount();
 }
