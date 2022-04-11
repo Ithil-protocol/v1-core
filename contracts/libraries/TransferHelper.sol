@@ -43,4 +43,16 @@ library TransferHelper {
         (originalBalance, received) = transferTokens(token, from, to, amount);
         position.collateral += received;
     }
+
+    function transferAsCollateral(IERC20 token, IStrategy.Order memory order)
+        internal
+        returns (
+            uint256 collateralReceived,
+            uint256 toBorrow,
+            uint256 originalCollBal
+        )
+    {
+        (originalCollBal, collateralReceived) = transferTokens(token, msg.sender, address(this), order.collateral);
+        toBorrow = order.collateralIsSpentToken ? order.maxSpent : order.maxSpent - collateralReceived;
+    }
 }

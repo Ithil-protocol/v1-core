@@ -51,35 +51,6 @@ abstract contract BaseStrategy is Liquidable {
         return address(vault);
     }
 
-    function _transferCollateral(Order memory order)
-        internal
-        validOrder(order)
-        returns (
-            uint256 collateralReceived,
-            uint256 toBorrow,
-            address collateralToken,
-            uint256 originalCollBal
-        )
-    {
-        toBorrow = order.maxSpent;
-        if (order.collateralIsSpentToken) {
-            collateralToken = order.spentToken;
-            (originalCollBal, collateralReceived) = IERC20(collateralToken).transferTokens(
-                msg.sender,
-                address(this),
-                order.collateral
-            );
-            toBorrow -= collateralReceived;
-        } else {
-            collateralToken = order.obtainedToken;
-            (originalCollBal, collateralReceived) = IERC20(collateralToken).transferTokens(
-                msg.sender,
-                address(this),
-                order.collateral
-            );
-        }
-    }
-
     function openPosition(Order memory order) external returns (uint256) {
         (
             uint256 interestRate,
@@ -201,7 +172,7 @@ abstract contract BaseStrategy is Liquidable {
         uint256 originalCollBal = 0;
 
         uint256 vaultBalance = vault.balance(spentToken);
-
+        collateralToken = order.collateralIsSpentToken ? order.spentToken : order.obtainedToken;
         if (order.collateralIsSpentToken) {
             riskFactors[obtainedToken] +=
                 ((VaultMath.RESOLUTION - riskFactors[obtainedToken]) * (order.maxSpent - order.collateral)) /
@@ -212,7 +183,7 @@ abstract contract BaseStrategy is Liquidable {
                 vaultBalance;
         }
 
-        (collateralReceived, toBorrow, collateralToken, originalCollBal) = _transferCollateral(order);
+        (collateralReceived, toBorrow, originalCollBal) = IERC20(collateralToken).transferAsCollateral(order);
         toSpend = originalCollBal + collateralReceived;
         if (!order.collateralIsSpentToken) {
             toSpend = IERC20(spentToken).balanceOf(address(this));
