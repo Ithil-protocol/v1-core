@@ -35,7 +35,7 @@ contract MockToken is ERC20, Ownable {
         address to = msg.sender;
         require(!blockedMinters[to], "MockToken: Blocked account");
         require(block.timestamp - throttledMinters[to] >= throttlingPeriod, "MockToken: Too many requests");
-        _mint(to, 1000 * 10**decimalPlaces);
+        _mint(to, 1000 * 10**decimals());
         throttledMinters[to] = block.timestamp;
     }
 
