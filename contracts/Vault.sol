@@ -134,7 +134,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (msg.value != amount) revert Vault__Insufficient_ETH();
 
         uint256 totalWealth = balance(weth);
-        IWETH(weth).deposit{ value: msg.value }();
+        IWETH(weth).deposit{ value: amount }();
 
         _stakeAndMint(weth, amount, msg.sender, totalWealth);
     }
@@ -165,7 +165,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         IWETH tkn = IWETH(weth);
         tkn.withdraw(amount);
-        tkn.safeTransfer(msg.sender, amount);
+        payable(msg.sender).transfer(amount); // reverts if unsuccessful
     }
 
     function _unstakeAndBurn(

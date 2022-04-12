@@ -49,34 +49,30 @@ export function checkStaking(): void {
   });
 
   it("Vault: stake and unstake ETH", async function () {
-    const provider = ethers.getDefaultProvider();
-
     const baseFee = 10;
     const fixedFee = 11;
     const token = this.mockWETH;
+    const admin = this.signers.admin;
     const investor = this.signers.investor;
     const amount = ethers.utils.parseUnits("1.0", 18);
     const amountBack = ethers.utils.parseUnits("1.0", 18);
 
-    await token.connect(investor).approve(this.vault.address, amount);
-    await this.vault.whitelistToken(token.address, baseFee, fixedFee);
+    await this.vault.connect(admin).whitelistToken(token.address, baseFee, fixedFee);
 
     const initialState = {
-      balance: await provider.getBalance(investor.address),
+      balance: await this.provider.getBalance(investor.address),
     };
 
     const stakeTx = await this.vault.connect(investor).stakeETH(amount, { value: amount });
     const stakeEvents = await stakeTx.wait();
 
     const middleState = {
-      balance: await provider.getBalance(investor.address),
+      balance: await this.provider.getBalance(investor.address),
     };
 
-    console.log("middleState.balance", middleState.balance.toString());
-    console.log("initialState.balance", initialState.balance.toString());
-    console.log("stakeEvents.gasUsed", stakeEvents.gasUsed.toString());
+    const totalGasForStaking = stakeEvents.gasUsed.mul(stakeEvents.effectiveGasPrice);
 
-    expect(middleState.balance).to.equal(initialState.balance.sub(amount).sub(stakeEvents.gasUsed));
+    expect(middleState.balance).to.equal(initialState.balance.sub(amount).sub(totalGasForStaking));
 
     const validStakeEvents = stakeEvents.events?.filter(
       event => event.event === "Deposit" && event.args && event.args[0] === investor.address,
@@ -87,12 +83,12 @@ export function checkStaking(): void {
     const unstakeEvents = await unstakeTx.wait();
 
     const finalState = {
-      balance: await provider.getBalance(investor.address),
+      balance: await this.provider.getBalance(investor.address),
     };
 
-    expect(finalState.balance.add(unstakeEvents.gasUsed).add(stakeEvents.gasUsed)).to.equal(
-      initialState.balance.sub(amount).add(amountBack),
-    );
+    const totalGasForUnstaking = unstakeEvents.gasUsed.mul(unstakeEvents.effectiveGasPrice);
+
+    expect(finalState.balance).to.equal(middleState.balance.add(amount).sub(totalGasForUnstaking));
 
     const validUnstakeEvents = unstakeEvents.events?.filter(
       event => event.event === "Withdrawal" && event.args && event.args[0] === investor.address,
