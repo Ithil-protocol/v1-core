@@ -20,6 +20,8 @@ describe("Lending unit tests", function () {
     this.signers.investor = signers[1];
     this.signers.trader = signers[2];
     this.signers.liquidator = signers[3];
+
+    this.provider = waffle.provider;
   });
 
   describe("Vault", function () {
