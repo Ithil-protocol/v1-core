@@ -194,16 +194,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     ) external override whitelisted(token) onlyStrategy {
         VaultState.VaultData storage vaultData = vaults[token];
 
-        vaultData.subtractLoan(debt);
-
-        if (amount >= debt + fees) {
-            IERC20 tkn = IERC20(token);
-            uint256 availableInsuranceBalance = vaultData.insuranceReserveBalance.positiveSub(vaultData.netLoans);
-
-            vaultData.addInsuranceReserve(tkn.balanceOf(address(this)), availableInsuranceBalance, fees);
-
-            tkn.safeTransfer(borrower, amount - debt - fees);
-        } else if (amount < debt) vaultData.subtractInsuranceReserve(debt - amount);
+        vaultData.repayLoan(IERC20(token), borrower, debt, fees, amount);
 
         emit LoanRepaid(borrower, token, amount);
     }

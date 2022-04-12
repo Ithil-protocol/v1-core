@@ -10,6 +10,7 @@ import "./TransferHelper.sol";
 /// @notice   A library to stora vault state
 library VaultState {
     using TransferHelper for IERC20;
+    using GeneralMath for uint256;
 
     error Vault__Insufficient_Funds_Available(address token, uint256 requested);
 
@@ -66,5 +67,24 @@ library VaultState {
     function subtractInsuranceReserve(VaultState.VaultData storage self, uint256 b) internal {
         if (self.insuranceReserveBalance > b) self.insuranceReserveBalance -= b;
         else self.insuranceReserveBalance = 0;
+    }
+
+    function repayLoan(
+        VaultState.VaultData storage self,
+        IERC20 token,
+        address borrower,
+        uint256 debt,
+        uint256 fees,
+        uint256 amount
+    ) internal {
+        subtractLoan(self, debt);
+
+        if (amount >= debt + fees) {
+            uint256 availableInsuranceBalance = self.insuranceReserveBalance.positiveSub(self.netLoans);
+
+            addInsuranceReserve(self, token.balanceOf(address(this)), availableInsuranceBalance, fees);
+
+            token.transfer(borrower, amount - debt - fees);
+        } else if (amount < debt) subtractInsuranceReserve(self, debt - amount);
     }
 }
