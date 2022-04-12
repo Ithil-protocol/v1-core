@@ -41,9 +41,7 @@ describe("Strategy tests", function () {
       );
 
       const wethArtifact: Artifact = await artifacts.readArtifact("MockWETH");
-      this.mockWETH = <MockWETH>(
-        await waffle.deployContract(this.signers.admin, wethArtifact, [this.mockKyberNetworkProxy.address])
-      );
+      this.mockWETH = <MockWETH>await waffle.deployContract(this.signers.admin, wethArtifact, []);
 
       const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
       this.vault = <Vault>await waffle.deployContract(this.signers.admin, vaultArtifact, [this.mockWETH.address]);

@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import { MockToken } from "./MockToken.sol";
 
 contract MockWETH is MockToken {
-    constructor(address to) MockToken("Wrapped Ether", "WETH", to) {}
+    constructor() MockToken("Wrapped Ether", "WETH", 18) {}
 
     receive() external payable {
         deposit();

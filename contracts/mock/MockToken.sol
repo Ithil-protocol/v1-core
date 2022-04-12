@@ -6,16 +6,17 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract MockToken is ERC20, Ownable {
-    mapping(address => uint256) public throttledMinters;
-    mapping(address => bool) public blockedMinters;
-    uint256 public throttlingPeriod = 0;
+    mapping(address => uint256) private throttledMinters;
+    mapping(address => bool) private blockedMinters;
+    uint256 private throttlingPeriod = 0;
+    uint8 private immutable decimalPlaces;
 
     constructor(
-        string memory name,
-        string memory symbol,
-        address to
-    ) ERC20(name, symbol) {
-        _mint(to, type(uint128).max);
+        string memory _name,
+        string memory _symbol,
+        uint8 _decimals
+    ) ERC20(_name, _symbol) {
+        decimalPlaces = _decimals;
     }
 
     function toggleBlock(address account) external onlyOwner {
@@ -34,7 +35,11 @@ contract MockToken is ERC20, Ownable {
         address to = msg.sender;
         require(!blockedMinters[to], "MockToken: Blocked account");
         require(block.timestamp - throttledMinters[to] >= throttlingPeriod, "MockToken: Too many requests");
-        _mint(to, 1000 * 10**decimals());
+        _mint(to, 1000 * 10**decimalPlaces);
         throttledMinters[to] = block.timestamp;
+    }
+
+    function decimals() public view override returns (uint8) {
+        return decimalPlaces;
     }
 }
