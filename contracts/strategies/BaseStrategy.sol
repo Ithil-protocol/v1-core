@@ -61,7 +61,6 @@ abstract contract BaseStrategy is Liquidable {
             address collateralToken
         ) = _borrow(order);
 
-        toSpend = IERC20(order.spentToken).balanceOf(address(this)) - toSpend;
         if (order.collateralIsSpentToken) {
             order.maxSpent = toSpend + collateralReceived;
             interestRate *= toBorrow / collateralReceived;
@@ -125,7 +124,7 @@ abstract contract BaseStrategy is Liquidable {
 
         uint256 vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault));
         (uint256 amountIn, uint256 amountOut) = _closePosition(position, maxOrMin);
-        _repay(position, amountIn);
+        vault.repay(position.owedToken, amountIn, position.principal, position.fees, position.owner);
 
         if (collateralInHeldTokens && amountOut <= position.allowance)
             IERC20(position.heldToken).safeTransfer(position.owner, position.allowance - amountOut);
@@ -171,17 +170,7 @@ abstract contract BaseStrategy is Liquidable {
         uint256 riskFactor = computePairRiskFactor(spentToken, obtainedToken);
         uint256 originalCollBal = 0;
 
-        uint256 vaultBalance = vault.balance(spentToken);
         collateralToken = order.collateralIsSpentToken ? order.spentToken : order.obtainedToken;
-        if (order.collateralIsSpentToken) {
-            riskFactors[obtainedToken] +=
-                ((VaultMath.RESOLUTION - riskFactors[obtainedToken]) * (order.maxSpent - order.collateral)) /
-                vaultBalance;
-        } else {
-            riskFactors[obtainedToken] +=
-                ((VaultMath.RESOLUTION - riskFactors[obtainedToken]) * order.maxSpent) /
-                vaultBalance;
-        }
 
         (collateralReceived, toBorrow, originalCollBal) = IERC20(collateralToken).transferAsCollateral(order);
         toSpend = originalCollBal + collateralReceived;
@@ -190,15 +179,6 @@ abstract contract BaseStrategy is Liquidable {
         }
 
         (interestRate, fees) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
-    }
-
-    function _repay(Position memory position, uint256 amountIn) internal {
-        uint256 vaultBalance = vault.balance(position.owedToken);
-
-        riskFactors[position.heldToken] -=
-            (riskFactors[position.heldToken] * position.principal) /
-            (vaultBalance + position.principal);
-
-        vault.repay(position.owedToken, amountIn, position.principal, position.fees, position.owner);
+        toSpend = IERC20(order.spentToken).balanceOf(address(this)) - toSpend;
     }
 }

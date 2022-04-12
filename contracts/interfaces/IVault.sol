@@ -119,7 +119,6 @@ interface IVault {
     error Vault__Token_Already_Supported(address token);
     error Vault__ETH_Transfer_Failed();
     error Vault__Restricted_Access(address sender);
-    error Vault__Insufficient_Funds_Available(address token, uint256 requested);
     error Vault__Locked(address token);
     error Vault__Max_Withdrawal(address withdrawer, address token);
     error Vault__Null_Amount();

@@ -24,7 +24,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     using VaultMath for uint256;
     using GeneralMath for uint256;
     using GeneralMath for VaultState.VaultData;
-    using VaultMath for VaultState.VaultData;
+    using VaultState for VaultState.VaultData;
 
     IWETH internal immutable weth;
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -170,17 +170,17 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         returns (uint256 baseInterestRate, uint256 fees)
     {
         VaultState.VaultData storage vaultData = vaults[token];
-        uint256 freeLiquidity = IERC20(token).balanceOf(address(this)) - vaultData.insuranceReserveBalance;
+        (uint256 freeLiquidity, ) = vaultData.takeLoan(IERC20(token), amount);
 
-        if (amount > freeLiquidity) revert Vault__Insufficient_Funds_Available(token, amount);
-
-        baseInterestRate = VaultMath.computeInterestRateNoLeverage(vaultData, freeLiquidity, riskFactor);
-        vaultData.netLoans += amount;
+        baseInterestRate = VaultMath.computeInterestRateNoLeverage(
+            vaultData.netLoans - amount,
+            freeLiquidity,
+            vaultData.insuranceReserveBalance,
+            riskFactor,
+            vaultData.baseFee
+        );
 
         fees = VaultMath.computeFees(amount, vaultData.fixedFee);
-
-        IERC20 tkn = IERC20(token);
-        tkn.safeTransfer(msg.sender, amount);
 
         emit LoanTaken(borrower, token, amount, baseInterestRate);
     }

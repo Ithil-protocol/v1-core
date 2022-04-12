@@ -75,38 +75,21 @@ library VaultMath {
     }
 
     /// @notice Computes the interest rate to apply to a position at its opening
-    /// @param data the data containing the current vault state
+    /// @param netLoans the net loans of the vault
     /// @param freeLiquidity the free liquidity of the vault
+    /// @param insuranceReserveBalance the insurance reserve balance
     /// @param riskFactor the riskiness of the investment
+    /// @param baseFee the base fee of the investment
     function computeInterestRateNoLeverage(
-        VaultState.VaultData memory data,
+        uint256 netLoans,
         uint256 freeLiquidity,
-        uint256 riskFactor
+        uint256 insuranceReserveBalance,
+        uint256 riskFactor,
+        uint256 baseFee
     ) internal pure returns (uint256 interestRate) {
-        uint256 uncovered = data.netLoans.positiveSub(data.insuranceReserveBalance);
-        interestRate = (data.netLoans + uncovered) * riskFactor;
-        interestRate /= (data.netLoans + freeLiquidity);
-        interestRate += data.baseFee;
-    }
-
-    function subtractLoan(VaultState.VaultData storage self, uint256 b) internal {
-        if (self.netLoans > b) self.netLoans -= b;
-        else self.netLoans = 0;
-    }
-
-    function subtractInsuranceReserve(VaultState.VaultData storage self, uint256 b) internal {
-        if (self.insuranceReserveBalance > b) self.insuranceReserveBalance -= b;
-        else self.insuranceReserveBalance = 0;
-    }
-
-    function addInsuranceReserve(
-        VaultState.VaultData storage self,
-        uint256 totalBalance,
-        uint256 insReserveBalance,
-        uint256 fees
-    ) internal {
-        self.insuranceReserveBalance +=
-            (fees * VaultMath.RESERVE_RATIO * (totalBalance - insReserveBalance)) /
-            (totalBalance * VaultMath.RESOLUTION);
+        uint256 uncovered = netLoans.positiveSub(insuranceReserveBalance);
+        interestRate = (netLoans + uncovered) * riskFactor;
+        interestRate /= (netLoans + freeLiquidity);
+        interestRate += baseFee;
     }
 }

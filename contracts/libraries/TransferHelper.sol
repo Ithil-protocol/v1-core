@@ -12,8 +12,9 @@ import { IStrategy } from "../interfaces/IStrategy.sol";
 library TransferHelper {
     using SafeERC20 for IERC20;
 
-    error TransferHelper__Insufficient_Token_Balance(address);
-    error TransferHelper__Insufficient_Token_Allowance(address);
+    error TransferHelper__Insufficient_Token_Balance(address from, address token);
+    error TransferHelper__Insufficient_Token_Allowance(address owner, address spender, address token);
+    error TransferHelper__Sending_Too_Much(address sender, address token);
 
     function transferTokens(
         IERC20 token,
@@ -21,16 +22,31 @@ library TransferHelper {
         address to,
         uint256 amount
     ) internal returns (uint256 originalBalance, uint256 received) {
-        if (token.balanceOf(from) < amount) revert TransferHelper__Insufficient_Token_Balance(address(token));
+        if (token.balanceOf(from) < amount) revert TransferHelper__Insufficient_Token_Balance(from, address(token));
 
         if (token.allowance(from, address(this)) < amount)
-            revert TransferHelper__Insufficient_Token_Allowance(address(token));
+            revert TransferHelper__Insufficient_Token_Allowance(from, address(this), address(token));
 
         // computes transferred balance for tokens with tax on transfers
         originalBalance = token.balanceOf(to);
         token.safeTransferFrom(from, to, amount);
 
         received = token.balanceOf(to) - originalBalance;
+    }
+
+    function sendTokens(
+        IERC20 token,
+        address to,
+        uint256 amount
+    ) internal returns (uint256) {
+        if (token.balanceOf(address(this)) < amount)
+            revert TransferHelper__Sending_Too_Much(address(this), address(token));
+
+        // computes transferred balance for tokens with tax on transfers
+        uint256 balance = token.balanceOf(to);
+        token.safeTransfer(to, amount);
+
+        return token.balanceOf(to) - balance;
     }
 
     function topUpCollateral(
