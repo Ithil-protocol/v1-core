@@ -33,19 +33,26 @@ export function checkLiquidate(): void {
 
     await marginToken.connect(trader).approve(this.marginTradingStrategy.address, marginTokenMargin);
 
+    // step 1. open position
+    await changeRate(this.mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
+    await changeRate(this.mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
+
+    const [minObtained] = await this.marginTradingStrategy.quote(
+      marginToken.address,
+      investmentToken.address,
+      marginTokenMargin.mul(leverage),
+    );
+
     const order = {
       spentToken: marginToken.address,
       obtainedToken: investmentToken.address,
       collateral: marginTokenMargin,
       collateralIsSpentToken: true,
-      minObtained: marginTokenMargin,
+      minObtained: minObtained,
       maxSpent: marginTokenMargin.mul(leverage),
       deadline: deadline,
     };
 
-    // step 1. open position
-    await changeRate(this.mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
-    await changeRate(this.mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
     await this.marginTradingStrategy.connect(trader).openPosition(order);
 
     let position0 = await this.marginTradingStrategy.positions(1);

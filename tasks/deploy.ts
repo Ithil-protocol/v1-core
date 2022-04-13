@@ -47,7 +47,7 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
 
   // MockWETH
   const wethFactory: MockWETH__factory = <MockWETH__factory>await hre.ethers.getContractFactory("MockWETH");
-  const weth: MockWETH = <MockWETH>await wethFactory.deploy(kyber.address);
+  const weth: MockWETH = <MockWETH>await wethFactory.deploy();
   await weth.deployed();
   console.log("MockWETH deployed to address: ", weth.address);
 
@@ -55,7 +55,7 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   const tknFactory: MockTaxedToken__factory = <MockTaxedToken__factory>(
     await hre.ethers.getContractFactory("MockTaxedToken")
   );
-  const tkn: MockTaxedToken = <MockTaxedToken>await tknFactory.deploy("Dai Stablecoin", "DAI", kyber.address);
+  const tkn: MockTaxedToken = <MockTaxedToken>await tknFactory.deploy("Dai Stablecoin", "DAI", 18);
   await tkn.deployed();
   console.log("MockTaxedToken deployed to address: ", tkn.address);
 
