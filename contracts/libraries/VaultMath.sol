@@ -32,34 +32,13 @@ library VaultMath {
         }
     }
 
-    /// @notice Computes the claiming power of an investor after a deposit
-    function claimingPowerAfterDeposit(
-        uint256 deposit,
-        uint256 oldClaimingPower,
-        uint256 totalClaimingPower,
+    /// @notice Computes the amount of wrapped token to burn from a staker
+    function shareValue(
+        uint256 amount,
+        uint256 totalSupply,
         uint256 totalBalance
-    ) internal pure returns (uint256 newClaimingPower) {
-        if (deposit <= 0) {
-            newClaimingPower = oldClaimingPower;
-        } else if (totalBalance <= 0) {
-            newClaimingPower = deposit;
-        } else {
-            newClaimingPower = oldClaimingPower + (totalClaimingPower * deposit) / totalBalance;
-        }
-    }
-
-    /// @notice Computes the claiming power of an investor after a withdrawal
-    function claimingPowerAfterWithdrawal(
-        uint256 withdrawal,
-        uint256 oldClaimingPower,
-        uint256 totalClaimingPower,
-        uint256 totalBalance
-    ) internal pure returns (uint256 newClaimingPower) {
-        if (withdrawal >= maximumWithdrawal(oldClaimingPower, totalClaimingPower, totalBalance)) {
-            newClaimingPower = 0;
-        } else {
-            newClaimingPower = oldClaimingPower - (totalClaimingPower * withdrawal) / totalBalance;
-        }
+    ) internal pure returns (uint256) {
+        return totalBalance != 0 ? (totalSupply * amount) / totalBalance : amount;
     }
 
     function computeFees(uint256 amount, uint256 fixedFee) internal pure returns (uint256 debt) {

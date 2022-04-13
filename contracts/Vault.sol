@@ -146,9 +146,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 totalWealth
     ) internal {
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
-        uint256 oldCp = wToken.balanceOf(user);
-        uint256 toMint = VaultMath.claimingPowerAfterDeposit(amount, oldCp, wToken.totalSupply(), totalWealth);
-        toMint -= oldCp;
+        uint256 toMint = VaultMath.shareValue(amount, wToken.totalSupply(), totalWealth);
         wToken.mint(user, toMint);
 
         emit Deposit(user, token, amount, toMint);
@@ -182,8 +180,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (amount > VaultMath.maximumWithdrawal(senderCp, totalClaims, totalWealth))
             revert Vault__Max_Withdrawal(user, token);
 
-        uint256 toBurn = (senderCp -
-            VaultMath.claimingPowerAfterWithdrawal(amount, senderCp, totalClaims, totalWealth));
+        uint256 toBurn = VaultMath.shareValue(amount, totalClaims, totalWealth);
         wToken.burn(user, toBurn);
 
         emit Withdrawal(user, token, amount, toBurn);
