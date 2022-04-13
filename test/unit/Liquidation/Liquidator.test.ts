@@ -34,9 +34,7 @@ describe("Liquidation tests", function () {
       );
 
       const wethArtifact: Artifact = await artifacts.readArtifact("MockWETH");
-      this.mockWETH = <MockWETH>(
-        await waffle.deployContract(this.signers.admin, wethArtifact, [this.mockKyberNetworkProxy.address])
-      );
+      this.mockWETH = <MockWETH>await waffle.deployContract(this.signers.admin, wethArtifact, []);
 
       const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
       this.vault = <Vault>await waffle.deployContract(this.signers.admin, vaultArtifact, [this.mockWETH.address]);
@@ -52,14 +50,14 @@ describe("Liquidation tests", function () {
 
       const tknArtifact: Artifact = await artifacts.readArtifact("MockTaxedToken");
       this.mockTaxedToken = <MockTaxedToken>(
-        await waffle.deployContract(this.signers.admin, tknArtifact, [
-          "Dai Stablecoin",
-          "DAI",
-          this.mockKyberNetworkProxy.address,
-        ])
+        await waffle.deployContract(this.signers.admin, tknArtifact, ["Dai Stablecoin", "DAI", 18])
       );
 
       await this.vault.addStrategy(this.marginTradingStrategy.address);
+
+      // mint tokens
+      await this.mockWETH.mintTo(this.mockKyberNetworkProxy.address, ethers.constants.MaxInt256);
+      await this.mockTaxedToken.mintTo(this.mockKyberNetworkProxy.address, ethers.constants.MaxInt256);
     });
 
     checkLiquidateSingle();

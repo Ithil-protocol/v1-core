@@ -13,15 +13,24 @@ interface IVault {
     /// @param token the token to check the claimable amount against
     function claimable(address token) external view returns (uint256);
 
-    /// @notice Add tokens to the vault, and updates internal status to register updated claiming powers
+    /// @notice Add tokens to the vault and updates internal status to register updated claiming powers
     /// @param token the token to deposit
-    /// @param amount the amount of native tokens deposited
+    /// @param amount the amount of tokens to be deposited
     function stake(address token, uint256 amount) external;
+
+    /// @notice Get ETH, wraps them into WETH and adds them to the vault,
+    ///         then it updates internal status to register updated claiming powers
+    /// @param amount the amount of tokens to be deposited
+    function stakeETH(uint256 amount) external payable;
 
     /// @notice Remove tokens from the vault, and updates internal status to register updated claiming powers
     /// @param token the token to deposit
-    /// @param amount the amount of native tokens withdrawn
+    /// @param amount the amount of tokens to be withdrawn
     function unstake(address token, uint256 amount) external;
+
+    /// @notice Remove WETH from the vault, unwraps them and updates internal status to register updated claiming powers
+    /// @param amount the amount of tokens to be withdrawn
+    function unstakeETH(uint256 amount) external;
 
     /// ==== ADMIN ==== ///
 
@@ -122,4 +131,5 @@ interface IVault {
     error Vault__Locked(address token);
     error Vault__Max_Withdrawal(address withdrawer, address token);
     error Vault__Null_Amount();
+    error Vault__Insufficient_ETH();
 }

@@ -33,17 +33,11 @@ describe("Strategy tests", function () {
       );
 
       const wethArtifact: Artifact = await artifacts.readArtifact("MockWETH");
-      this.mockWETH = <MockWETH>(
-        await waffle.deployContract(this.signers.admin, wethArtifact, [this.mockKyberNetworkProxy.address])
-      );
+      this.mockWETH = <MockWETH>await waffle.deployContract(this.signers.admin, wethArtifact, []);
 
       const tknArtifact: Artifact = await artifacts.readArtifact("MockTaxedToken");
       this.mockTaxedToken = <MockTaxedToken>(
-        await waffle.deployContract(this.signers.admin, tknArtifact, [
-          "Dai Stablecoin",
-          "DAI",
-          this.mockKyberNetworkProxy.address,
-        ])
+        await waffle.deployContract(this.signers.admin, tknArtifact, ["Dai Stablecoin", "DAI", 18])
       );
 
       const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
@@ -66,9 +60,8 @@ describe("Strategy tests", function () {
         ])
       );
 
-      const bigAmount = ethers.utils.parseUnits("1000000000", 18);
       const yvault = await this.mockYearnRegistry.latestVault(this.mockTaxedToken.address);
-      await this.mockTaxedToken.mintTo(yvault, bigAmount);
+      await this.mockTaxedToken.mintTo(yvault, ethers.constants.MaxInt256);
 
       await this.vault.addStrategy(this.yearnStrategy.address);
     });
