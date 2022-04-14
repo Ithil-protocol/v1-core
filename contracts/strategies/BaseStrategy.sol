@@ -181,6 +181,7 @@ abstract contract BaseStrategy is Liquidable {
 
     function _maxApprove(IERC20 token, address receiver) internal {
         if (token.allowance(address(this), receiver) <= 0) {
+            token.safeApprove(receiver, 0);
             token.safeApprove(receiver, type(uint256).max);
         }
     }

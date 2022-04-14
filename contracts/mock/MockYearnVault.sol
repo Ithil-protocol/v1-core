@@ -24,11 +24,15 @@ contract MockYearnVault is IYearnVault, ERC20, Ownable {
         registry = msg.sender;
     }
 
-    function deposit(uint256 amount, address recipient) external override returns (uint256) {
-        require(nativeToken.balanceOf(recipient) >= amount, "MockYearnVault: not enough tokens");
-        require(nativeToken.allowance(recipient, address(this)) >= amount, "MockYearnVault: allowance error");
+    function token() external view override returns (address) {
+        return address(nativeToken);
+    }
 
-        nativeToken.safeTransferFrom(recipient, address(this), amount);
+    function deposit(uint256 amount, address recipient) external override returns (uint256) {
+        require(nativeToken.balanceOf(msg.sender) >= amount, "MockYearnVault: not enough tokens");
+        require(nativeToken.allowance(msg.sender, address(this)) >= amount, "MockYearnVault: allowance error");
+
+        nativeToken.safeTransferFrom(msg.sender, address(this), amount);
         uint256 shares = amount / _pricePerShare();
         _mint(recipient, shares);
         return shares;

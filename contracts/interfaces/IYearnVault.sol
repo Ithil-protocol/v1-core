@@ -14,4 +14,6 @@ interface IYearnVault is IERC20 {
     ) external returns (uint256);
 
     function pricePerShare() external view returns (uint256);
+
+    function token() external view returns (address);
 }

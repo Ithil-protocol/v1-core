@@ -52,13 +52,13 @@ describe("Strategy tests", function () {
       await this.mockYearnRegistry.newVault(this.mockTaxedToken.address);
 
       const ysArtifact: Artifact = await artifacts.readArtifact("YearnStrategy");
-      this.yearnStrategy = <YearnStrategy>(
-        await waffle.deployContract(this.signers.admin, ysArtifact, [
-          this.mockYearnRegistry.address,
-          this.vault.address,
-          this.liquidator.address,
-        ])
-      );
+      this.yearnStrategy = <YearnStrategy>await waffle.deployContract(this.signers.admin, ysArtifact, [
+        this.mockYearnRegistry.address, // registry
+        this.vault.address, // vault
+        this.liquidator.address, // liquidator
+        this.vault.address, // partnerId
+        this.mockYearnRegistry.address, // yearnPartnerTracker
+      ]);
 
       const yvault = await this.mockYearnRegistry.latestVault(this.mockTaxedToken.address);
       await this.mockTaxedToken.mintTo(yvault, ethers.constants.MaxInt256);
