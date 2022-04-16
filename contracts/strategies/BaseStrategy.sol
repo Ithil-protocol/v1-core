@@ -32,6 +32,9 @@ abstract contract BaseStrategy is Liquidable {
             // @todo should add minimum margin check here
             revert Insufficient_Collateral(order.collateral);
         _;
+
+        vault.checkWhitelisted(order.spentToken);
+        vault.checkWhitelisted(order.obtainedToken);
     }
 
     modifier validPosition(uint256 positionId) {
@@ -54,7 +57,6 @@ abstract contract BaseStrategy is Liquidable {
 
     function _transferCollateral(Order memory order)
         internal
-        validOrder(order)
         returns (
             uint256 collateralReceived,
             uint256 toBorrow,
@@ -81,7 +83,7 @@ abstract contract BaseStrategy is Liquidable {
         }
     }
 
-    function openPosition(Order memory order) external returns (uint256) {
+    function openPosition(Order memory order) external validOrder(order) returns (uint256) {
         (
             uint256 interestRate,
             uint256 fees,
@@ -153,14 +155,15 @@ abstract contract BaseStrategy is Liquidable {
 
         bool collateralInHeldTokens = position.collateralToken != position.owedToken;
 
-        uint256 vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault));
+        IERC20 owedToken = IERC20(position.owedToken);
+        uint256 vaultRepaid = owedToken.balanceOf(address(vault));
         (uint256 amountIn, uint256 amountOut) = _closePosition(position, maxOrMin);
         _repay(position, amountIn);
 
         if (collateralInHeldTokens && amountOut <= position.allowance)
             IERC20(position.heldToken).safeTransfer(position.owner, position.allowance - amountOut);
 
-        vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault)) - vaultRepaid;
+        vaultRepaid = owedToken.balanceOf(address(vault)) - vaultRepaid;
 
         if (vaultRepaid < position.principal) revert Loan_Not_Repaid(vaultRepaid, position.principal);
 
@@ -171,12 +174,10 @@ abstract contract BaseStrategy is Liquidable {
         Position storage position = positions[positionId];
         if (position.owner != msg.sender) revert Restricted_Access(position.owner, msg.sender);
 
-        IERC20 tokenToTransfer = IERC20(position.collateralToken);
-
         position.collateral += newCollateral;
         if (position.collateralToken == position.owedToken)
-            tokenToTransfer.safeTransferFrom(msg.sender, address(vault), newCollateral);
-        else tokenToTransfer.safeTransferFrom(msg.sender, address(this), newCollateral);
+            IERC20(position.collateralToken).safeTransferFrom(msg.sender, address(vault), newCollateral);
+        else IERC20(position.collateralToken).safeTransferFrom(msg.sender, address(this), newCollateral);
     }
 
     function _maxApprove(IERC20 token, address receiver) internal {
