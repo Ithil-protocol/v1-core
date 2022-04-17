@@ -16,27 +16,25 @@ abstract contract BaseStrategy is Liquidable {
 
     uint256 public id;
 
-    error Obtained_Insufficient_Amount(uint256);
-    error Opened_Liquidable_Position(uint256);
-    error Loan_Not_Repaid(uint256, uint256);
-    error Expired();
-
     constructor(address _vault, address _liquidator) Liquidable(_liquidator, _vault) {
         id = 0;
     }
 
     modifier validOrder(Order memory order) {
-        if (block.timestamp > order.deadline) revert Expired();
-        if (order.spentToken == order.obtainedToken) revert Source_Eq_Dest(order.spentToken);
+        if (block.timestamp > order.deadline) revert Strategy__Order_Expired();
+        if (order.spentToken == order.obtainedToken) revert Strategy__Source_Eq_Dest(order.spentToken);
         if (order.collateral == 0)
             // @todo should add minimum margin check here
-            revert Insufficient_Collateral(order.collateral);
+            revert Strategy__Insufficient_Collateral(order.collateral);
         _;
     }
 
-    modifier validPosition(uint256 positionId) {
-        bool nonzero = positions[positionId].owner != address(0);
-        if (!nonzero) revert Invalid_Position(positionId, address(this));
+    modifier isPositionEditable(uint256 positionId) {
+        if (positions[positionId].owner != msg.sender) revert Strategy__Restricted_Access();
+
+        // flashloan protection
+        if (positions[positionId].createdAt == block.timestamp) revert Strategy__Throttled();
+
         _;
     }
 
@@ -102,9 +100,9 @@ abstract contract BaseStrategy is Liquidable {
             interestRate *= amountIn / collateralReceived;
         }
 
-        if (interestRate > VaultMath.MAX_RATE) revert Maximum_Leverage_Exceeded();
+        if (interestRate > VaultMath.MAX_RATE) revert Strategy__Maximum_Leverage_Exceeded();
 
-        if (amountIn < order.minObtained) revert Obtained_Insufficient_Amount(amountIn);
+        if (amountIn < order.minObtained) revert Strategy__Insufficient_Amount_Out(amountIn, order.minObtained);
 
         positions[++id] = Position({
             owner: msg.sender,
@@ -135,10 +133,7 @@ abstract contract BaseStrategy is Liquidable {
         return id;
     }
 
-    function closePosition(uint256 positionId, uint256 maxOrMin) external validPosition(positionId) {
-        if (positions[positionId].owner != msg.sender)
-            revert Restricted_Access(positions[positionId].owner, msg.sender);
-
+    function closePosition(uint256 positionId, uint256 maxOrMin) external isPositionEditable(positionId) {
         Position memory position = positions[positionId];
 
         delete positions[positionId];
@@ -162,14 +157,13 @@ abstract contract BaseStrategy is Liquidable {
 
         vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault)) - vaultRepaid;
 
-        if (vaultRepaid < position.principal) revert Loan_Not_Repaid(vaultRepaid, position.principal);
+        if (vaultRepaid < position.principal) revert Strategy__Loan_Not_Repaid(vaultRepaid, position.principal);
 
         emit PositionWasClosed(positionId);
     }
 
-    function editPosition(uint256 positionId, uint256 newCollateral) external validPosition(positionId) {
+    function editPosition(uint256 positionId, uint256 newCollateral) external isPositionEditable(positionId) {
         Position storage position = positions[positionId];
-        if (position.owner != msg.sender) revert Restricted_Access(position.owner, msg.sender);
 
         IERC20 tokenToTransfer = IERC20(position.collateralToken);
 
