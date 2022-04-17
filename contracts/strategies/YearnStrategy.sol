@@ -43,19 +43,13 @@ contract YearnStrategy is BaseStrategy {
 
         if (tkn.balanceOf(address(this)) < order.maxSpent) revert YearnStrategy__Not_Enough_Liquidity();
 
-        (bool success, bytes memory return_data) = address(registry).call( // This creates a low level call to the token
-            abi.encodePacked( // This encodes the function to call and the parameters to pass to that function
-                registry.latestVault.selector, // This is the function identifier of the function we want to call
-                abi.encode(order.spentToken) // This encodes the parameter we want to pass to the function
-            )
-        );
+        try registry.latestVault(order.spentToken) returns (address vaultAddress) {
+            super._maxApprove(tkn, yearnPartnerTracker);
 
-        if (!success) revert YearnStrategy__Inexistent_Pool(order.spentToken);
-
-        address vaultAddress = abi.decode(return_data, (address));
-        super._maxApprove(tkn, yearnPartnerTracker);
-
-        amountIn = IYearnPartnerTracker(yearnPartnerTracker).deposit(vaultAddress, partnerId, order.maxSpent);
+            amountIn = IYearnPartnerTracker(yearnPartnerTracker).deposit(vaultAddress, partnerId, order.maxSpent);
+        } catch {
+            revert YearnStrategy__Inexistent_Pool(order.spentToken);
+        }
     }
 
     function _closePosition(Position memory position, uint256 expectedCost)
@@ -63,20 +57,17 @@ contract YearnStrategy is BaseStrategy {
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
-        (bool success, bytes memory return_data) = address(registry).call(
-            abi.encodePacked(registry.latestVault.selector, abi.encode(position.owedToken))
-        );
+        try registry.latestVault(position.owedToken) returns (address vaultAddress) {
+            IYearnVault yvault = IYearnVault(vaultAddress);
 
-        if (!success) revert YearnStrategy__Inexistent_Pool(position.owedToken);
+            uint256 pricePerShare = yvault.pricePerShare();
+            uint256 maxLoss = ((position.allowance * pricePerShare - expectedCost) * 10000) /
+                (position.allowance * pricePerShare);
 
-        address vault = abi.decode(return_data, (address));
-        IYearnVault yvault = IYearnVault(vault);
-
-        uint256 pricePerShare = yvault.pricePerShare();
-        uint256 maxLoss = ((position.allowance * pricePerShare - expectedCost) * 10000) /
-            (position.allowance * pricePerShare);
-
-        amountIn = yvault.withdraw(position.allowance, address(vault), maxLoss);
+            amountIn = yvault.withdraw(position.allowance, address(vault), maxLoss);
+        } catch {
+            revert YearnStrategy__Inexistent_Pool(position.owedToken);
+        }
     }
 
     function quote(
