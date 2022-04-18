@@ -47,11 +47,6 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         _;
     }
 
-    modifier whitelisted(address token) {
-        if (!vaults[token].supported && token != ETH) revert Vault__Unsupported_Token(token);
-        _;
-    }
-
     modifier onlyStrategy() {
         if (!strategies[msg.sender]) revert Vault__Restricted_Access();
         _;
@@ -62,11 +57,17 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (msg.sender != weth) revert Vault__ETH_Transfer_Failed();
     }
 
+    function checkWhitelisted(address token) public view override {
+        if (!vaults[token].supported && token != ETH) revert Vault__Unsupported_Token(token);
+    }
+
     function balance(address token) public view override returns (uint256) {
         return IERC20(token).balanceOf(address(this)) + vaults[token].netLoans - vaults[token].insuranceReserveBalance;
     }
 
-    function claimable(address token) external view override whitelisted(token) returns (uint256) {
+    function claimable(address token) external view override returns (uint256) {
+        checkWhitelisted(token);
+
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
 
         return VaultMath.maximumWithdrawal(wToken.balanceOf(msg.sender), wToken.totalSupply(), balance(token));
@@ -117,20 +118,18 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         assert(success);
     }
 
-    function stake(address token, uint256 amount)
-        external
-        override
-        whitelisted(token)
-        unlocked(token)
-        isValidAmount(amount)
-    {
+    function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
+        checkWhitelisted(token);
+
         uint256 totalWealth = balance(token);
         (, amount) = IERC20(token).transferTokens(msg.sender, address(this), amount);
 
         _stakeAndMint(token, amount, msg.sender, totalWealth);
     }
 
-    function stakeETH(uint256 amount) external payable override whitelisted(weth) unlocked(weth) isValidAmount(amount) {
+    function stakeETH(uint256 amount) external payable override unlocked(weth) isValidAmount(amount) {
+        checkWhitelisted(weth);
+
         if (msg.value != amount) revert Vault__Insufficient_ETH();
 
         uint256 totalWealth = balance(weth);
@@ -154,17 +153,20 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         emit Deposit(user, token, amount, toMint);
     }
 
-    function unstake(address token, uint256 amount) external override whitelisted(token) isValidAmount(amount) {
+    function unstake(address token, uint256 amount) external override isValidAmount(amount) {
+        checkWhitelisted(token);
+
         _unstakeAndBurn(token, amount, msg.sender);
 
         IERC20(token).safeTransfer(msg.sender, amount);
     }
 
-    function unstakeETH(uint256 amount) external override whitelisted(weth) isValidAmount(amount) {
+    function unstakeETH(uint256 amount) external override isValidAmount(amount) {
+        checkWhitelisted(weth);
+
         _unstakeAndBurn(weth, amount, msg.sender);
 
-        IWETH tkn = IWETH(weth);
-        tkn.withdraw(amount);
+        IWETH(weth).withdraw(amount);
         payable(msg.sender).transfer(amount); // reverts if unsuccessful
     }
 
@@ -194,14 +196,9 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 amount,
         uint256 riskFactor,
         address borrower
-    )
-        external
-        override
-        whitelisted(token)
-        unlocked(token)
-        onlyStrategy
-        returns (uint256 baseInterestRate, uint256 fees)
-    {
+    ) external override unlocked(token) onlyStrategy returns (uint256 baseInterestRate, uint256 fees) {
+        checkWhitelisted(token);
+
         VaultState.VaultData storage vaultData = vaults[token];
         uint256 freeLiquidity = IERC20(token).balanceOf(address(this)) - vaultData.insuranceReserveBalance;
 
@@ -212,8 +209,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         fees = VaultMath.computeFees(amount, vaultData.fixedFee);
 
-        IERC20 tkn = IERC20(token);
-        tkn.safeTransfer(msg.sender, amount);
+        IERC20(token).safeTransfer(msg.sender, amount);
 
         emit LoanTaken(borrower, token, amount, baseInterestRate);
     }
@@ -224,7 +220,9 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 debt,
         uint256 fees,
         address borrower
-    ) external override whitelisted(token) onlyStrategy {
+    ) external override onlyStrategy {
+        checkWhitelisted(token);
+
         VaultState.VaultData storage vaultData = vaults[token];
 
         vaultData.subtractLoan(debt);
