@@ -13,6 +13,7 @@ import { VaultMath } from "./libraries/VaultMath.sol";
 import { VaultState } from "./libraries/VaultState.sol";
 import { GeneralMath } from "./libraries/GeneralMath.sol";
 import { WrappedToken } from "./WrappedToken.sol";
+import { WToken } from "./libraries/WToken.sol";
 import { TransferHelper } from "./libraries/TransferHelper.sol";
 
 /// @title    Vault contract
@@ -20,8 +21,9 @@ import { TransferHelper } from "./libraries/TransferHelper.sol";
 /// @notice   Stores staked funds, issues loans and handles repayments to strategies
 contract Vault is IVault, ReentrancyGuard, Ownable {
     using TransferHelper for IERC20;
-    using SafeERC20 for IERC20;
-    using SafeERC20 for IWETH;
+    using WToken for IWrappedToken;
+    // using SafeERC20 for IERC20;
+    // using SafeERC20 for IWETH;
     using VaultMath for uint256;
     using GeneralMath for uint256;
     using GeneralMath for VaultState.VaultData;
@@ -124,66 +126,48 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         unlocked(token)
         isValidAmount(amount)
     {
+        IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
+
         uint256 totalWealth = balance(token);
+
         (, amount) = IERC20(token).transferTokens(msg.sender, address(this), amount);
 
-        _stakeAndMint(token, amount, msg.sender, totalWealth);
+        uint256 toMint = wToken.mintWrapped(amount, msg.sender, totalWealth);
+
+        emit Deposit(msg.sender, token, amount, toMint);
     }
 
     function stakeETH(uint256 amount) external payable override whitelisted(weth) unlocked(weth) isValidAmount(amount) {
         if (msg.value != amount) revert Vault__Insufficient_ETH();
 
+        IWrappedToken wToken = IWrappedToken(vaults[weth].wrappedToken);
         uint256 totalWealth = balance(weth);
         IWETH(weth).deposit{ value: amount }();
 
-        _stakeAndMint(weth, amount, msg.sender, totalWealth);
-    }
+        uint256 toMint = wToken.mintWrapped(amount, msg.sender, totalWealth);
 
-    function _stakeAndMint(
-        address token,
-        uint256 amount,
-        address user,
-        uint256 totalWealth
-    ) internal {
-        IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
-        uint256 toMint = VaultMath.shareValue(amount, wToken.totalSupply(), totalWealth);
-        wToken.mint(user, toMint);
-
-        emit Deposit(user, token, amount, toMint);
+        emit Deposit(msg.sender, weth, amount, toMint);
     }
 
     function unstake(address token, uint256 amount) external override whitelisted(token) isValidAmount(amount) {
-        _unstakeAndBurn(token, amount, msg.sender);
+        IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
 
-        IERC20(token).safeTransfer(msg.sender, amount);
+        uint256 toBurn = wToken.burnWrapped(amount, balance(token), msg.sender);
+
+        IERC20(token).transfer(msg.sender, amount);
+        emit Withdrawal(msg.sender, token, amount, toBurn);
     }
 
     function unstakeETH(uint256 amount) external override whitelisted(weth) isValidAmount(amount) {
-        _unstakeAndBurn(weth, amount, msg.sender);
+        IWrappedToken wToken = IWrappedToken(vaults[weth].wrappedToken);
+
+        uint256 toBurn = wToken.burnWrapped(amount, balance(weth), msg.sender);
 
         IWETH tkn = IWETH(weth);
         tkn.withdraw(amount);
         payable(msg.sender).transfer(amount); // reverts if unsuccessful
-    }
 
-    function _unstakeAndBurn(
-        address token,
-        uint256 amount,
-        address user
-    ) internal {
-        IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
-
-        uint256 senderCp = wToken.balanceOf(user);
-        uint256 totalClaims = wToken.totalSupply();
-        uint256 totalWealth = balance(token);
-
-        if (amount > VaultMath.maximumWithdrawal(senderCp, totalClaims, totalWealth))
-            revert Vault__Max_Withdrawal(user, token);
-
-        uint256 toBurn = VaultMath.shareValue(amount, totalClaims, totalWealth);
-        wToken.burn(user, toBurn);
-
-        emit Withdrawal(user, token, amount, toBurn);
+        emit Withdrawal(msg.sender, weth, amount, toBurn);
     }
 
     function borrow(
