@@ -33,7 +33,7 @@ abstract contract BaseStrategy is Liquidable {
         if (positions[positionId].owner != msg.sender) revert Strategy__Restricted_Access();
 
         // flashloan protection
-        if (positions[positionId].createdAt == block.timestamp) revert Strategy__Throttled();
+        if (positions[positionId].createdAt >= block.timestamp) revert Strategy__Throttled();
 
         _;
     }
