@@ -12,8 +12,8 @@ import { IStrategy } from "../interfaces/IStrategy.sol";
 library TransferHelper {
     using SafeERC20 for IERC20;
 
-    error TransferHelper__Insufficient_Token_Balance(address);
-    error TransferHelper__Insufficient_Token_Allowance(address);
+    error TransferHelper__Insufficient_Token_Balance(address token, uint256 balance, uint256 amount);
+    error TransferHelper__Insufficient_Token_Allowance(address token, uint256 allowance, uint256 amount);
 
     function transferTokens(
         IERC20 token,
@@ -21,10 +21,13 @@ library TransferHelper {
         address to,
         uint256 amount
     ) internal returns (uint256 originalBalance, uint256 received) {
-        if (token.balanceOf(from) < amount) revert TransferHelper__Insufficient_Token_Balance(address(token));
+        uint256 balanceFrom = token.balanceOf(from);
+        uint256 allowanceFrom = token.allowance(from, address(this));
+        if (balanceFrom < amount)
+            revert TransferHelper__Insufficient_Token_Balance(address(token), balanceFrom, amount);
 
-        if (token.allowance(from, address(this)) < amount)
-            revert TransferHelper__Insufficient_Token_Allowance(address(token));
+        if (allowanceFrom < amount)
+            revert TransferHelper__Insufficient_Token_Allowance(address(token), allowanceFrom, amount);
 
         // computes transferred balance for tokens with tax on transfers
         originalBalance = token.balanceOf(to);

@@ -13,9 +13,9 @@ contract YearnStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
 
-    error YearnStrategy__Restricted_Access();
-    error YearnStrategy__Inexistent_Pool(address);
-    error YearnStrategy__Not_Enough_Liquidity();
+    error YearnStrategy__Restricted_Access(address owner, address sender);
+    error YearnStrategy__Inexistent_Pool(address nativeToken);
+    error YearnStrategy__Not_Enough_Liquidity(uint256 balance, uint256 spent);
 
     IYearnRegistry internal immutable registry;
 
@@ -33,8 +33,8 @@ contract YearnStrategy is BaseStrategy {
 
     function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
         IERC20 tkn = IERC20(order.spentToken);
-
-        if (tkn.balanceOf(address(this)) < order.maxSpent) revert YearnStrategy__Not_Enough_Liquidity();
+        uint256 balance = tkn.balanceOf(address(this));
+        if (balance < order.maxSpent) revert YearnStrategy__Not_Enough_Liquidity(balance, order.maxSpent);
 
         (bool success, bytes memory return_data) = address(registry).call( // This creates a low level call to the token
             abi.encodePacked( // This encodes the function to call and the parameters to pass to that function

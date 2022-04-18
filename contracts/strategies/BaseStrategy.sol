@@ -21,7 +21,7 @@ abstract contract BaseStrategy is Liquidable {
     }
 
     modifier validOrder(Order memory order) {
-        if (block.timestamp > order.deadline) revert Strategy__Order_Expired();
+        if (block.timestamp > order.deadline) revert Strategy__Order_Expired(block.timestamp, order.deadline);
         if (order.spentToken == order.obtainedToken) revert Strategy__Source_Eq_Dest(order.spentToken);
         if (order.collateral == 0)
             // @todo should add minimum margin check here
@@ -33,10 +33,12 @@ abstract contract BaseStrategy is Liquidable {
     }
 
     modifier isPositionEditable(uint256 positionId) {
-        if (positions[positionId].owner != msg.sender) revert Strategy__Restricted_Access();
+        if (positions[positionId].owner != msg.sender)
+            revert Strategy__Restricted_Access(positions[positionId].owner, msg.sender);
 
         // flashloan protection
-        if (positions[positionId].createdAt >= block.timestamp) revert Strategy__Throttled();
+        if (positions[positionId].createdAt >= block.timestamp)
+            revert Strategy__Throttled(positions[positionId].createdAt, block.timestamp);
 
         _;
     }
@@ -102,7 +104,7 @@ abstract contract BaseStrategy is Liquidable {
             interestRate *= amountIn / collateralReceived;
         }
 
-        if (interestRate > VaultMath.MAX_RATE) revert Strategy__Maximum_Leverage_Exceeded();
+        if (interestRate > VaultMath.MAX_RATE) revert Strategy__Maximum_Leverage_Exceeded(interestRate);
 
         if (amountIn < order.minObtained) revert Strategy__Insufficient_Amount_Out(amountIn, order.minObtained);
 
