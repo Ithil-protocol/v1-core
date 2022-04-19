@@ -7,6 +7,10 @@ import { VaultState } from "../libraries/VaultState.sol";
 /// @title    Interface of Vault contract
 /// @author   Ithil
 interface IVault {
+    /// @notice Checks if a token is supported
+    /// @param token the token to check the status against
+    function checkWhitelisted(address token) external view;
+
     /// ==== STAKING ==== ///
 
     /// @notice Gets the amount of tokens a user can get back when unstaking

@@ -29,7 +29,7 @@ abstract contract Liquidable is AbstractStrategy {
     }
 
     modifier onlyLiquidator() {
-        if (msg.sender != liquidator) revert Only_Liquidator(msg.sender, liquidator);
+        if (msg.sender != liquidator) revert Strategy__Only_Liquidator();
         _;
     }
 
@@ -87,7 +87,8 @@ abstract contract Liquidable is AbstractStrategy {
             delete positions[positionId];
             (, uint256 received) = IERC20(position.owedToken).transferTokens(purchaser, address(vault), price);
             //todo: calculate fees!
-            if (received < position.principal + position.fees) revert Insufficient_Price(price);
+            if (received < position.principal + position.fees)
+                revert Strategy__Insufficient_Amount_Out(received, position.principal + position.fees);
             else IERC20(position.heldToken).safeTransfer(purchaser, position.allowance);
 
             emit PositionWasLiquidated(positionId);
@@ -110,7 +111,7 @@ abstract contract Liquidable is AbstractStrategy {
                 newCollateral
             );
             (int256 newScore, ) = computeLiquidationScore(position);
-            if (newScore > 0) revert Insufficient_Margin_Call(received);
+            if (newScore > 0) revert Strategy__Insufficient_Margin_Provided();
         }
     }
 }

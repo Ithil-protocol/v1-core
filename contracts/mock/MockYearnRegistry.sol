@@ -2,11 +2,16 @@
 pragma solidity >=0.8.6;
 pragma experimental ABIEncoderV2;
 
+import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IYearnRegistry } from "../interfaces/IYearnRegistry.sol";
+import { IYearnPartnerTracker } from "../interfaces/IYearnPartnerTracker.sol";
+import { IYearnVault } from "../interfaces/IYearnVault.sol";
 import { MockYearnVault } from "./MockYearnVault.sol";
 
-contract MockYearnRegistry is IYearnRegistry, Ownable {
+contract MockYearnRegistry is IYearnRegistry, IYearnPartnerTracker, Ownable {
+    using SafeERC20 for IERC20;
+
     mapping(address => address) public yvaults;
     uint256 public priceForShare = 0;
 
@@ -31,5 +36,21 @@ contract MockYearnRegistry is IYearnRegistry, Ownable {
         emit SharePriceWasChanged(priceForShare, newPrice);
 
         priceForShare = newPrice;
+    }
+
+    function deposit(
+        address vault,
+        address partnerId,
+        uint256 amount
+    ) external override returns (uint256) {
+        IYearnVault yault = IYearnVault(vault);
+        IERC20 token = IERC20(yault.token());
+        if (token.allowance(address(this), vault) < amount) {
+            token.safeApprove(vault, 0);
+            token.safeApprove(vault, type(uint256).max);
+        }
+        token.safeTransferFrom(msg.sender, address(this), amount);
+
+        return yault.deposit(amount, msg.sender);
     }
 }
