@@ -49,17 +49,6 @@ library TransferHelper {
         return token.balanceOf(to) - balance;
     }
 
-    function topUpCollateral(
-        IERC20 token,
-        IStrategy.Position storage position,
-        address from,
-        address to,
-        uint256 amount
-    ) internal returns (uint256 originalBalance, uint256 received) {
-        (originalBalance, received) = transferTokens(token, from, to, amount);
-        position.collateral += received;
-    }
-
     function transferAsCollateral(IERC20 token, IStrategy.Order memory order)
         internal
         returns (

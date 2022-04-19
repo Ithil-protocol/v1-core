@@ -59,12 +59,12 @@ library VaultState {
         received = token.sendTokens(msg.sender, amount);
     }
 
-    function subtractLoan(VaultState.VaultData storage self, uint256 b) internal {
+    function subtractLoan(VaultState.VaultData storage self, uint256 b) private {
         if (self.netLoans > b) self.netLoans -= b;
         else self.netLoans = 0;
     }
 
-    function subtractInsuranceReserve(VaultState.VaultData storage self, uint256 b) internal {
+    function subtractInsuranceReserve(VaultState.VaultData storage self, uint256 b) private {
         if (self.insuranceReserveBalance > b) self.insuranceReserveBalance -= b;
         else self.insuranceReserveBalance = 0;
     }
