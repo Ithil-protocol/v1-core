@@ -39,3 +39,4 @@ export const tokens = {
 
 export const kyberNetwork = "0x818E6FECD516Ecc3849DAf6845e3EC868087B755";
 export const yearnRegistry = "0x50c1a2eA0a861A967D9d0FFE2AE4012c2E053804";
+export const yearnPartnerTracker = "0x8ee392a4787397126C163Cb9844d7c447da419D8";

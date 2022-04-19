@@ -85,7 +85,13 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   const ysFactory: YearnStrategy__factory = <YearnStrategy__factory>(
     await hre.ethers.getContractFactory("YearnStrategy")
   );
-  const ys: YearnStrategy = <YearnStrategy>await ysFactory.deploy(yearn.address, vault.address, liquidator.address);
+  const ys: YearnStrategy = <YearnStrategy>await ysFactory.deploy(
+    yearn.address, // registry
+    vault.address, // vault
+    liquidator.address, // liquidator
+    vault.address, // partnerId
+    yearn.address, // yearnPartnerTracker
+  );
   await ys.deployed();
   console.log("YearnStrategy deployed to address: ", ys.address);
 
