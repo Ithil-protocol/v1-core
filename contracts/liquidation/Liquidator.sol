@@ -16,9 +16,6 @@ contract Liquidator is Ownable {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
 
-    error Insufficient_Margin_Call(uint256);
-    error Insufficient_Price(uint256);
-
     function liquidateSingle(address _strategy, uint256 positionId) external {
         //todo: add checks on liquidator
         IStrategy strategy = IStrategy(_strategy);
@@ -44,47 +41,4 @@ contract Liquidator is Ownable {
         IStrategy strategy = IStrategy(_strategy);
         strategy.forcefullyDelete(msg.sender, positionId, price);
     }
-
-    // function liquidate(address _strategy, uint256[] memory positionIds) external {
-    //     IStrategy strategy = IStrategy(_strategy);
-    //     //todo: add checks on liquidator
-    //     IStrategy.Position memory modelPosition = strategy.positions[positionIds[0]];
-    //     modelPosition.allowance = 0;
-    //     modelPosition.principal = 0;
-    //     modelPosition.fees = 0;
-    //     modelPosition.interestRate = 0;
-    //     modelPosition.owner = msg.sender;
-    //     for (uint256 i = 0; i < positionIds.length; i++) {
-    //         IStrategy.Position memory position = strategy.positions[positionIds[i]];
-
-    //         if (position.heldToken != modelPosition.heldToken || position.owedToken != modelPosition.owedToken)
-    //             continue;
-
-    //         if (strategy.totalAllowances[position.heldToken] > 0) {
-    //             uint256 nominalAllowance = position.allowance;
-    //             totalAllowances[position.heldToken] -= nominalAllowance;
-    //             position.allowance *= IERC20(position.heldToken).balanceOf(address(this));
-    //             position.allowance /= (totalAllowances[position.heldToken] + nominalAllowance);
-    //         }
-
-    //         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
-    //         if (score > 0) {
-    //             baseStrategy.forcefullyDelete(positionIds[i]);
-    //             modelPosition.allowance += position.allowance;
-    //             modelPosition.principal += position.principal;
-    //             modelPosition.fees += dueFees;
-    //         }
-    //     }
-
-    //     uint256 expectedCost = 0;
-    //     bool collateralInHeldTokens = modelPosition.collateralToken != modelPosition.owedToken;
-
-    //     if (collateralInHeldTokens)
-    //         (expectedCost, ) = _quote(
-    //             modelPosition.owedToken,
-    //             modelPosition.heldToken,
-    //             modelPosition.principal + modelPosition.fees
-    //         );
-    //     if (modelPosition.allowance > 0) _closePosition(modelPosition, expectedCost);
-    // }
 }

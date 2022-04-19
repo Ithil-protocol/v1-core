@@ -48,13 +48,13 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     }
 
     modifier onlyStrategy() {
-        if (!strategies[msg.sender]) revert Vault__Restricted_Access();
+        if (!strategies[msg.sender]) revert Vault__Restricted_Access(msg.sender);
         _;
     }
 
     // only accept ETH via fallback from the WETH contract
     receive() external payable {
-        if (msg.sender != weth) revert Vault__ETH_Transfer_Failed();
+        if (msg.sender != weth) revert Vault__ETH_Transfer_Failed(msg.sender, weth);
     }
 
     function checkWhitelisted(address token) public view override {
@@ -130,7 +130,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     function stakeETH(uint256 amount) external payable override unlocked(weth) isValidAmount(amount) {
         checkWhitelisted(weth);
 
-        if (msg.value != amount) revert Vault__Insufficient_ETH();
+        if (msg.value != amount) revert Vault__Insufficient_ETH(msg.value, amount);
 
         uint256 totalWealth = balance(weth);
         IWETH(weth).deposit{ value: amount }();
@@ -180,9 +180,9 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 senderCp = wToken.balanceOf(user);
         uint256 totalClaims = wToken.totalSupply();
         uint256 totalWealth = balance(token);
+        uint256 maxWithdrawal = VaultMath.maximumWithdrawal(senderCp, totalClaims, totalWealth);
 
-        if (amount > VaultMath.maximumWithdrawal(senderCp, totalClaims, totalWealth))
-            revert Vault__Max_Withdrawal(user, token);
+        if (amount > maxWithdrawal) revert Vault__Max_Withdrawal(user, token, amount, maxWithdrawal);
 
         uint256 toBurn = (senderCp -
             VaultMath.claimingPowerAfterWithdrawal(amount, senderCp, totalClaims, totalWealth));
@@ -202,7 +202,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         VaultState.VaultData storage vaultData = vaults[token];
         uint256 freeLiquidity = IERC20(token).balanceOf(address(this)) - vaultData.insuranceReserveBalance;
 
-        if (amount > freeLiquidity) revert Vault__Insufficient_Funds_Available(token, amount);
+        if (amount > freeLiquidity) revert Vault__Insufficient_Funds_Available(token, amount, freeLiquidity);
 
         baseInterestRate = VaultMath.computeInterestRateNoLeverage(vaultData, freeLiquidity, riskFactor);
         vaultData.netLoans += amount;
