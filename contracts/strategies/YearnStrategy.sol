@@ -10,6 +10,8 @@ import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
 
+import "hardhat/console.sol";
+
 contract YearnStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
@@ -43,13 +45,10 @@ contract YearnStrategy is BaseStrategy {
 
         if (tkn.balanceOf(address(this)) < order.maxSpent) revert YearnStrategy__Not_Enough_Liquidity();
 
-        try registry.latestVault(order.spentToken) returns (address vaultAddress) {
-            super._maxApprove(tkn, yearnPartnerTracker);
+        address vaultAddress = registry.latestVault(order.spentToken);
+        super._maxApprove(tkn, yearnPartnerTracker);
 
-            amountIn = IYearnPartnerTracker(yearnPartnerTracker).deposit(vaultAddress, partnerId, order.maxSpent);
-        } catch {
-            revert YearnStrategy__Inexistent_Pool(order.spentToken);
-        }
+        amountIn = IYearnPartnerTracker(yearnPartnerTracker).deposit(vaultAddress, partnerId, order.maxSpent);
     }
 
     function _closePosition(Position memory position, uint256 expectedCost)
@@ -57,17 +56,14 @@ contract YearnStrategy is BaseStrategy {
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
-        try registry.latestVault(position.owedToken) returns (address vaultAddress) {
-            IYearnVault yvault = IYearnVault(vaultAddress);
+        address vaultAddress = registry.latestVault(position.owedToken);
+        IYearnVault yvault = IYearnVault(vaultAddress);
 
-            uint256 pricePerShare = yvault.pricePerShare();
-            uint256 maxLoss = ((position.allowance * pricePerShare - expectedCost) * 10000) /
-                (position.allowance * pricePerShare);
+        uint256 pricePerShare = yvault.pricePerShare();
+        uint256 maxLoss = ((position.allowance * pricePerShare - expectedCost) * 10000) /
+            (position.allowance * pricePerShare);
 
-            amountIn = yvault.withdraw(position.allowance, address(vault), maxLoss);
-        } catch {
-            revert YearnStrategy__Inexistent_Pool(position.owedToken);
-        }
+        amountIn = yvault.withdraw(position.allowance, address(vault), maxLoss);
     }
 
     function quote(
