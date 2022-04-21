@@ -6,6 +6,7 @@ import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/Saf
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
 import { Liquidable } from "./Liquidable.sol";
+import { PositionHelper } from "../libraries/PositionHelper.sol";
 
 /// @title    BaseStrategy contract
 /// @author   Ithil
@@ -13,6 +14,7 @@ import { Liquidable } from "./Liquidable.sol";
 abstract contract BaseStrategy is Liquidable {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
+    using PositionHelper for Position;
 
     uint256 public id;
 
@@ -143,10 +145,11 @@ abstract contract BaseStrategy is Liquidable {
     function editPosition(uint256 positionId, uint256 newCollateral) external isPositionEditable(positionId) {
         Position storage position = positions[positionId];
 
-        position.collateral += newCollateral;
-        if (position.collateralToken == position.owedToken)
-            IERC20(position.collateralToken).safeTransferFrom(msg.sender, address(vault), newCollateral);
-        else IERC20(position.collateralToken).safeTransferFrom(msg.sender, address(this), newCollateral);
+        position.topUpCollateral(
+            msg.sender,
+            position.collateralToken == position.owedToken ? address(vault) : address(this),
+            newCollateral
+        );
     }
 
     function _maxApprove(IERC20 token, address receiver) internal {

@@ -106,7 +106,7 @@ abstract contract Liquidable is AbstractStrategy {
         (int256 score, ) = computeLiquidationScore(position);
         if (score > 0) {
             positions[_id].owner = newOwner;
-            (, uint256 received) = position.topUpCollateral(newOwner, address(this), newCollateral);
+            position.topUpCollateral(newOwner, address(this), newCollateral);
             (int256 newScore, ) = computeLiquidationScore(position);
             if (newScore > 0) revert Strategy__Insufficient_Margin_Provided();
         }
