@@ -79,9 +79,7 @@ abstract contract BaseStrategy is Liquidable {
         } else {
             uint256 initialDstBalance = IERC20(order.obtainedToken).balanceOf(address(this));
             amountIn = _openPosition(order);
-            if (initialDstBalance > 0)
-                interestRate *= (toBorrow * (initialDstBalance + amountIn)) / (collateralReceived * initialDstBalance);
-            else interestRate *= toBorrow / collateralReceived;
+            interestRate *= (toBorrow * initialDstBalance) / (collateralReceived * (initialDstBalance + amountIn));
         }
 
         if (interestRate > VaultMath.MAX_RATE) revert Strategy__Maximum_Leverage_Exceeded();
