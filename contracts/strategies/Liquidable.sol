@@ -31,7 +31,7 @@ abstract contract Liquidable is AbstractStrategy {
     }
 
     modifier onlyLiquidator() {
-        if (msg.sender != liquidator) revert Strategy__Only_Liquidator();
+        if (msg.sender != liquidator) revert Strategy__Only_Liquidator(msg.sender, liquidator);
         _;
     }
 
@@ -108,7 +108,7 @@ abstract contract Liquidable is AbstractStrategy {
             positions[_id].owner = newOwner;
             position.topUpCollateral(newOwner, address(this), newCollateral);
             (int256 newScore, ) = computeLiquidationScore(position);
-            if (newScore > 0) revert Strategy__Insufficient_Margin_Provided();
+            if (newScore > 0) revert Strategy__Insufficient_Margin_Provided(newScore);
         }
     }
 }

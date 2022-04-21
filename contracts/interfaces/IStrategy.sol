@@ -96,14 +96,14 @@ interface IStrategy {
     /// @notice Emitted when a position is liquidated
     event PositionWasLiquidated(uint256 indexed id);
 
-    error Strategy__Order_Expired();
+    error Strategy__Order_Expired(uint256 timestamp, uint256 deadline);
     error Strategy__Source_Eq_Dest(address token);
     error Strategy__Insufficient_Collateral(uint256 collateral);
-    error Strategy__Restricted_Access();
-    error Strategy__Throttled();
-    error Strategy__Maximum_Leverage_Exceeded();
+    error Strategy__Restricted_Access(address owner, address sender);
+    error Strategy__Throttled(uint256 createdAt, uint256 timestamp);
+    error Strategy__Maximum_Leverage_Exceeded(uint256 interestRate);
     error Strategy__Insufficient_Amount_Out(uint256 amountIn, uint256 minAmountOut);
     error Strategy__Loan_Not_Repaid(uint256 repaid, uint256 debt);
-    error Strategy__Only_Liquidator();
-    error Strategy__Insufficient_Margin_Provided();
+    error Strategy__Only_Liquidator(address sender, address liquidator);
+    error Strategy__Insufficient_Margin_Provided(int256 newScore);
 }

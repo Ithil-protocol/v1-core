@@ -16,9 +16,9 @@ contract YearnStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
 
-    error YearnStrategy__Restricted_Access();
-    error YearnStrategy__Inexistent_Pool(address token);
-    error YearnStrategy__Not_Enough_Liquidity(uint256 maxSpent);
+    error YearnStrategy__Restricted_Access(address owner, address sender);
+    error YearnStrategy__Inexistent_Pool(address nativeToken);
+    error YearnStrategy__Not_Enough_Liquidity(uint256 balance, uint256 spent);
 
     IYearnRegistry internal immutable registry;
     address internal immutable yearnPartnerTracker;
@@ -42,8 +42,8 @@ contract YearnStrategy is BaseStrategy {
 
     function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
         IERC20 tkn = IERC20(order.spentToken);
-
-        if (tkn.balanceOf(address(this)) < order.maxSpent) revert YearnStrategy__Not_Enough_Liquidity(order.maxSpent);
+        uint256 balance = tkn.balanceOf(address(this));
+        if (balance < order.maxSpent) revert YearnStrategy__Not_Enough_Liquidity(balance, order.maxSpent);
 
         address vaultAddress = registry.latestVault(order.spentToken);
         super._maxApprove(tkn, yearnPartnerTracker);

@@ -16,9 +16,6 @@ contract Liquidator is Ownable {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
 
-    error Insufficient_Margin_Call(uint256);
-    error Insufficient_Price(uint256);
-
     function liquidateSingle(address _strategy, uint256 positionId) external {
         //todo: add checks on liquidator
         IStrategy strategy = IStrategy(_strategy);

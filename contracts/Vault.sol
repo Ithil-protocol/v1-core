@@ -56,7 +56,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
     // only accept ETH via fallback from the WETH contract
     receive() external payable {
-        if (msg.sender != weth) revert Vault__ETH_Transfer_Failed();
+        if (msg.sender != weth) revert Vault__ETH_Transfer_Failed(msg.sender, weth);
     }
 
     function checkWhitelisted(address token) public view override {
@@ -136,7 +136,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     function stakeETH(uint256 amount) external payable override unlocked(weth) isValidAmount(amount) {
         checkWhitelisted(weth);
 
-        if (msg.value != amount) revert Vault__Insufficient_ETH();
+        if (msg.value != amount) revert Vault__Insufficient_ETH(msg.value, amount);
 
         IWrappedToken wToken = IWrappedToken(vaults[weth].wrappedToken);
         uint256 totalWealth = balance(weth);
