@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { AbstractStrategy } from "./AbstractStrategy.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
+import { PositionHelper } from "../libraries/PositionHelper.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { VaultState } from "../libraries/VaultState.sol";
 
@@ -14,11 +15,16 @@ import { VaultState } from "../libraries/VaultState.sol";
 
 abstract contract Liquidable is AbstractStrategy {
     using TransferHelper for IERC20;
+    using PositionHelper for Position;
     using SafeERC20 for IERC20;
 
     address public immutable liquidator;
 
     mapping(address => uint256) public riskFactors;
+
+    error Position_Not_Liquidable(int256 liquidationScore);
+    error Insufficient_Margin_Call(uint256 received);
+    error Insufficient_Price(uint256 price);
 
     constructor(address _liquidator, address _vault) AbstractStrategy(_vault) {
         liquidator = _liquidator;
@@ -100,12 +106,7 @@ abstract contract Liquidable is AbstractStrategy {
         (int256 score, ) = computeLiquidationScore(position);
         if (score > 0) {
             positions[_id].owner = newOwner;
-            (, uint256 received) = IERC20(position.collateralToken).topUpCollateral(
-                positions[_id],
-                newOwner,
-                address(this),
-                newCollateral
-            );
+            position.topUpCollateral(newOwner, address(this), newCollateral);
             (int256 newScore, ) = computeLiquidationScore(position);
             if (newScore > 0) revert Strategy__Insufficient_Margin_Provided(newScore);
         }

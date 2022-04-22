@@ -43,6 +43,13 @@ interface IStrategy {
         uint256 createdAt;
     }
 
+    error Invalid_Position(uint256 id, address strategy);
+    error Restricted_Access(address owner, address sender);
+    error Insufficient_Collateral(uint256 collateral);
+    error Source_Eq_Dest(address source);
+    error Only_Liquidator(address sender, address liquidator);
+    error Maximum_Leverage_Exceeded();
+
     function computePairRiskFactor(address token0, address token1) external view returns (uint256);
 
     function quote(
@@ -89,8 +96,6 @@ interface IStrategy {
     /// @notice Emitted when a position is liquidated
     event PositionWasLiquidated(uint256 indexed id);
 
-    error Insufficient_Collateral(uint256 collateral);
-    error Source_Eq_Dest(address token);
     error Strategy__Order_Expired(uint256 timestamp, uint256 deadline);
     error Strategy__Source_Eq_Dest(address token);
     error Strategy__Insufficient_Collateral(uint256 collateral);

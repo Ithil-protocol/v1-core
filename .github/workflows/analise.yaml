@@ -59,4 +59,4 @@ jobs:
       # Run Slither static analysis
       - name: Run Slither static analysis
         if: always()
-        run: slither --npx-disable --hardhat-ignore-compile --exclude-dependencies --exclude-informational --exclude-low  --exclude controlled-delegatecall,divide-before-multiply,unused-return .
+        run: slither --npx-disable --hardhat-ignore-compile --exclude-dependencies --exclude-informational --exclude-low  --exclude controlled-delegatecall,divide-before-multiply,unused-return,arbitrary-send .

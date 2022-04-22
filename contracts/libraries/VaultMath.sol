@@ -15,7 +15,6 @@ library VaultMath {
     uint24 internal constant TIME_FEE_PERIOD = 86400;
     uint40 internal constant APY_PERIOD = 31536000;
     uint24 internal constant MAX_RATE = 10000; //todo: adjust
-    uint24 internal constant RESERVE_RATIO = 2500; //todo: adjust
 
     /// @notice Computes the maximum amount of money an investor can withdraw from the pool
     /// @dev Floor(x+y) >= Floor(x) + Floor(y), therefore the sum of all investors'
@@ -32,34 +31,13 @@ library VaultMath {
         }
     }
 
-    /// @notice Computes the claiming power of an investor after a deposit
-    function claimingPowerAfterDeposit(
-        uint256 deposit,
-        uint256 oldClaimingPower,
-        uint256 totalClaimingPower,
+    /// @notice Computes the amount of wrapped token to burn from a staker
+    function shareValue(
+        uint256 amount,
+        uint256 totalSupply,
         uint256 totalBalance
-    ) internal pure returns (uint256 newClaimingPower) {
-        if (deposit <= 0) {
-            newClaimingPower = oldClaimingPower;
-        } else if (totalBalance <= 0) {
-            newClaimingPower = deposit;
-        } else {
-            newClaimingPower = oldClaimingPower + (totalClaimingPower * deposit) / totalBalance;
-        }
-    }
-
-    /// @notice Computes the claiming power of an investor after a withdrawal
-    function claimingPowerAfterWithdrawal(
-        uint256 withdrawal,
-        uint256 oldClaimingPower,
-        uint256 totalClaimingPower,
-        uint256 totalBalance
-    ) internal pure returns (uint256 newClaimingPower) {
-        if (withdrawal >= maximumWithdrawal(oldClaimingPower, totalClaimingPower, totalBalance)) {
-            newClaimingPower = 0;
-        } else {
-            newClaimingPower = oldClaimingPower - (totalClaimingPower * withdrawal) / totalBalance;
-        }
+    ) internal pure returns (uint256) {
+        return totalBalance != 0 ? (totalSupply * amount) / totalBalance : amount;
     }
 
     function computeFees(uint256 amount, uint256 fixedFee) internal pure returns (uint256 debt) {
@@ -75,38 +53,21 @@ library VaultMath {
     }
 
     /// @notice Computes the interest rate to apply to a position at its opening
-    /// @param data the data containing the current vault state
+    /// @param netLoans the net loans of the vault
     /// @param freeLiquidity the free liquidity of the vault
+    /// @param insuranceReserveBalance the insurance reserve balance
     /// @param riskFactor the riskiness of the investment
+    /// @param baseFee the base fee of the investment
     function computeInterestRateNoLeverage(
-        VaultState.VaultData memory data,
+        uint256 netLoans,
         uint256 freeLiquidity,
-        uint256 riskFactor
+        uint256 insuranceReserveBalance,
+        uint256 riskFactor,
+        uint256 baseFee
     ) internal pure returns (uint256 interestRate) {
-        uint256 uncovered = data.netLoans.positiveSub(data.insuranceReserveBalance);
-        interestRate = (data.netLoans + uncovered) * riskFactor;
-        interestRate /= (data.netLoans + freeLiquidity);
-        interestRate += data.baseFee;
-    }
-
-    function subtractLoan(VaultState.VaultData storage self, uint256 b) internal {
-        if (self.netLoans > b) self.netLoans -= b;
-        else self.netLoans = 0;
-    }
-
-    function subtractInsuranceReserve(VaultState.VaultData storage self, uint256 b) internal {
-        if (self.insuranceReserveBalance > b) self.insuranceReserveBalance -= b;
-        else self.insuranceReserveBalance = 0;
-    }
-
-    function addInsuranceReserve(
-        VaultState.VaultData storage self,
-        uint256 totalBalance,
-        uint256 insReserveBalance,
-        uint256 fees
-    ) internal {
-        self.insuranceReserveBalance +=
-            (fees * VaultMath.RESERVE_RATIO * (totalBalance - insReserveBalance)) /
-            (totalBalance * VaultMath.RESOLUTION);
+        uint256 uncovered = netLoans.positiveSub(insuranceReserveBalance);
+        interestRate = (netLoans + uncovered) * riskFactor;
+        interestRate /= (netLoans + freeLiquidity);
+        interestRate += baseFee;
     }
 }
