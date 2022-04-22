@@ -165,6 +165,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         uint256 toBurn = wToken.burnWrapped(amount, balance(weth), msg.sender);
         IWETH(weth).withdraw(amount);
+        // slither-disable-next-line
         payable(msg.sender).transfer(amount); // reverts if unsuccessful
 
         emit Withdrawal(msg.sender, weth, amount, toBurn);
@@ -179,7 +180,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         checkWhitelisted(token);
 
         VaultState.VaultData storage vaultData = vaults[token];
-        (uint256 freeLiquidity, ) = vaultData.takeLoan(IERC20(token), amount);
+        (uint256 freeLiquidity, ) = vaultData.takeLoan(IERC20(token), amount, riskFactor);
 
         baseInterestRate = VaultMath.computeInterestRateNoLeverage(
             vaultData.netLoans - amount,
@@ -199,13 +200,14 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 amount,
         uint256 debt,
         uint256 fees,
+        uint256 riskFactor,
         address borrower
     ) external override onlyStrategy {
         checkWhitelisted(token);
 
         VaultState.VaultData storage vaultData = vaults[token];
 
-        vaultData.repayLoan(IERC20(token), borrower, debt, fees, amount);
+        vaultData.repayLoan(IERC20(token), borrower, debt, fees, amount, riskFactor);
 
         emit LoanRepaid(borrower, token, amount);
     }

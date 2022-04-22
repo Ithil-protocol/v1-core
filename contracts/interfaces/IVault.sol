@@ -97,6 +97,7 @@ interface IVault {
         uint256 amount,
         uint256 debt,
         uint256 fees,
+        uint256 riskFactor,
         address borrower
     ) external;
 

@@ -135,7 +135,14 @@ abstract contract BaseStrategy is Liquidable {
         IERC20 owedToken = IERC20(position.owedToken);
         uint256 vaultRepaid = owedToken.balanceOf(address(vault));
         (uint256 amountIn, uint256 amountOut) = _closePosition(position, maxOrMin);
-        vault.repay(position.owedToken, amountIn, position.principal, position.fees, position.owner);
+        vault.repay(
+            position.owedToken,
+            amountIn,
+            position.principal,
+            position.fees,
+            riskFactors[position.heldToken],
+            position.owner
+        );
 
         if (collateralInHeldTokens && amountOut <= position.allowance)
             IERC20(position.heldToken).safeTransfer(position.owner, position.allowance - amountOut);

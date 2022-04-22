@@ -15,7 +15,6 @@ library VaultMath {
     uint24 internal constant TIME_FEE_PERIOD = 86400;
     uint40 internal constant APY_PERIOD = 31536000;
     uint24 internal constant MAX_RATE = 10000; //todo: adjust
-    uint24 internal constant RESERVE_RATIO = 2500; //todo: adjust
 
     /// @notice Computes the maximum amount of money an investor can withdraw from the pool
     /// @dev Floor(x+y) >= Floor(x) + Floor(y), therefore the sum of all investors'

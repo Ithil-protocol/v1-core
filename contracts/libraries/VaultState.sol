@@ -13,6 +13,7 @@ library VaultState {
     using GeneralMath for uint256;
 
     error Vault__Insufficient_Funds_Available(address token, uint256 requested);
+    error Vault__Repay_Failed();
 
     /// @notice store data about whitelisted tokens
     /// @param supported Easily check if a token is supported or not (null VaultData struct)
@@ -23,6 +24,7 @@ library VaultState {
     /// @param fixedFee
     /// @param netLoans Total amount of liquidity currently lent to traders
     /// @param insuranceReserveBalance Total amount of liquidity left as insurance
+    /// @param optimalRatio The optimal ratio of the insurance reserve
     struct VaultData {
         bool supported;
         bool locked;
@@ -32,6 +34,7 @@ library VaultState {
         uint256 fixedFee;
         uint256 netLoans;
         uint256 insuranceReserveBalance;
+        uint256 optimalRatio;
     }
 
     function addInsuranceReserve(
@@ -41,16 +44,19 @@ library VaultState {
         uint256 fees
     ) internal {
         self.insuranceReserveBalance +=
-            (fees * VaultMath.RESERVE_RATIO * (totalBalance - insReserveBalance)) /
+            (fees * self.optimalRatio * (totalBalance - insReserveBalance)) /
             (totalBalance * VaultMath.RESOLUTION);
     }
 
     function takeLoan(
         VaultState.VaultData storage self,
         IERC20 token,
-        uint256 amount
+        uint256 amount,
+        uint256 riskFactor
     ) internal returns (uint256 freeLiquidity, uint256 received) {
+        uint256 totalRisk = self.optimalRatio * self.netLoans;
         self.netLoans += amount;
+        self.optimalRatio = (totalRisk + amount * riskFactor) / self.netLoans;
 
         freeLiquidity = IERC20(token).balanceOf(address(this)) - self.insuranceReserveBalance;
 
@@ -75,16 +81,19 @@ library VaultState {
         address borrower,
         uint256 debt,
         uint256 fees,
-        uint256 amount
+        uint256 amount,
+        uint256 riskFactor
     ) internal {
+        uint256 totalRisk = self.optimalRatio * self.netLoans;
         subtractLoan(self, debt);
+        self.optimalRatio = self.netLoans != 0 ? totalRisk.positiveSub(riskFactor * debt) / self.netLoans : 0;
 
         if (amount >= debt + fees) {
             uint256 availableInsuranceBalance = self.insuranceReserveBalance.positiveSub(self.netLoans);
 
             addInsuranceReserve(self, token.balanceOf(address(this)), availableInsuranceBalance, fees);
 
-            token.transfer(borrower, amount - debt - fees);
+            if (!token.transfer(borrower, amount - debt - fees)) revert Vault__Repay_Failed();
         } else if (amount < debt) subtractInsuranceReserve(self, debt - amount);
     }
 }
