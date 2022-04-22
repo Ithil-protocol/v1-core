@@ -154,7 +154,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         uint256 toBurn = wToken.burnWrapped(amount, balance(token), msg.sender);
 
-        IERC20(token).transfer(msg.sender, amount);
+        if (!IERC20(token).transfer(msg.sender, amount)) revert Vault__Unstake_Failed();
         emit Withdrawal(msg.sender, token, amount, toBurn);
     }
 
@@ -165,8 +165,9 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         uint256 toBurn = wToken.burnWrapped(amount, balance(weth), msg.sender);
         IWETH(weth).withdraw(amount);
-        // slither-disable-next-line
-        payable(msg.sender).transfer(amount); // reverts if unsuccessful
+
+        (bool success, bytes memory data) = payable(msg.sender).call{ value: amount }("");
+        if (!success) revert Vault__ETH_Unstake_Failed(data); // reverts if unsuccessful
 
         emit Withdrawal(msg.sender, weth, amount, toBurn);
     }
