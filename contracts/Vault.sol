@@ -186,9 +186,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     function treasuryStake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
         checkWhitelisted(token);
 
-        VaultState.VaultData storage vault = vaults[token];
-        (, amount) = IERC20(token).transferTokens(msg.sender, address(this), amount);
-        vault.treasuryLiquidity += amount;
+        vaults[token].addTreasuryLiquidity(IERC20(token), amount);
     }
 
     function treasuryUnstake(address token, uint256 amount)
@@ -204,6 +202,8 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 tol = vault.treasuryLiquidity;
 
         if (tol < amount) revert Vault__Insufficient_TOL(tol);
+
+        vault.treasuryLiquidity -= amount;
 
         IERC20(token).transfer(treasury, amount);
     }

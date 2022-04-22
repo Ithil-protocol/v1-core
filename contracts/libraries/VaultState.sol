@@ -77,6 +77,15 @@ library VaultState {
         else self.insuranceReserveBalance = 0;
     }
 
+    function addTreasuryLiquidity(
+        VaultState.VaultData storage self,
+        IERC20 token,
+        uint256 amount
+    ) internal {
+        (, amount) = token.transferTokens(msg.sender, address(this), amount);
+        self.treasuryLiquidity += amount;
+    }
+
     function repayLoan(
         VaultState.VaultData storage self,
         IERC20 token,
