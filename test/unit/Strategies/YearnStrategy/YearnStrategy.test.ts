@@ -41,7 +41,12 @@ describe("Strategy tests", function () {
       );
 
       const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
-      this.vault = <Vault>await waffle.deployContract(this.signers.admin, vaultArtifact, [this.mockWETH.address]);
+      this.vault = <Vault>(
+        await waffle.deployContract(this.signers.admin, vaultArtifact, [
+          this.mockWETH.address,
+          this.signers.admin.address,
+        ])
+      );
 
       const liquidatorArtifact: Artifact = await artifacts.readArtifact("Liquidator");
       this.liquidator = <Liquidator>await waffle.deployContract(this.signers.admin, liquidatorArtifact);

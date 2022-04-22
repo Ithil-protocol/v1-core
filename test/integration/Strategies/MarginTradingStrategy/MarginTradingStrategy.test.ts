@@ -35,7 +35,9 @@ describe("Strategy integration tests", function () {
       await getTokens(this.signers.trader.address, tokens.DAI.address, tokens.DAI.whale, marginTokenLiquidity);
 
       const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
-      this.vault = <Vault>await waffle.deployContract(this.signers.admin, vaultArtifact, [this.weth.address]);
+      this.vault = <Vault>(
+        await waffle.deployContract(this.signers.admin, vaultArtifact, [this.weth.address, this.signers.admin.address])
+      );
 
       const liquidatorArtifact: Artifact = await artifacts.readArtifact("Liquidator");
       this.liquidator = <Liquidator>await waffle.deployContract(this.signers.admin, liquidatorArtifact);

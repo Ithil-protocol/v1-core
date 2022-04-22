@@ -30,13 +30,15 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     using VaultState for VaultState.VaultData;
 
     address internal immutable weth;
+    address internal immutable treasury;
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     mapping(address => VaultState.VaultData) public vaults;
     mapping(address => bool) public strategies;
 
-    constructor(address _weth) {
+    constructor(address _weth, address _treasury) {
         weth = _weth;
+        treasury = _treasury;
     }
 
     modifier isValidAmount(uint256 amount) {
@@ -54,6 +56,11 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         _;
     }
 
+    modifier onlyTreasury() {
+        if (msg.sender != treasury) revert Vault__Restricted_Access(msg.sender);
+        _;
+    }
+
     // only accept ETH via fallback from the WETH contract
     receive() external payable {
         if (msg.sender != weth) revert Vault__ETH_Transfer_Failed(msg.sender, weth);
@@ -64,7 +71,11 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     }
 
     function balance(address token) public view override returns (uint256) {
-        return IERC20(token).balanceOf(address(this)) + vaults[token].netLoans - vaults[token].insuranceReserveBalance;
+        return
+            IERC20(token).balanceOf(address(this)) +
+            vaults[token].netLoans -
+            vaults[token].insuranceReserveBalance -
+            vaults[token].treasuryLiquidity;
     }
 
     function claimable(address token) external view override returns (uint256) {
@@ -170,6 +181,31 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (!success) revert Vault__ETH_Unstake_Failed(data); // reverts if unsuccessful
 
         emit Withdrawal(msg.sender, weth, amount, toBurn);
+    }
+
+    function treasuryStake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
+        checkWhitelisted(token);
+
+        VaultState.VaultData storage vault = vaults[token];
+        (, amount) = IERC20(token).transferTokens(msg.sender, address(this), amount);
+        vault.treasuryLiquidity += amount;
+    }
+
+    function treasuryUnstake(address token, uint256 amount)
+        external
+        override
+        unlocked(token)
+        isValidAmount(amount)
+        onlyTreasury
+    {
+        checkWhitelisted(token);
+
+        VaultState.VaultData storage vault = vaults[token];
+        uint256 tol = vault.treasuryLiquidity;
+
+        if (tol < amount) revert Vault__Insufficient_TOL(tol);
+
+        IERC20(token).transfer(treasury, amount);
     }
 
     function borrow(

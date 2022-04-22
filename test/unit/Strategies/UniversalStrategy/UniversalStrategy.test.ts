@@ -44,7 +44,12 @@ describe("Strategy tests", function () {
       this.mockWETH = <MockWETH>await waffle.deployContract(this.signers.admin, wethArtifact, []);
 
       const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
-      this.vault = <Vault>await waffle.deployContract(this.signers.admin, vaultArtifact, [this.mockWETH.address]);
+      this.vault = <Vault>(
+        await waffle.deployContract(this.signers.admin, vaultArtifact, [
+          this.mockWETH.address,
+          this.signers.admin.address,
+        ])
+      );
 
       const usArtifact: Artifact = await artifacts.readArtifact("UniversalStrategy");
       this.universalStrategy = <UniversalStrategy>(

@@ -36,6 +36,16 @@ interface IVault {
     /// @param amount the amount of tokens to be withdrawn
     function unstakeETH(uint256 amount) external;
 
+    /// @notice Add tokens to the vault as treasury-owned liquidity (does not accumulate APY)
+    /// @param token the token to deposit
+    /// @param amount the amount of tokens to be deposited
+    function treasuryStake(address token, uint256 amount) external;
+
+    /// @notice Remove tokens from the treasury-owned liquidity
+    /// @param token the token to deposit
+    /// @param amount the amount of tokens to be withdrawn
+    function treasuryUnstake(address token, uint256 amount) external;
+
     /// ==== ADMIN ==== ///
 
     /// @notice Adds a new strategy address to the list
@@ -140,4 +150,5 @@ interface IVault {
     error Vault__Insufficient_ETH(uint256 value, uint256 amount);
     error Vault__Unstake_Failed();
     error Vault__ETH_Unstake_Failed(bytes data);
+    error Vault__Insufficient_TOL(uint256 tol);
 }

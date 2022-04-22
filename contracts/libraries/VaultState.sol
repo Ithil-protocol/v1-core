@@ -25,6 +25,7 @@ library VaultState {
     /// @param netLoans Total amount of liquidity currently lent to traders
     /// @param insuranceReserveBalance Total amount of liquidity left as insurance
     /// @param optimalRatio The optimal ratio of the insurance reserve
+    /// @param treasuryLiquidity The amount of liquidity owned by the treasury
     struct VaultData {
         bool supported;
         bool locked;
@@ -35,6 +36,7 @@ library VaultState {
         uint256 netLoans;
         uint256 insuranceReserveBalance;
         uint256 optimalRatio;
+        uint256 treasuryLiquidity;
     }
 
     function addInsuranceReserve(
