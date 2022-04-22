@@ -205,7 +205,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         vault.treasuryLiquidity -= amount;
 
-        IERC20(token).transfer(treasury, amount);
+        if (!IERC20(token).transfer(msg.sender, amount)) revert Vault__Unstake_Failed();
     }
 
     function borrow(
