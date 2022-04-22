@@ -20,6 +20,7 @@ import { TransferHelper } from "./libraries/TransferHelper.sol";
 /// @author   Ithil
 /// @notice   Stores staked funds, issues loans and handles repayments to strategies
 contract Vault is IVault, ReentrancyGuard, Ownable {
+    using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
     using WToken for IWrappedToken;
     // using SafeERC20 for IERC20;
@@ -165,7 +166,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         uint256 toBurn = wToken.burnWrapped(amount, balance(token), msg.sender);
 
-        if (!IERC20(token).transfer(msg.sender, amount)) revert Vault__Unstake_Failed();
+        IERC20(token).safeTransfer(msg.sender, amount);
         emit Withdrawal(msg.sender, token, amount, toBurn);
     }
 
@@ -205,7 +206,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         vault.treasuryLiquidity -= amount;
 
-        if (!IERC20(token).transfer(msg.sender, amount)) revert Vault__Unstake_Failed();
+        IERC20(token).safeTransfer(msg.sender, amount);
     }
 
     function borrow(

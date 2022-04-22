@@ -148,7 +148,6 @@ interface IVault {
     error Vault__Max_Withdrawal(address user, address token, uint256 amount, uint256 maxWithdrawal);
     error Vault__Null_Amount();
     error Vault__Insufficient_ETH(uint256 value, uint256 amount);
-    error Vault__Unstake_Failed();
     error Vault__ETH_Unstake_Failed(bytes data);
     error Vault__Insufficient_TOL(uint256 tol);
 }
