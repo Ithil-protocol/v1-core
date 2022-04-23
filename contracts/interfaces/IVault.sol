@@ -46,6 +46,11 @@ interface IVault {
     /// @param amount the amount of tokens to be withdrawn
     function treasuryUnstake(address token, uint256 amount) external;
 
+    /// @notice If the insurance reserve is higher than the optimal ratio, transfers the extra amount to the treasury
+    /// @param token the token to withdraw
+    /// @return toTransfer the amount withdrawn
+    function rebalanceInsurance(address token) external returns (uint256 toTransfer);
+
     /// ==== ADMIN ==== ///
 
     /// @notice Adds a new strategy address to the list
