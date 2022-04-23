@@ -42,11 +42,12 @@ library VaultState {
     function addInsuranceReserve(
         VaultState.VaultData storage self,
         uint256 totalBalance,
-        uint256 insReserveBalance,
         uint256 fees
     ) internal {
+        uint256 availableInsuranceBalance = self.insuranceReserveBalance.positiveSub(self.netLoans);
+
         self.insuranceReserveBalance +=
-            (fees * self.optimalRatio * (totalBalance - insReserveBalance)) /
+            (fees * self.optimalRatio * (totalBalance - availableInsuranceBalance)) /
             (totalBalance * VaultMath.RESOLUTION);
     }
 
@@ -100,9 +101,7 @@ library VaultState {
         self.optimalRatio = self.netLoans != 0 ? totalRisk.positiveSub(riskFactor * debt) / self.netLoans : 0;
 
         if (amount >= debt + fees) {
-            uint256 availableInsuranceBalance = self.insuranceReserveBalance.positiveSub(self.netLoans);
-
-            addInsuranceReserve(self, token.balanceOf(address(this)), availableInsuranceBalance, fees);
+            addInsuranceReserve(self, token.balanceOf(address(this)), fees);
 
             if (!token.transfer(borrower, amount - debt - fees)) revert Vault__Repay_Failed();
         } else if (amount < debt) subtractInsuranceReserve(self, debt - amount);
