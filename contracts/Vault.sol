@@ -132,6 +132,19 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         assert(success);
     }
 
+    function rebalanceInsurance(address token) external {
+        VaultState.VaultData storage vault = vaults[token];
+
+        uint256 usableBalance = IERC20(token).balanceOf(address(this)) + vault.netLoans;
+
+        uint256 toTransfer = vault.insuranceReserveBalance.positiveSub(
+            (usableBalance * vault.optimalRatio) / VaultMath.RESOLUTION
+        );
+        vault.insuranceReserveBalance -= toTransfer;
+
+        IERC20(token).safeTransfer(treasury, toTransfer);
+    }
+
     function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
         checkWhitelisted(token);
 
