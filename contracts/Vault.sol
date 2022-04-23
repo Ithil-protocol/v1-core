@@ -20,6 +20,7 @@ import { TransferHelper } from "./libraries/TransferHelper.sol";
 /// @author   Ithil
 /// @notice   Stores staked funds, issues loans and handles repayments to strategies
 contract Vault is IVault, ReentrancyGuard, Ownable {
+    using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
     using WToken for IWrappedToken;
     // using SafeERC20 for IERC20;
@@ -30,13 +31,15 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     using VaultState for VaultState.VaultData;
 
     address internal immutable weth;
+    address internal immutable treasury;
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     mapping(address => VaultState.VaultData) public vaults;
     mapping(address => bool) public strategies;
 
-    constructor(address _weth) {
+    constructor(address _weth, address _treasury) {
         weth = _weth;
+        treasury = _treasury;
     }
 
     modifier isValidAmount(uint256 amount) {
@@ -54,6 +57,11 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         _;
     }
 
+    modifier onlyTreasury() {
+        if (msg.sender != treasury) revert Vault__Restricted_Access(msg.sender);
+        _;
+    }
+
     // only accept ETH via fallback from the WETH contract
     receive() external payable {
         if (msg.sender != weth) revert Vault__ETH_Transfer_Failed(msg.sender, weth);
@@ -64,7 +72,11 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     }
 
     function balance(address token) public view override returns (uint256) {
-        return IERC20(token).balanceOf(address(this)) + vaults[token].netLoans - vaults[token].insuranceReserveBalance;
+        return
+            IERC20(token).balanceOf(address(this)) +
+            vaults[token].netLoans -
+            vaults[token].insuranceReserveBalance -
+            vaults[token].treasuryLiquidity;
     }
 
     function claimable(address token) external view override returns (uint256) {
@@ -154,7 +166,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         uint256 toBurn = wToken.burnWrapped(amount, balance(token), msg.sender);
 
-        if (!IERC20(token).transfer(msg.sender, amount)) revert Vault__Unstake_Failed();
+        IERC20(token).safeTransfer(msg.sender, amount);
         emit Withdrawal(msg.sender, token, amount, toBurn);
     }
 
@@ -170,6 +182,31 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (!success) revert Vault__ETH_Unstake_Failed(data); // reverts if unsuccessful
 
         emit Withdrawal(msg.sender, weth, amount, toBurn);
+    }
+
+    function treasuryStake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
+        checkWhitelisted(token);
+
+        vaults[token].addTreasuryLiquidity(IERC20(token), amount);
+    }
+
+    function treasuryUnstake(address token, uint256 amount)
+        external
+        override
+        unlocked(token)
+        isValidAmount(amount)
+        onlyTreasury
+    {
+        checkWhitelisted(token);
+
+        VaultState.VaultData storage vault = vaults[token];
+        uint256 tol = vault.treasuryLiquidity;
+
+        if (tol < amount) revert Vault__Insufficient_TOL(tol);
+
+        vault.treasuryLiquidity -= amount;
+
+        IERC20(token).safeTransfer(msg.sender, amount);
     }
 
     function borrow(

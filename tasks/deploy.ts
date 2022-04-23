@@ -61,7 +61,7 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
 
   // Vault
   const vaultFactory: Vault__factory = <Vault__factory>await hre.ethers.getContractFactory("Vault");
-  const vault: Vault = <Vault>await vaultFactory.deploy(weth.address);
+  const vault: Vault = <Vault>await vaultFactory.deploy(weth.address, "0x0000000000000000000000000000000000000000"); //todo: insert treasury
   await vault.deployed();
   console.log("Vault deployed to address: ", vault.address);
 
