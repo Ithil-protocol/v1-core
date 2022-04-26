@@ -95,7 +95,6 @@ abstract contract Liquidable is AbstractStrategy {
             //todo: properly repay the vault
             delete positions[positionId];
             (, uint256 received) = IERC20(position.owedToken).transferTokens(purchaser, address(vault), price);
-            //todo: calculate fees!
             position.principal *= (VaultMath.RESOLUTION + penalty) / VaultMath.RESOLUTION;
             if (received < position.principal + position.fees)
                 revert Strategy__Insufficient_Amount_Out(received, position.principal + dueFees);
@@ -112,10 +111,12 @@ abstract contract Liquidable is AbstractStrategy {
         uint256 penalty
     ) external override onlyLiquidator {
         Position storage position = positions[_id];
-        (int256 score, ) = computeLiquidationScore(position);
+        (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
             positions[_id].owner = newOwner;
             position.principal *= (VaultMath.RESOLUTION + penalty) / VaultMath.RESOLUTION;
+            position.fees += dueFees;
+            position.createdAt = block.timestamp;
             position.topUpCollateral(newOwner, address(this), newCollateral);
             (int256 newScore, ) = computeLiquidationScore(position);
             if (newScore > 0) revert Strategy__Insufficient_Margin_Provided(newScore);
