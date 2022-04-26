@@ -7,6 +7,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IVault } from "../interfaces/IVault.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
+import { GeneralMath } from "../libraries/GeneralMath.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
 
 /// @title    Liquidator contract
@@ -15,6 +16,7 @@ import { TransferHelper } from "../libraries/TransferHelper.sol";
 contract Liquidator is Ownable {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
+    using GeneralMath for uint256;
 
     address public immutable ithil;
     mapping(address => uint256) public stakes;
@@ -52,7 +54,8 @@ contract Liquidator is Ownable {
     function liquidateSingle(address _strategy, uint256 positionId) external {
         //todo: add checks on liquidator
         IStrategy strategy = IStrategy(_strategy);
-        strategy.forcefullyClose(positionId, msg.sender);
+        uint256 penalty = computePenalty();
+        strategy.forcefullyClose(positionId, msg.sender, penalty);
     }
 
     function marginCall(
@@ -62,7 +65,8 @@ contract Liquidator is Ownable {
     ) external {
         //todo: add checks on liquidator
         IStrategy strategy = IStrategy(_strategy);
-        strategy.modifyCollateralAndOwner(positionId, extraMargin, msg.sender);
+        uint256 penalty = computePenalty();
+        strategy.modifyCollateralAndOwner(positionId, extraMargin, msg.sender, penalty);
     }
 
     function purchaseAssets(
@@ -72,6 +76,14 @@ contract Liquidator is Ownable {
     ) external {
         //todo: add checks on liquidator
         IStrategy strategy = IStrategy(_strategy);
-        strategy.forcefullyDelete(positionId, price, msg.sender);
+        uint256 penalty = computePenalty();
+        strategy.forcefullyDelete(positionId, price, msg.sender, penalty);
+    }
+
+    function computePenalty() public view returns (uint256) {
+        if (maximumStake > 0)
+            return
+                uint256(VaultMath.RESOLUTION).positiveSub((stakes[msg.sender] * VaultMath.RESOLUTION) / maximumStake);
+        else return 0;
     }
 }
