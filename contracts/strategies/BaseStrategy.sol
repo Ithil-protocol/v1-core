@@ -184,6 +184,7 @@ abstract contract BaseStrategy is Liquidable {
         )
     {
         address spentToken = order.spentToken;
+        IERC20 spentTkn = IERC20(spentToken);
         address obtainedToken = order.obtainedToken;
         uint256 riskFactor = computePairRiskFactor(spentToken, obtainedToken);
         uint256 originalCollBal = 0;
@@ -193,10 +194,10 @@ abstract contract BaseStrategy is Liquidable {
         (collateralReceived, toBorrow, originalCollBal) = IERC20(collateralToken).transferAsCollateral(order);
         toSpend = originalCollBal + collateralReceived;
         if (!order.collateralIsSpentToken) {
-            toSpend = IERC20(spentToken).balanceOf(address(this));
+            toSpend = spentTkn.balanceOf(address(this));
         }
 
         (interestRate, fees) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
-        toSpend = IERC20(order.spentToken).balanceOf(address(this)) - toSpend;
+        toSpend = spentTkn.balanceOf(address(this)) - toSpend;
     }
 }
