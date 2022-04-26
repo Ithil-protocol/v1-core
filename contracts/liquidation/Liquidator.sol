@@ -18,7 +18,7 @@ contract Liquidator is Ownable {
     using TransferHelper for IERC20;
     using GeneralMath for uint256;
 
-    address public immutable ithil;
+    IERC20 public immutable ithil;
     mapping(address => uint256) public stakes;
     uint256 public maximumStake;
 
@@ -27,7 +27,7 @@ contract Liquidator is Ownable {
     error Liquidator__Unstaking_Too_Much(uint256 maximum);
 
     constructor(address _ithil) {
-        ithil = _ithil;
+        ithil = IERC20(_ithil);
     }
 
     function setMaximumStake(uint256 amount) external onlyOwner {
@@ -35,55 +35,51 @@ contract Liquidator is Ownable {
     }
 
     function stake(uint256 amount) external {
-        IERC20 ith = IERC20(ithil);
-        uint256 allowance = ith.allowance(msg.sender, address(this));
-        if (ith.balanceOf(msg.sender) < amount) revert Liquidator__Not_Enough_Ithil();
+        uint256 allowance = ithil.allowance(msg.sender, address(this));
+        if (ithil.balanceOf(msg.sender) < amount) revert Liquidator__Not_Enough_Ithil();
         if (allowance < amount) revert Liquidator__Not_Enough_Ithil_Allowance(allowance);
         stakes[msg.sender] += amount;
-        ith.safeTransferFrom(msg.sender, address(this), amount);
+        ithil.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function unstake(uint256 amount) external {
-        IERC20 ith = IERC20(ithil);
         uint256 staked = stakes[msg.sender];
         if (staked < amount) revert Liquidator__Unstaking_Too_Much(staked);
         stakes[msg.sender] -= amount;
-        ith.safeTransfer(msg.sender, amount);
+        ithil.safeTransfer(msg.sender, amount);
     }
 
-    function liquidateSingle(address _strategy, uint256 positionId) external {
+    function liquidateSingle(IStrategy strategy, uint256 positionId) external {
         //todo: add checks on liquidator
-        IStrategy strategy = IStrategy(_strategy);
-        uint256 penalty = computePenalty();
-        strategy.forcefullyClose(positionId, msg.sender, penalty);
+        uint256 reward = rewardPercentage();
+        strategy.forcefullyClose(positionId, msg.sender, reward);
     }
 
     function marginCall(
-        address _strategy,
+        IStrategy strategy,
         uint256 positionId,
         uint256 extraMargin
     ) external {
         //todo: add checks on liquidator
-        IStrategy strategy = IStrategy(_strategy);
-        uint256 penalty = computePenalty();
-        strategy.modifyCollateralAndOwner(positionId, extraMargin, msg.sender, penalty);
+        uint256 reward = rewardPercentage();
+        strategy.modifyCollateralAndOwner(positionId, extraMargin, msg.sender, reward);
     }
 
     function purchaseAssets(
-        address _strategy,
+        IStrategy strategy,
         uint256 positionId,
         uint256 price
     ) external {
         //todo: add checks on liquidator
-        IStrategy strategy = IStrategy(_strategy);
-        uint256 penalty = computePenalty();
-        strategy.forcefullyDelete(positionId, price, msg.sender, penalty);
+        uint256 reward = rewardPercentage();
+        strategy.forcefullyDelete(positionId, price, msg.sender, reward);
     }
 
-    function computePenalty() public view returns (uint256) {
-        if (maximumStake > 0)
-            return
-                uint256(VaultMath.RESOLUTION).positiveSub((stakes[msg.sender] * VaultMath.RESOLUTION) / maximumStake);
-        else return 0;
+    function rewardPercentage() public view returns (uint256) {
+        if (maximumStake > 0) {
+            uint256 stakePercentage = (stakes[msg.sender] * VaultMath.RESOLUTION) / maximumStake;
+            if (stakePercentage > VaultMath.RESOLUTION) return VaultMath.RESOLUTION;
+            else return (stakes[msg.sender] * VaultMath.RESOLUTION) / maximumStake;
+        } else return 0;
     }
 }

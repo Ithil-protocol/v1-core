@@ -64,7 +64,7 @@ abstract contract Liquidable is AbstractStrategy {
     function forcefullyClose(
         uint256 _id,
         address _liquidator,
-        uint256 penalty
+        uint256 reward
     ) external override onlyLiquidator {
         Position memory position = positions[_id];
 
@@ -77,7 +77,7 @@ abstract contract Liquidable is AbstractStrategy {
             if (collateralInHeldTokens)
                 (expectedCost, ) = quote(position.owedToken, position.heldToken, position.principal + dueFees);
             else expectedCost = position.allowance;
-            position.principal *= (VaultMath.RESOLUTION + penalty) / VaultMath.RESOLUTION;
+            position.principal *= (2 * VaultMath.RESOLUTION - reward) / VaultMath.RESOLUTION;
             _closePosition(position, expectedCost);
             emit PositionWasLiquidated(_id);
         }
@@ -87,7 +87,7 @@ abstract contract Liquidable is AbstractStrategy {
         uint256 positionId,
         uint256 price,
         address purchaser,
-        uint256 penalty
+        uint256 reward
     ) external override onlyLiquidator {
         Position memory position = positions[positionId];
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
@@ -95,7 +95,7 @@ abstract contract Liquidable is AbstractStrategy {
             //todo: properly repay the vault
             delete positions[positionId];
             (, uint256 received) = IERC20(position.owedToken).transferTokens(purchaser, address(vault), price);
-            position.principal *= (VaultMath.RESOLUTION + penalty) / VaultMath.RESOLUTION;
+            position.principal *= (2 * VaultMath.RESOLUTION - reward) / VaultMath.RESOLUTION;
             if (received < position.principal + position.fees)
                 revert Strategy__Insufficient_Amount_Out(received, position.principal + dueFees);
             else IERC20(position.heldToken).safeTransfer(purchaser, position.allowance);
@@ -108,13 +108,13 @@ abstract contract Liquidable is AbstractStrategy {
         uint256 _id,
         uint256 newCollateral,
         address newOwner,
-        uint256 penalty
+        uint256 reward
     ) external override onlyLiquidator {
         Position storage position = positions[_id];
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
             positions[_id].owner = newOwner;
-            position.principal *= (VaultMath.RESOLUTION + penalty) / VaultMath.RESOLUTION;
+            position.principal *= (2 * VaultMath.RESOLUTION - reward) / VaultMath.RESOLUTION;
             position.fees += dueFees;
             position.createdAt = block.timestamp;
             position.topUpCollateral(newOwner, address(this), newCollateral);
