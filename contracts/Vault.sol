@@ -135,11 +135,13 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     function rebalanceInsurance(address token) external override returns (uint256 toTransfer) {
         VaultState.VaultData storage vault = vaults[token];
         IERC20 tkn = IERC20(token);
-        uint256 usableBalance = tkn.balanceOf(address(this)) + vault.netLoans;
+        uint256 optimalIR = ((tkn.balanceOf(address(this)) + vault.netLoans) * vault.optimalRatio) /
+            VaultMath.RESOLUTION;
+        uint256 insuranceReserveBalance = vault.insuranceReserveBalance;
 
-        toTransfer = vault.insuranceReserveBalance.positiveSub(
-            (usableBalance * vault.optimalRatio) / VaultMath.RESOLUTION
-        );
+        if (insuranceReserveBalance < optimalIR) revert Vault__Insurance_Below_OR(insuranceReserveBalance, optimalIR);
+
+        toTransfer = insuranceReserveBalance - optimalIR;
         vault.insuranceReserveBalance -= toTransfer;
 
         tkn.safeTransfer(treasury, toTransfer);

@@ -155,4 +155,5 @@ interface IVault {
     error Vault__Insufficient_ETH(uint256 value, uint256 amount);
     error Vault__ETH_Unstake_Failed(bytes data);
     error Vault__Insufficient_TOL(uint256 tol);
+    error Vault__Insurance_Below_OR(uint256 insuranceReserve, uint256 optimalRatio);
 }
