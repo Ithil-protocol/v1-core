@@ -61,16 +61,17 @@ abstract contract Liquidable is AbstractStrategy {
         score = int256(position.collateral * pairRiskFactor) - profitAndLoss * int24(VaultMath.RESOLUTION);
     }
 
-    function forcefullyClose(uint256 _id) external override onlyLiquidator {
+    function forcefullyClose(uint256 _id, address _liquidator) external override onlyLiquidator {
         Position memory position = positions[_id];
 
-        (int256 score, ) = computeLiquidationScore(position);
+        (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
             delete positions[_id];
+            position.owner = _liquidator;
             uint256 expectedCost = 0;
             bool collateralInHeldTokens = position.collateralToken != position.owedToken;
             if (collateralInHeldTokens)
-                (expectedCost, ) = quote(position.owedToken, position.heldToken, position.principal + position.fees);
+                (expectedCost, ) = quote(position.owedToken, position.heldToken, position.principal + dueFees);
             else expectedCost = position.allowance;
             _closePosition(position, expectedCost);
             emit PositionWasLiquidated(_id);
@@ -78,19 +79,19 @@ abstract contract Liquidable is AbstractStrategy {
     }
 
     function forcefullyDelete(
-        address purchaser,
         uint256 positionId,
-        uint256 price
+        uint256 price,
+        address purchaser
     ) external override onlyLiquidator {
         Position memory position = positions[positionId];
-        (int256 score, ) = computeLiquidationScore(position);
+        (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
             //todo: properly repay the vault
             delete positions[positionId];
             (, uint256 received) = IERC20(position.owedToken).transferTokens(purchaser, address(vault), price);
             //todo: calculate fees!
             if (received < position.principal + position.fees)
-                revert Strategy__Insufficient_Amount_Out(received, position.principal + position.fees);
+                revert Strategy__Insufficient_Amount_Out(received, position.principal + dueFees);
             else IERC20(position.heldToken).safeTransfer(purchaser, position.allowance);
 
             emit PositionWasLiquidated(positionId);

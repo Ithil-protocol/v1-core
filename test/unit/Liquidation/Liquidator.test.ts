@@ -26,7 +26,11 @@ describe("Liquidation tests", function () {
   describe("Liquidator", function () {
     beforeEach(async function () {
       const liquidatorArtifact: Artifact = await artifacts.readArtifact("Liquidator");
-      this.liquidator = <Liquidator>await waffle.deployContract(this.signers.admin, liquidatorArtifact, []);
+      this.liquidator = <Liquidator>(
+        await waffle.deployContract(this.signers.admin, liquidatorArtifact, [
+          "0x0000000000000000000000000000000000000000",
+        ])
+      );
 
       const kyberArtifact: Artifact = await artifacts.readArtifact("MockKyberNetworkProxy");
       this.mockKyberNetworkProxy = <MockKyberNetworkProxy>(

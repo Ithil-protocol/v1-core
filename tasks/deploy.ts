@@ -67,7 +67,9 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
 
   // Liquidator
   const liquidatorFactory: Liquidator__factory = <Liquidator__factory>await hre.ethers.getContractFactory("Liquidator");
-  const liquidator: Liquidator = <Liquidator>await liquidatorFactory.deploy();
+  const liquidator: Liquidator = <Liquidator>(
+    await liquidatorFactory.deploy("0x0000000000000000000000000000000000000000")
+  );
   await liquidator.deployed();
   console.log("Liquidator deployed to address: ", liquidator.address);
 

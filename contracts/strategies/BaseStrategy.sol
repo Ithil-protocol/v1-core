@@ -149,6 +149,7 @@ abstract contract BaseStrategy is Liquidable {
 
         vaultRepaid = owedToken.balanceOf(address(vault)) - vaultRepaid;
 
+        /// The following check is important to prevent users from producing bad liquidations
         if (vaultRepaid < position.principal) revert Strategy__Loan_Not_Repaid(vaultRepaid, position.principal);
 
         emit PositionWasClosed(positionId);

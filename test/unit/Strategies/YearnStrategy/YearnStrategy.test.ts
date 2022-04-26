@@ -49,7 +49,11 @@ describe("Strategy tests", function () {
       );
 
       const liquidatorArtifact: Artifact = await artifacts.readArtifact("Liquidator");
-      this.liquidator = <Liquidator>await waffle.deployContract(this.signers.admin, liquidatorArtifact);
+      this.liquidator = <Liquidator>(
+        await waffle.deployContract(this.signers.admin, liquidatorArtifact, [
+          "0x0000000000000000000000000000000000000000",
+        ])
+      );
 
       const yearnArtifact: Artifact = await artifacts.readArtifact("MockYearnRegistry");
       this.mockYearnRegistry = <MockYearnRegistry>await waffle.deployContract(this.signers.admin, yearnArtifact, []);

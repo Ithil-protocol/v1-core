@@ -16,10 +16,43 @@ contract Liquidator is Ownable {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
 
+    address public immutable ithil;
+    mapping(address => uint256) public stakes;
+    uint256 public maximumStake;
+
+    error Liquidator__Not_Enough_Ithil_Allowance(uint256 allowance);
+    error Liquidator__Not_Enough_Ithil();
+    error Liquidator__Unstaking_Too_Much(uint256 maximum);
+
+    constructor(address _ithil) {
+        ithil = _ithil;
+    }
+
+    function setMaximumStake(uint256 amount) external onlyOwner {
+        maximumStake = amount;
+    }
+
+    function stake(uint256 amount) external {
+        IERC20 ith = IERC20(ithil);
+        uint256 allowance = ith.allowance(msg.sender, address(this));
+        if (ith.balanceOf(msg.sender) < amount) revert Liquidator__Not_Enough_Ithil();
+        if (allowance < amount) revert Liquidator__Not_Enough_Ithil_Allowance(allowance);
+        stakes[msg.sender] += amount;
+        ith.safeTransferFrom(msg.sender, address(this), amount);
+    }
+
+    function unstake(uint256 amount) external {
+        IERC20 ith = IERC20(ithil);
+        uint256 staked = stakes[msg.sender];
+        if (staked < amount) revert Liquidator__Unstaking_Too_Much(staked);
+        stakes[msg.sender] -= amount;
+        ith.safeTransfer(msg.sender, amount);
+    }
+
     function liquidateSingle(address _strategy, uint256 positionId) external {
         //todo: add checks on liquidator
         IStrategy strategy = IStrategy(_strategy);
-        strategy.forcefullyClose(positionId);
+        strategy.forcefullyClose(positionId, msg.sender);
     }
 
     function marginCall(
@@ -39,6 +72,6 @@ contract Liquidator is Ownable {
     ) external {
         //todo: add checks on liquidator
         IStrategy strategy = IStrategy(_strategy);
-        strategy.forcefullyDelete(msg.sender, positionId, price);
+        strategy.forcefullyDelete(positionId, price, msg.sender);
     }
 }
