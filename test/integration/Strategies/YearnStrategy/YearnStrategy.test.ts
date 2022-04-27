@@ -40,7 +40,11 @@ describe("Strategy integration tests", function () {
       );
 
       const liquidatorArtifact: Artifact = await artifacts.readArtifact("Liquidator");
-      this.liquidator = <Liquidator>await waffle.deployContract(this.signers.admin, liquidatorArtifact);
+      this.liquidator = <Liquidator>(
+        await waffle.deployContract(this.signers.admin, liquidatorArtifact, [
+          "0x0000000000000000000000000000000000000000",
+        ])
+      );
 
       const ysArtifact: Artifact = await artifacts.readArtifact("YearnStrategy");
       this.yearnStrategy = <YearnStrategy>await waffle.deployContract(this.signers.admin, ysArtifact, [
