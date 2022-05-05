@@ -22,27 +22,25 @@ describe("Lending unit tests", function () {
     this.signers.liquidator = signers[3];
 
     this.provider = waffle.provider;
+
+    const kyberArtifact: Artifact = await artifacts.readArtifact("MockKyberNetworkProxy");
+    this.mockKyberNetworkProxy = <MockKyberNetworkProxy>(
+      await waffle.deployContract(this.signers.admin, kyberArtifact, [])
+    );
+
+    const wethArtifact: Artifact = await artifacts.readArtifact("MockWETH");
+    this.mockWETH = <MockWETH>await waffle.deployContract(this.signers.admin, wethArtifact, []);
+
+    const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
+    this.vault = <Vault>(
+      await waffle.deployContract(this.signers.admin, vaultArtifact, [
+        this.mockWETH.address,
+        this.signers.admin.address,
+      ])
+    );
   });
 
   describe("Vault", function () {
-    beforeEach(async function () {
-      const kyberArtifact: Artifact = await artifacts.readArtifact("MockKyberNetworkProxy");
-      this.mockKyberNetworkProxy = <MockKyberNetworkProxy>(
-        await waffle.deployContract(this.signers.admin, kyberArtifact, [])
-      );
-
-      const wethArtifact: Artifact = await artifacts.readArtifact("MockWETH");
-      this.mockWETH = <MockWETH>await waffle.deployContract(this.signers.admin, wethArtifact, []);
-
-      const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
-      this.vault = <Vault>(
-        await waffle.deployContract(this.signers.admin, vaultArtifact, [
-          this.mockWETH.address,
-          this.signers.admin.address,
-        ])
-      );
-    });
-
     checkWhiteList(); // whitelistToken
     checkStaking(); // stake, unstake
     checkAddStrategy(); // addStrategy, removeStrategy
