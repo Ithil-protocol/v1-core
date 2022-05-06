@@ -3,32 +3,25 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import ERC20 from "@openzeppelin/contracts/build/contracts/ERC20.json";
+import { mintAndStake, expandTo18Decimals } from "../../common/utils";
 
 export function checkStaking(): void {
   it("Vault: stake and unstake tokens", async function () {
     const token = this.mockWETH;
     const investor = this.signers.investor;
 
-    // Fund investor with a given wealth (through minting) and approve the vault
-    const firstStakerWealth = BigNumber.from(10).pow(18).mul(2);
-    await token.mintTo(investor.address, firstStakerWealth);
-    await token.connect(investor).approve(this.vault.address, firstStakerWealth);
-
     // Get wrapped token contract
     const wrappedTokenAddress = (await this.vault.vaults(token.address)).wrappedToken;
     const wrappedToken = await ethers.getContractAt(ERC20.abi, wrappedTokenAddress);
 
     // Amount to stake
-    const amountToStake = BigNumber.from(10).pow(18);
-
+    const amountToStake = expandTo18Decimals(1000);
+    // Initial staker's liquidity
+    const initialStakerLiquidity = expandTo18Decimals(10000);
     // Amount to unstake
-    const amountBack = BigNumber.from(10).pow(18);
+    const amountBack = expandTo18Decimals(800);
 
-    const initialState = {
-      balance: await token.balanceOf(investor.address),
-    };
-
-    const stakeTx = await this.vault.connect(investor).stake(token.address, amountToStake);
+    const stakeTx = await mintAndStake(investor, this.vault, token, initialStakerLiquidity, amountToStake);
     const stakeEvents = (await stakeTx.wait()).events;
 
     const middleState = {
@@ -36,7 +29,6 @@ export function checkStaking(): void {
       wrappedBalance: await wrappedToken.balanceOf(investor.address),
     };
 
-    expect(middleState.balance).to.equal(initialState.balance.sub(amountToStake));
     expect(middleState.wrappedBalance).to.equal(amountToStake);
 
     const validStakeEvents = stakeEvents?.filter(
@@ -45,11 +37,11 @@ export function checkStaking(): void {
     expect(validStakeEvents?.length).equal(1);
 
     // Transfer tokens to vault: it has the same effect of fee generation
-    const amountAdded = BigNumber.from(10).pow(17);
+    const amountAdded = expandTo18Decimals(100);
     await token.mintTo(this.vault.address, amountAdded);
 
     // Withdrawing too much should revert
-    await expect(this.vault.connect(investor).unstake(token.address, amountBack.add(amountAdded).add(1))).to.be
+    await expect(this.vault.connect(investor).unstake(token.address, amountToStake.add(amountAdded).add(1))).to.be
       .reverted;
 
     // Unstake maximum
@@ -60,7 +52,7 @@ export function checkStaking(): void {
       balance: await token.balanceOf(investor.address),
     };
 
-    expect(finalState.balance).to.equal(initialState.balance.sub(amountToStake).add(amountBack).add(amountAdded));
+    expect(finalState.balance).to.equal(initialStakerLiquidity.sub(amountToStake).add(amountBack).add(amountAdded));
 
     const validUnstakeEvents = unstakeEvents?.filter(
       event => event.event === "Withdrawal" && event.args && event.args[0] === investor.address,
