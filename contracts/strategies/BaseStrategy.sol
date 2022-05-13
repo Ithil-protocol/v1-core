@@ -6,8 +6,7 @@ import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/Saf
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
 import { Liquidable } from "./Liquidable.sol";
-
-import "hardhat/console.sol";
+import { PositionHelper } from "../libraries/PositionHelper.sol";
 
 /// @title    BaseStrategy contract
 /// @author   Ithil
@@ -15,12 +14,12 @@ import "hardhat/console.sol";
 abstract contract BaseStrategy is Liquidable {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
+    using PositionHelper for Position;
 
     uint256 public id;
 
-    error Obtained_Insufficient_Amount(uint256);
-    error Opened_Liquidable_Position(uint256);
-    error Loan_Not_Repaid(uint256, uint256);
+    error Obtained_Insufficient_Amount(uint256 amountIn);
+    error Loan_Not_Repaid(uint256 repaid, uint256 principal);
     error Expired();
 
     constructor(address _vault, address _liquidator) Liquidable(_liquidator, _vault) {
@@ -28,17 +27,25 @@ abstract contract BaseStrategy is Liquidable {
     }
 
     modifier validOrder(Order memory order) {
-        if (block.timestamp > order.deadline) revert Expired();
-        if (order.spentToken == order.obtainedToken) revert Source_Eq_Dest(order.spentToken);
+        if (block.timestamp > order.deadline) revert Strategy__Order_Expired(block.timestamp, order.deadline);
+        if (order.spentToken == order.obtainedToken) revert Strategy__Source_Eq_Dest(order.spentToken);
         if (order.collateral == 0)
             // @todo should add minimum margin check here
-            revert Insufficient_Collateral(order.collateral);
+            revert Strategy__Insufficient_Collateral(order.collateral);
         _;
+
+        vault.checkWhitelisted(order.spentToken);
+        vault.checkWhitelisted(order.obtainedToken);
     }
 
-    modifier validPosition(uint256 positionId) {
-        bool nonzero = positions[positionId].owner != address(0);
-        if (!nonzero) revert Invalid_Position(positionId, address(this));
+    modifier isPositionEditable(uint256 positionId) {
+        if (positions[positionId].owner != msg.sender)
+            revert Strategy__Restricted_Access(positions[positionId].owner, msg.sender);
+
+        // flashloan protection
+        if (positions[positionId].createdAt >= block.timestamp)
+            revert Strategy__Throttled(positions[positionId].createdAt, block.timestamp);
+
         _;
     }
 
@@ -54,72 +61,37 @@ abstract contract BaseStrategy is Liquidable {
         return address(vault);
     }
 
-    function _transferCollateral(Order memory order)
-        internal
-        validOrder(order)
-        returns (
-            uint256 collateralReceived,
-            uint256 toBorrow,
-            address collateralToken,
-            uint256 originalCollBal
-        )
-    {
-        toBorrow = order.maxSpent;
-        if (order.collateralIsSpentToken) {
-            collateralToken = order.spentToken;
-            (originalCollBal, collateralReceived) = IERC20(collateralToken).transferTokens(
-                msg.sender,
-                address(this),
-                order.collateral
-            );
-            toBorrow -= collateralReceived;
-        } else {
-            collateralToken = order.obtainedToken;
-            (originalCollBal, collateralReceived) = IERC20(collateralToken).transferTokens(
-                msg.sender,
-                address(this),
-                order.collateral
-            );
-        }
-    }
-
     function openPosition(Order memory order) external returns (uint256) {
-        address spentToken = order.spentToken;
-        address obtainedToken = order.obtainedToken;
-        uint256 riskFactor = computePairRiskFactor(spentToken, obtainedToken);
-
         (
+            uint256 interestRate,
+            uint256 fees,
+            uint256 toSpend,
             uint256 collateralReceived,
             uint256 toBorrow,
-            address collateralToken,
-            uint256 originalCollBal
-        ) = _transferCollateral(order);
-        uint256 toSpend = originalCollBal + collateralReceived;
-        if (!order.collateralIsSpentToken) {
-            toSpend = IERC20(spentToken).balanceOf(address(this));
-        }
+            address collateralToken
+        ) = _borrow(order);
 
-        (uint256 interestRate, uint256 fees) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
+        if (order.collateralIsSpentToken) order.maxSpent = toSpend + collateralReceived;
 
-        toSpend = IERC20(spentToken).balanceOf(address(this)) - toSpend;
-        if (order.collateralIsSpentToken) {
-            order.maxSpent = toSpend + collateralReceived;
-            interestRate *= toBorrow / collateralReceived;
-        }
-        uint256 amountIn = _openPosition(order);
+        uint256 amountIn;
         if (!order.collateralIsSpentToken) {
+            amountIn = _openPosition(order);
             amountIn += collateralReceived;
             interestRate *= amountIn / collateralReceived;
+        } else {
+            uint256 initialDstBalance = IERC20(order.obtainedToken).balanceOf(address(this));
+            amountIn = _openPosition(order);
+            interestRate *= (toBorrow * initialDstBalance) / (collateralReceived * (initialDstBalance + amountIn));
         }
 
-        if (interestRate > VaultMath.MAX_RATE) revert Maximum_Leverage_Exceeded();
+        if (interestRate > VaultMath.MAX_RATE) revert Strategy__Maximum_Leverage_Exceeded(interestRate);
 
-        if (amountIn < order.minObtained) revert Obtained_Insufficient_Amount(amountIn);
+        if (amountIn < order.minObtained) revert Strategy__Insufficient_Amount_Out(amountIn, order.minObtained);
 
         positions[++id] = Position({
             owner: msg.sender,
-            owedToken: spentToken,
-            heldToken: obtainedToken,
+            owedToken: order.spentToken,
+            heldToken: order.obtainedToken,
             collateralToken: collateralToken,
             collateral: collateralReceived,
             principal: toBorrow,
@@ -132,8 +104,8 @@ abstract contract BaseStrategy is Liquidable {
         emit PositionWasOpened(
             id,
             msg.sender,
-            spentToken,
-            obtainedToken,
+            order.spentToken,
+            order.obtainedToken,
             collateralToken,
             collateralReceived,
             toBorrow,
@@ -145,10 +117,7 @@ abstract contract BaseStrategy is Liquidable {
         return id;
     }
 
-    function closePosition(uint256 positionId, uint256 maxOrMin) external validPosition(positionId) {
-        if (positions[positionId].owner != msg.sender)
-            revert Restricted_Access(positions[positionId].owner, msg.sender);
-
+    function closePosition(uint256 positionId, uint256 maxOrMin) external isPositionEditable(positionId) {
         Position memory position = positions[positionId];
 
         delete positions[positionId];
@@ -163,30 +132,72 @@ abstract contract BaseStrategy is Liquidable {
 
         bool collateralInHeldTokens = position.collateralToken != position.owedToken;
 
-        uint256 vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault));
+        IERC20 owedToken = IERC20(position.owedToken);
+        uint256 vaultRepaid = owedToken.balanceOf(address(vault));
         (uint256 amountIn, uint256 amountOut) = _closePosition(position, maxOrMin);
+        vault.repay(
+            position.owedToken,
+            amountIn,
+            position.principal,
+            position.fees,
+            riskFactors[position.heldToken],
+            position.owner
+        );
 
         if (collateralInHeldTokens && amountOut <= position.allowance)
             IERC20(position.heldToken).safeTransfer(position.owner, position.allowance - amountOut);
 
-        vault.repay(position.owedToken, amountIn, position.principal, position.fees, position.owner);
+        vaultRepaid = owedToken.balanceOf(address(vault)) - vaultRepaid;
 
-        vaultRepaid = IERC20(position.owedToken).balanceOf(address(vault)) - vaultRepaid;
-
-        if (vaultRepaid < position.principal) revert Loan_Not_Repaid(vaultRepaid, position.principal);
+        /// The following check is important to prevent users from producing bad liquidations
+        if (vaultRepaid < position.principal) revert Strategy__Loan_Not_Repaid(vaultRepaid, position.principal);
 
         emit PositionWasClosed(positionId);
     }
 
-    function editPosition(uint256 positionId, uint256 newCollateral) external validPosition(positionId) {
+    function editPosition(uint256 positionId, uint256 newCollateral) external isPositionEditable(positionId) {
         Position storage position = positions[positionId];
-        if (position.owner != msg.sender) revert Restricted_Access(position.owner, msg.sender);
 
-        IERC20 tokenToTransfer = IERC20(position.collateralToken);
+        position.topUpCollateral(
+            msg.sender,
+            position.collateralToken == position.owedToken ? address(vault) : address(this),
+            newCollateral
+        );
+    }
 
-        position.collateral += newCollateral;
-        if (position.collateralToken == position.owedToken)
-            tokenToTransfer.safeTransferFrom(msg.sender, address(vault), newCollateral);
-        else tokenToTransfer.safeTransferFrom(msg.sender, address(this), newCollateral);
+    function _maxApprove(IERC20 token, address receiver) internal {
+        if (token.allowance(address(this), receiver) <= 0) {
+            token.safeApprove(receiver, 0);
+            token.safeApprove(receiver, type(uint256).max);
+        }
+    }
+
+    function _borrow(Order memory order)
+        internal
+        returns (
+            uint256 interestRate,
+            uint256 fees,
+            uint256 toSpend,
+            uint256 collateralReceived,
+            uint256 toBorrow,
+            address collateralToken
+        )
+    {
+        address spentToken = order.spentToken;
+        IERC20 spentTkn = IERC20(spentToken);
+        address obtainedToken = order.obtainedToken;
+        uint256 riskFactor = computePairRiskFactor(spentToken, obtainedToken);
+        uint256 originalCollBal = 0;
+
+        collateralToken = order.collateralIsSpentToken ? order.spentToken : order.obtainedToken;
+
+        (collateralReceived, toBorrow, originalCollBal) = IERC20(collateralToken).transferAsCollateral(order);
+        toSpend = originalCollBal + collateralReceived;
+        if (!order.collateralIsSpentToken) {
+            toSpend = spentTkn.balanceOf(address(this));
+        }
+
+        (interestRate, fees) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
+        toSpend = spentTkn.balanceOf(address(this)) - toSpend;
     }
 }

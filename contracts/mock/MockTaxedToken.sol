@@ -10,8 +10,8 @@ contract MockTaxedToken is MockToken {
     constructor(
         string memory name,
         string memory symbol,
-        address to
-    ) MockToken(name, symbol, to) {}
+        uint8 decimals
+    ) MockToken(name, symbol, decimals) {}
 
     function _partialBurn(address from, uint256 amount) internal returns (uint256) {
         uint256 toBurn = (amount * taxFee) / 100;

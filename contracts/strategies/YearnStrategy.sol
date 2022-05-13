@@ -4,27 +4,36 @@ pragma experimental ABIEncoderV2;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IYearnRegistry } from "../interfaces/IYearnRegistry.sol";
+import { IYearnPartnerTracker } from "../interfaces/IYearnPartnerTracker.sol";
 import { IYearnVault } from "../interfaces/IYearnVault.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
 
+import "hardhat/console.sol";
+
 contract YearnStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
 
-    error YearnStrategy__Restricted_Access();
-    error YearnStrategy__Inexistent_Pool(address);
-    error YearnStrategy__Not_Enough_Liquidity();
+    error YearnStrategy__Restricted_Access(address owner, address sender);
+    error YearnStrategy__Inexistent_Pool(address nativeToken);
+    error YearnStrategy__Not_Enough_Liquidity(uint256 balance, uint256 spent);
 
     IYearnRegistry internal immutable registry;
+    address internal immutable yearnPartnerTracker;
+    address internal immutable partnerId;
 
     constructor(
         address _registry,
         address _vault,
-        address _liquidator
+        address _liquidator,
+        address _partnerId,
+        address _yearnPartnerTracker
     ) BaseStrategy(_vault, _liquidator) {
         registry = IYearnRegistry(_registry);
+        partnerId = _partnerId;
+        yearnPartnerTracker = _yearnPartnerTracker;
     }
 
     function name() external pure override returns (string memory) {
@@ -33,26 +42,13 @@ contract YearnStrategy is BaseStrategy {
 
     function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
         IERC20 tkn = IERC20(order.spentToken);
+        uint256 balance = tkn.balanceOf(address(this));
+        if (balance < order.maxSpent) revert YearnStrategy__Not_Enough_Liquidity(balance, order.maxSpent);
 
-        if (tkn.balanceOf(address(this)) < order.maxSpent) revert YearnStrategy__Not_Enough_Liquidity();
+        address vaultAddress = registry.latestVault(order.spentToken);
+        super._maxApprove(tkn, yearnPartnerTracker);
 
-        (bool success, bytes memory return_data) = address(registry).call( // This creates a low level call to the token
-            abi.encodePacked( // This encodes the function to call and the parameters to pass to that function
-                registry.latestVault.selector, // This is the function identifier of the function we want to call
-                abi.encode(order.spentToken) // This encodes the parameter we want to pass to the function
-            )
-        );
-
-        if (!success) revert YearnStrategy__Inexistent_Pool(order.spentToken);
-
-        address vaultAddress = abi.decode(return_data, (address));
-        IYearnVault yvault = IYearnVault(vaultAddress);
-
-        if (tkn.allowance(address(this), vaultAddress) <= 0) {
-            tkn.safeApprove(vaultAddress, type(uint256).max);
-        }
-
-        amountIn = yvault.deposit(order.maxSpent, address(this));
+        amountIn = IYearnPartnerTracker(yearnPartnerTracker).deposit(vaultAddress, partnerId, order.maxSpent);
     }
 
     function _closePosition(Position memory position, uint256 expectedCost)
@@ -60,15 +56,14 @@ contract YearnStrategy is BaseStrategy {
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
-        (bool success, bytes memory return_data) = address(registry).call(
-            abi.encodePacked(registry.latestVault.selector, abi.encode(position.owedToken))
-        );
+        address vaultAddress = registry.latestVault(position.owedToken);
+        IYearnVault yvault = IYearnVault(vaultAddress);
 
-        if (!success) revert YearnStrategy__Inexistent_Pool(position.owedToken);
+        uint256 pricePerShare = yvault.pricePerShare();
+        uint256 maxLoss = ((position.allowance * pricePerShare - expectedCost) * 10000) /
+            (position.allowance * pricePerShare);
 
-        address yvault = abi.decode(return_data, (address));
-        amountIn = IYearnVault(yvault).withdraw(position.allowance, address(vault), 1);
-        /// @todo check maxLoss=1 (0.01%) parameter
+        amountIn = yvault.withdraw(position.allowance, address(vault), maxLoss);
     }
 
     function quote(
@@ -84,6 +79,7 @@ contract YearnStrategy is BaseStrategy {
 
         address vaultAddress = abi.decode(return_data, (address));
         IYearnVault yvault = IYearnVault(vaultAddress);
+
         uint256 obtained = yvault.pricePerShare();
         obtained *= amount;
         return (obtained, obtained);

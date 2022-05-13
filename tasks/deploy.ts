@@ -47,7 +47,7 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
 
   // MockWETH
   const wethFactory: MockWETH__factory = <MockWETH__factory>await hre.ethers.getContractFactory("MockWETH");
-  const weth: MockWETH = <MockWETH>await wethFactory.deploy(kyber.address);
+  const weth: MockWETH = <MockWETH>await wethFactory.deploy();
   await weth.deployed();
   console.log("MockWETH deployed to address: ", weth.address);
 
@@ -55,19 +55,21 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   const tknFactory: MockTaxedToken__factory = <MockTaxedToken__factory>(
     await hre.ethers.getContractFactory("MockTaxedToken")
   );
-  const tkn: MockTaxedToken = <MockTaxedToken>await tknFactory.deploy("Dai Stablecoin", "DAI", kyber.address);
+  const tkn: MockTaxedToken = <MockTaxedToken>await tknFactory.deploy("Dai Stablecoin", "DAI", 18);
   await tkn.deployed();
   console.log("MockTaxedToken deployed to address: ", tkn.address);
 
   // Vault
   const vaultFactory: Vault__factory = <Vault__factory>await hre.ethers.getContractFactory("Vault");
-  const vault: Vault = <Vault>await vaultFactory.deploy(weth.address);
+  const vault: Vault = <Vault>await vaultFactory.deploy(weth.address, "0x0000000000000000000000000000000000000000"); //todo: insert treasury
   await vault.deployed();
   console.log("Vault deployed to address: ", vault.address);
 
   // Liquidator
   const liquidatorFactory: Liquidator__factory = <Liquidator__factory>await hre.ethers.getContractFactory("Liquidator");
-  const liquidator: Liquidator = <Liquidator>await liquidatorFactory.deploy();
+  const liquidator: Liquidator = <Liquidator>(
+    await liquidatorFactory.deploy("0x0000000000000000000000000000000000000000")
+  );
   await liquidator.deployed();
   console.log("Liquidator deployed to address: ", liquidator.address);
 
@@ -85,7 +87,13 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   const ysFactory: YearnStrategy__factory = <YearnStrategy__factory>(
     await hre.ethers.getContractFactory("YearnStrategy")
   );
-  const ys: YearnStrategy = <YearnStrategy>await ysFactory.deploy(yearn.address, vault.address, liquidator.address);
+  const ys: YearnStrategy = <YearnStrategy>await ysFactory.deploy(
+    yearn.address, // registry
+    vault.address, // vault
+    liquidator.address, // liquidator
+    vault.address, // partnerId
+    yearn.address, // yearnPartnerTracker
+  );
   await ys.deployed();
   console.log("YearnStrategy deployed to address: ", ys.address);
 

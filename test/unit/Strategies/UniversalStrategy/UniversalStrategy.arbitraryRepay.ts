@@ -28,6 +28,7 @@ export function checkArbitraryRepay(): void {
       amount,
       collateral,
       fixedFee,
+      riskFactor,
       borrower.address,
     );
     const events = (await rsp.wait()).events;

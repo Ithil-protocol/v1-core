@@ -35,6 +35,7 @@ jobs:
         env:
           INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
           REPORT_GAS: false
           FORKING: false
         run: |
@@ -45,3 +46,29 @@ jobs:
           git add .
           git commit -am "feat: new testnet deployment"
           git push
+      - name: Pushes the smart contract addresses to the deployed repo
+        id: push_directory
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.BOT_GITHUB_TOKEN }}
+        with:
+          source-directory: deployments/
+          destination-github-username: "Ithil-protocol"
+          destination-repository-name: "deployed"
+          user-email: info@ithil.fi
+          commit-message: "new addresses"
+          target-branch: master
+          target-directory: latest
+      - name: Pushes the smart contract abi to the deployed repo
+        id: push_directory
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.BOT_GITHUB_TOKEN }}
+        with:
+          source-directory: abi/
+          destination-github-username: "Ithil-protocol"
+          destination-repository-name: "deployed"
+          user-email: info@ithil.fi
+          commit-message: "new abi"
+          target-branch: master
+          target-directory: abi

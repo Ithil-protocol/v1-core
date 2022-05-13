@@ -25,19 +25,29 @@ export function checkClosePosition(): void {
       vault_inv: await investmentToken.balanceOf(this.vault.address),
     };
 
+    const riskFactor1 = await this.marginTradingStrategy.riskFactors(investmentToken.address);
+    await changeRate(this.mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
+    await changeRate(this.mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
+
+    const [minObtained] = await this.marginTradingStrategy.quote(
+      marginToken.address,
+      investmentToken.address,
+      marginTokenMargin.mul(leverage),
+    );
+
     const order = {
       spentToken: marginToken.address,
       obtainedToken: investmentToken.address,
       collateral: marginTokenMargin,
       collateralIsSpentToken: true,
-      minObtained: marginTokenMargin,
+      minObtained: minObtained,
       maxSpent: marginTokenMargin.mul(leverage),
       deadline: deadline,
     };
 
-    await changeRate(this.mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
-    await changeRate(this.mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
     await this.marginTradingStrategy.connect(trader).openPosition(order);
+
+    const riskFactor2 = await this.marginTradingStrategy.riskFactors(investmentToken.address);
 
     await changeRate(this.mockKyberNetworkProxy, investmentToken, 11 * 10 ** 10);
 
@@ -45,6 +55,8 @@ export function checkClosePosition(): void {
     const maxSpent = position.allowance;
 
     await this.marginTradingStrategy.connect(trader).closePosition(1, maxSpent);
+
+    const riskFactor3 = await this.marginTradingStrategy.riskFactors(investmentToken.address);
 
     const finalState = {
       trader_margin: await marginToken.balanceOf(trader.address),

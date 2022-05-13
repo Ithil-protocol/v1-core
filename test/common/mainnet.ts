@@ -43,3 +43,4 @@ export const stETH = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84";
 export const stETHcrvPool = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022";
 export const ycrvETHPool = "0xdCD90C7f6324cfa40d7169ef80b12031770B4325";
 export const crvLPtoken = "0x06325440d014e39736583c165c2963ba99faf14e";
+export const yearnPartnerTracker = "0x8ee392a4787397126C163Cb9844d7c447da419D8";

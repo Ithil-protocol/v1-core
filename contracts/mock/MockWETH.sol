@@ -6,7 +6,7 @@ import { MockToken } from "./MockToken.sol";
 import "hardhat/console.sol";
 
 contract MockWETH is MockToken {
-    constructor(address to) MockToken("Wrapped Ether", "WETH", to) {}
+    constructor() MockToken("Wrapped Ether", "WETH", 18) {}
 
     receive() external payable {
         deposit();

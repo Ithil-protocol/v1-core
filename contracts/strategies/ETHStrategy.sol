@@ -48,13 +48,13 @@ contract ETHStrategy is BaseStrategy {
     }
 
     receive() external payable {
-        if (msg.sender != vault.WETH() && msg.sender != address(crvPool)) revert ETHStrategy__ETH_Transfer_Failed();
+        if (msg.sender != vault.weth() && msg.sender != address(crvPool)) revert ETHStrategy__ETH_Transfer_Failed();
     }
 
     function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
-        if (order.spentToken != vault.WETH()) revert ETHStrategy__Token_Not_Supported();
+        if (order.spentToken != vault.weth()) revert ETHStrategy__Token_Not_Supported();
 
-        IWETH weth = IWETH(vault.WETH());
+        IWETH weth = IWETH(vault.weth());
 
         if (weth.balanceOf(address(this)) < order.maxSpent) revert ETHStrategy__Not_Enough_Liquidity();
 
@@ -91,7 +91,7 @@ contract ETHStrategy is BaseStrategy {
         amountIn = crvPool.remove_liquidity_one_coin(amount, 0, minAmount);
 
         // Wrap ETH to WETH
-        IWETH weth = IWETH(vault.WETH());
+        IWETH weth = IWETH(vault.weth());
         weth.deposit{ value: amountIn }();
 
         // Transfer WETH to the vault

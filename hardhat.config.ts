@@ -9,6 +9,7 @@ import "solidity-coverage";
 
 import "./tasks/accounts";
 import "./tasks/deploy";
+import "./tasks/publish";
 
 import { chainIds } from "./constants";
 import { resolve } from "path";
@@ -64,7 +65,7 @@ const config: HardhatUserConfig = {
       forking: {
         enabled: process.env.FORKING ? true : false,
         url: "https://eth-mainnet.alchemyapi.io/v2/" + process.env.ALCHEMY_API_KEY,
-        blockNumber: 13567270,
+        blockNumber: 14166636,
       },
     },
     goerli: getChainConfig("goerli"),

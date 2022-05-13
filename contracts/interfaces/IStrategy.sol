@@ -43,12 +43,11 @@ interface IStrategy {
         uint256 createdAt;
     }
 
-    error Invalid_Position(uint256, address);
-    error Restricted_Access(address, address);
-    error No_Withdraw(uint256);
-    error Insufficient_Collateral(uint256);
-    error Source_Eq_Dest(address);
-    error Only_Liquidator(address, address);
+    error Invalid_Position(uint256 id, address strategy);
+    error Restricted_Access(address owner, address sender);
+    error Insufficient_Collateral(uint256 collateral);
+    error Source_Eq_Dest(address source);
+    error Only_Liquidator(address sender, address liquidator);
     error Maximum_Leverage_Exceeded();
 
     function computePairRiskFactor(address token0, address token1) external view returns (uint256);
@@ -59,18 +58,24 @@ interface IStrategy {
         uint256 amount
     ) external view returns (uint256, uint256);
 
-    function forcefullyClose(uint256 _id) external;
+    function forcefullyClose(
+        uint256 _id,
+        address liquidator,
+        uint256 penalty
+    ) external;
 
     function forcefullyDelete(
-        address purchaser,
         uint256 positionId,
-        uint256 price
+        uint256 price,
+        address purchaser,
+        uint256 penalty
     ) external;
 
     function modifyCollateralAndOwner(
         uint256 _id,
         uint256 newCollateral,
-        address newOwner
+        address newOwner,
+        uint256 penalty
     ) external;
 
     function getPosition(uint256 positionId) external view returns (Position memory);
@@ -87,7 +92,7 @@ interface IStrategy {
         uint256 collateral,
         uint256 principal,
         uint256 allowance,
-        uint256 fees,
+        uint256 interestRtae,
         uint256 createdAt
     );
 
@@ -96,4 +101,15 @@ interface IStrategy {
 
     /// @notice Emitted when a position is liquidated
     event PositionWasLiquidated(uint256 indexed id);
+
+    error Strategy__Order_Expired(uint256 timestamp, uint256 deadline);
+    error Strategy__Source_Eq_Dest(address token);
+    error Strategy__Insufficient_Collateral(uint256 collateral);
+    error Strategy__Restricted_Access(address owner, address sender);
+    error Strategy__Throttled(uint256 createdAt, uint256 timestamp);
+    error Strategy__Maximum_Leverage_Exceeded(uint256 interestRate);
+    error Strategy__Insufficient_Amount_Out(uint256 amountIn, uint256 minAmountOut);
+    error Strategy__Loan_Not_Repaid(uint256 repaid, uint256 debt);
+    error Strategy__Only_Liquidator(address sender, address liquidator);
+    error Strategy__Insufficient_Margin_Provided(int256 newScore);
 }

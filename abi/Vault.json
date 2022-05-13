@@ -98,11 +98,6 @@
   },
   {
     "inputs": [],
-    "name": "Vault__Maximum_Leverage_Exceeded",
-    "type": "error"
-  },
-  {
-    "inputs": [],
     "name": "Vault__Null_Amount",
     "type": "error"
   },
@@ -157,7 +152,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "claimingPower",
+        "name": "minted",
         "type": "uint256"
       }
     ],
@@ -170,7 +165,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "borrower",
+        "name": "user",
         "type": "address"
       },
       {
@@ -195,7 +190,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "borrower",
+        "name": "user",
         "type": "address"
       },
       {
@@ -208,6 +203,12 @@
         "indexed": false,
         "internalType": "uint256",
         "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "baseInterestRate",
         "type": "uint256"
       }
     ],
@@ -315,7 +316,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "claimingPower",
+        "name": "burned",
         "type": "uint256"
       }
     ],
@@ -368,11 +369,6 @@
       },
       {
         "internalType": "uint256",
-        "name": "collateral",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
         "name": "riskFactor",
         "type": "uint256"
       },
@@ -386,22 +382,12 @@
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "interestRate",
+        "name": "baseInterestRate",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
         "name": "fees",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "debt",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "borrowed",
         "type": "uint256"
       }
     ],

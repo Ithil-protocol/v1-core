@@ -12,8 +12,9 @@ import { IStrategy } from "../interfaces/IStrategy.sol";
 library TransferHelper {
     using SafeERC20 for IERC20;
 
-    error TransferHelper__Insufficient_Token_Balance(address);
-    error TransferHelper__Insufficient_Token_Allowance(address);
+    error TransferHelper__Insufficient_Token_Balance(address from, address token);
+    error TransferHelper__Insufficient_Token_Allowance(address owner, address spender, address token);
+    error TransferHelper__Sending_Too_Much(address sender, address token);
 
     function transferTokens(
         IERC20 token,
@@ -21,10 +22,10 @@ library TransferHelper {
         address to,
         uint256 amount
     ) internal returns (uint256 originalBalance, uint256 received) {
-        if (token.balanceOf(from) < amount) revert TransferHelper__Insufficient_Token_Balance(address(token));
+        if (token.balanceOf(from) < amount) revert TransferHelper__Insufficient_Token_Balance(from, address(token));
 
         if (token.allowance(from, address(this)) < amount)
-            revert TransferHelper__Insufficient_Token_Allowance(address(token));
+            revert TransferHelper__Insufficient_Token_Allowance(from, address(this), address(token));
 
         // computes transferred balance for tokens with tax on transfers
         originalBalance = token.balanceOf(to);
@@ -33,14 +34,30 @@ library TransferHelper {
         received = token.balanceOf(to) - originalBalance;
     }
 
-    function topUpCollateral(
+    function sendTokens(
         IERC20 token,
-        IStrategy.Position storage position,
-        address from,
         address to,
         uint256 amount
-    ) internal returns (uint256 originalBalance, uint256 received) {
-        (originalBalance, received) = transferTokens(token, from, to, amount);
-        position.collateral += received;
+    ) internal returns (uint256) {
+        if (token.balanceOf(address(this)) < amount)
+            revert TransferHelper__Sending_Too_Much(address(this), address(token));
+
+        // computes transferred balance for tokens with tax on transfers
+        uint256 balance = token.balanceOf(to);
+        token.safeTransfer(to, amount);
+
+        return token.balanceOf(to) - balance;
+    }
+
+    function transferAsCollateral(IERC20 token, IStrategy.Order memory order)
+        internal
+        returns (
+            uint256 collateralReceived,
+            uint256 toBorrow,
+            uint256 originalCollBal
+        )
+    {
+        (originalCollBal, collateralReceived) = transferTokens(token, msg.sender, address(this), order.collateral);
+        toBorrow = order.collateralIsSpentToken ? order.maxSpent : order.maxSpent - collateralReceived;
     }
 }
