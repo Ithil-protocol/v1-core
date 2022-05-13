@@ -13,6 +13,8 @@ interface IVault {
 
     /// ==== STAKING ==== ///
 
+    function weth() external view returns (address);
+
     /// @notice Gets the amount of tokens a user can get back when unstaking
     /// @param token the token to check the claimable amount against
     function claimable(address token) external view returns (uint256);

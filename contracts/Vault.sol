@@ -6,8 +6,8 @@ import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/Saf
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
-import { IWETH } from "./interfaces/IWETH.sol";
 import { IVault } from "./interfaces/IVault.sol";
+import { IWETH } from "./interfaces/IWETH.sol";
 import { IWrappedToken } from "./interfaces/IWrappedToken.sol";
 import { VaultMath } from "./libraries/VaultMath.sol";
 import { VaultState } from "./libraries/VaultState.sol";
@@ -24,13 +24,13 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     using TransferHelper for IERC20;
     using WToken for IWrappedToken;
     // using SafeERC20 for IERC20;
-    // using SafeERC20 for IWETH;
+    using SafeERC20 for IWETH;
     using VaultMath for uint256;
     using GeneralMath for uint256;
     using GeneralMath for VaultState.VaultData;
     using VaultState for VaultState.VaultData;
 
-    address internal immutable weth;
+    address public immutable override weth;
     address internal immutable treasury;
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 

@@ -3,6 +3,7 @@ pragma solidity >=0.8.6;
 pragma experimental ABIEncoderV2;
 
 import { MockToken } from "./MockToken.sol";
+import "hardhat/console.sol";
 
 contract MockWETH is MockToken {
     constructor() MockToken("Wrapped Ether", "WETH", 18) {}
@@ -16,7 +17,8 @@ contract MockWETH is MockToken {
     }
 
     function withdraw(uint256 wad) external {
-        require(balanceOf(msg.sender) >= wad, "WETH: Balance error");
+        require(address(this).balance >= wad, "WETH: internal balance error");
+        require(balanceOf(msg.sender) >= wad, "WETH: sender balance error");
         _burn(msg.sender, wad);
         payable(msg.sender).transfer(wad);
     }
