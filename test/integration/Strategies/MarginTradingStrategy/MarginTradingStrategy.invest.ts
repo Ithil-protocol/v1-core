@@ -10,13 +10,13 @@ export function checkPerformInvestment(): void {
     const investmentToken = this.weth;
     const { investor, trader } = this.signers;
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
-    console.log(1);
+
     await this.vault.whitelistToken(marginToken.address, 10, 10);
     await this.vault.whitelistToken(investmentToken.address, 10, 10);
 
     await fundVault(investor, this.vault, marginToken, marginTokenLiquidity);
     await marginToken.connect(trader).approve(this.marginTradingStrategy.address, marginTokenMargin);
-    console.log(2);
+
     const initialState = {
       trader_margin: await marginToken.balanceOf(trader.address),
       trader_inv: await investmentToken.balanceOf(trader.address),
@@ -29,7 +29,7 @@ export function checkPerformInvestment(): void {
       investmentToken.address,
       marginTokenMargin.mul(leverage),
     );
-    console.log(3);
+
     const order = {
       spentToken: marginToken.address,
       obtainedToken: investmentToken.address,
@@ -41,12 +41,12 @@ export function checkPerformInvestment(): void {
     };
 
     await this.marginTradingStrategy.connect(trader).openPosition(order);
-    console.log(4);
+
     const position = await this.marginTradingStrategy.positions(1);
     const maxSpent = position.allowance;
 
     await this.marginTradingStrategy.connect(trader).closePosition(1, maxSpent);
-    console.log(5);
+
     const finalState = {
       trader_margin: await marginToken.balanceOf(trader.address),
       trader_inv: await investmentToken.balanceOf(trader.address),

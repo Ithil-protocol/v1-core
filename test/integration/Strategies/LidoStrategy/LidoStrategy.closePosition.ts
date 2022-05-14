@@ -5,7 +5,7 @@ import { fundVault, changeRate } from "../../../common/utils";
 import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
 
 export function checkClosePosition(): void {
-  it("ETHStrategy: closePosition", async function () {
+  it("LidoStrategy: closePosition", async function () {
     const { investor, trader } = this.signers;
     const marginToken = this.weth;
     const investmentToken = this.dai;
@@ -15,7 +15,7 @@ export function checkClosePosition(): void {
     await this.vault.whitelistToken(investmentToken.address, 10, 10);
 
     await fundVault(investor, this.vault, marginToken, marginTokenLiquidity);
-    await marginToken.connect(trader).approve(this.ethStrategy.address, marginTokenMargin);
+    await marginToken.connect(trader).approve(this.LidoStrategy.address, marginTokenMargin);
 
     const initialState = {
       trader_margin: await marginToken.balanceOf(trader.address),
@@ -34,10 +34,10 @@ export function checkClosePosition(): void {
       deadline: deadline,
     };
 
-    const position = await this.ethStrategy.connect(trader).openPosition(order);
+    const position = await this.LidoStrategy.connect(trader).openPosition(order);
     //const maxSpent = position.allowance;
 
-    await this.ethStrategy.connect(trader).closePosition(1, 0);
+    await this.LidoStrategy.connect(trader).closePosition(1, 0);
 
     const finalState = {
       trader_margin: await marginToken.balanceOf(trader.address),

@@ -16,6 +16,9 @@ import { MarginTradingStrategy__factory } from "../src/types/factories/MarginTra
 import { YearnStrategy } from "../src/types/YearnStrategy";
 import { YearnStrategy__factory } from "../src/types/factories/YearnStrategy__factory";
 
+import { LidoStrategy } from "../src/types/LidoStrategy";
+import { LidoStrategy__factory } from "../src/types/factories/LidoStrategy__factory";
+
 import { MockKyberNetworkProxy } from "../src/types/MockKyberNetworkProxy";
 import { MockKyberNetworkProxy__factory } from "../src/types/factories/MockKyberNetworkProxy__factory";
 
@@ -78,7 +81,7 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
     await hre.ethers.getContractFactory("MarginTradingStrategy")
   );
   const mts: MarginTradingStrategy = <MarginTradingStrategy>(
-    await mtsFactory.deploy(kyber.address, vault.address, liquidator.address)
+    await mtsFactory.deploy(vault.address, liquidator.address, kyber.address)
   );
   await mts.deployed();
   console.log("MarginTradingStrategy deployed to address: ", mts.address);
@@ -88,14 +91,30 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
     await hre.ethers.getContractFactory("YearnStrategy")
   );
   const ys: YearnStrategy = <YearnStrategy>await ysFactory.deploy(
-    yearn.address, // registry
     vault.address, // vault
     liquidator.address, // liquidator
+    yearn.address, // registry
     vault.address, // partnerId
     yearn.address, // yearnPartnerTracker
   );
   await ys.deployed();
   console.log("YearnStrategy deployed to address: ", ys.address);
+
+  // LidoStrategy
+  /*
+  const lsFactory: LidoStrategy__factory = <LidoStrategy__factory>(
+    await hre.ethers.getContractFactory("LidoStrategy")
+  );
+  const ls: LidoStrategy = <LidoStrategy>await lsFactory.deploy(
+    vault.address, // vault
+    liquidator.address, // liquidator
+    yearn.address, // registry
+    vault.address, // partnerId
+    yearn.address, // yearnPartnerTracker
+  );
+  await ls.deployed();
+  console.log("LidoStrategy deployed to address: ", ys.address);
+  */
 
   // write addresses to a file
   const addressesFile = {

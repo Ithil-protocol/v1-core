@@ -5,15 +5,15 @@ import type { Vault } from "../../../../src/types/Vault";
 import { Signers } from "../../../types";
 import type { ERC20 } from "../../../../src/types/ERC20";
 
-import { tokens, stETH, stETHcrvPool, crvLPtoken, ycrvETHPool } from "../../../common/mainnet";
+import { tokens, stETH, stETHcrvPool, crvLPtoken, yearnRegistry, yearnPartnerTracker } from "../../../common/mainnet";
 import { getTokens } from "../../../common/utils";
 import { marginTokenLiquidity } from "../../../common/params";
 
 import { Liquidator } from "../../../../src/types/Liquidator";
-import { ETHStrategy } from "../../../../src/types/ETHStrategy";
+import { LidoStrategy } from "../../../../src/types/LidoStrategy";
 
-import { checkOpenPosition } from "./ETHStrategy.openPosition";
-import { checkClosePosition } from "./ETHStrategy.closePosition";
+import { checkOpenPosition } from "./LidoStrategy.openPosition";
+import { checkClosePosition } from "./LidoStrategy.closePosition";
 
 describe("Strategy tests", function () {
   before(async function () {
@@ -26,7 +26,7 @@ describe("Strategy tests", function () {
     this.signers.liquidator = signers[3];
   });
 
-  describe("ETHStrategy", function () {
+  describe("LidoStrategy", function () {
     beforeEach(async function () {
       const tokenArtifact: Artifact = await artifacts.readArtifact("ERC20");
       this.weth = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.WETH.address);
@@ -48,17 +48,19 @@ describe("Strategy tests", function () {
         ])
       );
 
-      const ethArtifact: Artifact = await artifacts.readArtifact("ETHStrategy");
-      this.ethStrategy = <ETHStrategy>await waffle.deployContract(this.signers.admin, ethArtifact, [
+      const ethArtifact: Artifact = await artifacts.readArtifact("LidoStrategy");
+      this.LidoStrategy = <LidoStrategy>await waffle.deployContract(this.signers.admin, ethArtifact, [
+        this.vault.address,
+        this.liquidator.address,
         stETH,
         stETHcrvPool, // stETH-ETH Curve pool
         crvLPtoken, // Curve LP token
-        ycrvETHPool, // Yearn crvstETH vault
-        this.vault.address,
-        this.liquidator.address,
+        yearnRegistry, // Yearn Registry
+        this.vault.address, // Yearn partnerId
+        yearnPartnerTracker,
       ]);
 
-      await this.vault.addStrategy(this.ethStrategy.address);
+      await this.vault.addStrategy(this.LidoStrategy.address);
     });
 
     checkOpenPosition();

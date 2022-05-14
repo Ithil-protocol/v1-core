@@ -51,9 +51,9 @@ describe("Liquidation tests", function () {
       const mtsArtifact: Artifact = await artifacts.readArtifact("MarginTradingStrategy");
       this.marginTradingStrategy = <MarginTradingStrategy>(
         await waffle.deployContract(this.signers.admin, mtsArtifact, [
-          this.mockKyberNetworkProxy.address,
           this.vault.address,
           this.liquidator.address,
+          this.mockKyberNetworkProxy.address,
         ])
       );
 

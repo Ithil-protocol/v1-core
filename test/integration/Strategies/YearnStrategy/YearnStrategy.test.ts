@@ -48,9 +48,9 @@ describe("Strategy integration tests", function () {
 
       const ysArtifact: Artifact = await artifacts.readArtifact("YearnStrategy");
       this.yearnStrategy = <YearnStrategy>await waffle.deployContract(this.signers.admin, ysArtifact, [
-        yearnRegistry, // registry
         this.vault.address, // vault
         this.liquidator.address, // liquidator
+        yearnRegistry, // registry
         this.vault.address, // partnerId
         yearnPartnerTracker, // yearnPartnerTracker
       ]);
