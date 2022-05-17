@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.6;
+pragma solidity >=0.8.10;
 pragma experimental ABIEncoderV2;
 
 import { VaultState } from "../libraries/VaultState.sol";
@@ -12,6 +12,8 @@ interface IVault {
     function checkWhitelisted(address token) external view;
 
     /// ==== STAKING ==== ///
+
+    function weth() external view returns (address);
 
     /// @notice Gets the amount of tokens a user can get back when unstaking
     /// @param token the token to check the claimable amount against

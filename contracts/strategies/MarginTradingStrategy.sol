@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.6;
+pragma solidity >=0.8.10;
 pragma experimental ABIEncoderV2;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -18,9 +18,9 @@ contract MarginTradingStrategy is BaseStrategy {
     IKyberNetworkProxy public immutable kyberProxy;
 
     constructor(
-        address _kyber,
         address _vault,
-        address _liquidator
+        address _liquidator,
+        address _kyber
     ) BaseStrategy(_vault, _liquidator) {
         kyberProxy = IKyberNetworkProxy(_kyber);
     }

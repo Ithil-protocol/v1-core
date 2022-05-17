@@ -5,16 +5,17 @@ import type { Vault } from "../../../../src/types/Vault";
 import { Signers } from "../../../types";
 import type { ERC20 } from "../../../../src/types/ERC20";
 
-import { tokens, yearnRegistry, yearnPartnerTracker } from "../../../common/mainnet";
+import { tokens, stETH, stETHcrvPool, crvLPtoken, yearnRegistry, yearnPartnerTracker } from "../../../common/mainnet";
 import { getTokens } from "../../../common/utils";
 import { marginTokenLiquidity } from "../../../common/params";
 
-import { YearnStrategy } from "../../../../src/types/YearnStrategy";
 import { Liquidator } from "../../../../src/types/Liquidator";
+import { LidoStrategy } from "../../../../src/types/LidoStrategy";
 
-import { checkPerformInvestment } from "./YearnStrategy.invest";
+import { checkOpenPosition } from "./LidoStrategy.openPosition";
+import { checkClosePosition } from "./LidoStrategy.closePosition";
 
-describe("Strategy integration tests", function () {
+describe("Strategy tests", function () {
   before(async function () {
     this.signers = {} as Signers;
 
@@ -25,13 +26,14 @@ describe("Strategy integration tests", function () {
     this.signers.liquidator = signers[3];
   });
 
-  describe("YearnStrategy", function () {
+  describe("LidoStrategy", function () {
     beforeEach(async function () {
       const tokenArtifact: Artifact = await artifacts.readArtifact("ERC20");
       this.weth = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.WETH.address);
+      await getTokens(this.signers.investor.address, tokens.WETH.address, tokens.WETH.whale, marginTokenLiquidity);
+      await getTokens(this.signers.trader.address, tokens.WETH.address, tokens.WETH.whale, marginTokenLiquidity);
 
       this.dai = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.DAI.address);
-      await getTokens(this.signers.investor.address, tokens.DAI.address, tokens.DAI.whale, marginTokenLiquidity);
       await getTokens(this.signers.trader.address, tokens.DAI.address, tokens.DAI.whale, marginTokenLiquidity);
 
       const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
@@ -46,18 +48,22 @@ describe("Strategy integration tests", function () {
         ])
       );
 
-      const ysArtifact: Artifact = await artifacts.readArtifact("YearnStrategy");
-      this.yearnStrategy = <YearnStrategy>await waffle.deployContract(this.signers.admin, ysArtifact, [
-        this.vault.address, // vault
-        this.liquidator.address, // liquidator
-        yearnRegistry, // registry
-        this.vault.address, // partnerId
-        yearnPartnerTracker, // yearnPartnerTracker
+      const ethArtifact: Artifact = await artifacts.readArtifact("LidoStrategy");
+      this.LidoStrategy = <LidoStrategy>await waffle.deployContract(this.signers.admin, ethArtifact, [
+        this.vault.address,
+        this.liquidator.address,
+        stETH,
+        stETHcrvPool, // stETH-ETH Curve pool
+        crvLPtoken, // Curve LP token
+        yearnRegistry, // Yearn Registry
+        this.vault.address, // Yearn partnerId
+        yearnPartnerTracker,
       ]);
 
-      await this.vault.addStrategy(this.yearnStrategy.address);
+      await this.vault.addStrategy(this.LidoStrategy.address);
     });
 
-    checkPerformInvestment();
+    checkOpenPosition();
+    checkClosePosition();
   });
 });

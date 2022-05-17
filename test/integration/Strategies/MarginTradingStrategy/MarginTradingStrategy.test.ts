@@ -49,9 +49,9 @@ describe("Strategy integration tests", function () {
       const mtsArtifact: Artifact = await artifacts.readArtifact("MarginTradingStrategy");
       this.marginTradingStrategy = <MarginTradingStrategy>(
         await waffle.deployContract(this.signers.admin, mtsArtifact, [
-          kyberNetwork,
           this.vault.address,
           this.liquidator.address,
+          kyberNetwork,
         ])
       );
 
