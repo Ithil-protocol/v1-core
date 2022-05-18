@@ -1,6 +1,4 @@
-import { isCommunityResourcable } from "@ethersproject/providers";
 import { expect } from "chai";
-import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import ERC20 from "@openzeppelin/contracts/build/contracts/ERC20.json";
 import { mintAndStake, expandTo18Decimals } from "../../common/utils";
@@ -19,7 +17,7 @@ export function checkStaking(): void {
     // Initial staker's liquidity
     const initialStakerLiquidity = expandTo18Decimals(10000);
     // Amount to unstake
-    const amountBack = expandTo18Decimals(800);
+    const amountBack = expandTo18Decimals(1000);
 
     const stakeTx = await mintAndStake(investor, this.vault, token, initialStakerLiquidity, amountToStake);
     const stakeEvents = (await stakeTx.wait()).events;
