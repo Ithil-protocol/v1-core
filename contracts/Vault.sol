@@ -81,7 +81,6 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
     function claimable(address token) external view override returns (uint256) {
         checkWhitelisted(token);
-
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
 
         return VaultMath.maximumWithdrawal(wToken.balanceOf(msg.sender), wToken.totalSupply(), balance(token));
@@ -147,9 +146,22 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         tkn.safeTransfer(treasury, toTransfer);
     }
 
-    function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
+    function addInsurance(address token, uint256 amount)
+        external
+        override
+        unlocked(token)
+        isValidAmount(amount)
+        onlyTreasury
+    {
         checkWhitelisted(token);
 
+        (, uint256 received) = IERC20(token).transferTokens(msg.sender, address(this), amount);
+
+        vaults[token].insuranceReserveBalance += received;
+    }
+
+    function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
+        checkWhitelisted(token);
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
         uint256 totalWealth = balance(token);
 

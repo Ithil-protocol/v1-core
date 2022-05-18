@@ -59,6 +59,11 @@ interface IVault {
     /// @param strategy the strategy to add
     function addStrategy(address strategy) external;
 
+    /// @notice Adds tokens in the insurance reserve
+    /// @param token the token to add
+    /// @param amount the amount to add
+    function addInsurance(address token, uint256 amount) external;
+
     /// @notice Removes a strategy address from the list
     /// @param strategy the strategy to remove
     function removeStrategy(address strategy) external;

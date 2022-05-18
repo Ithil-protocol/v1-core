@@ -8,7 +8,10 @@ import { MockWETH } from "../../../src/types/MockWETH";
 
 import { checkWhiteList } from "./Vault.whiteList";
 import { checkTreasuryStaking } from "./Vault.treasuryStake";
+import { checkRebalanceInsurance } from "./Vault.insuranceRebalance";
+import { checkClaimable } from "./Vault.claimable";
 import { checkStaking } from "./Vault.stake";
+import { checkLock } from "./Vault.lock";
 import { checkBorrow } from "./Vault.borrow";
 import { checkAddStrategy } from "./Vault.addStrategy";
 
@@ -44,6 +47,9 @@ describe("Lending unit tests", function () {
     checkStaking(); // stake, unstake
     checkAddStrategy(); // addStrategy, removeStrategy
     checkTreasuryStaking();
+    checkRebalanceInsurance();
+    checkClaimable();
+    checkLock();
     // checkBorrow(); // borrow, repay // TODO: currently, skip borrow checking because it is strategyOnly
   });
 });

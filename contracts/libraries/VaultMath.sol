@@ -37,7 +37,7 @@ library VaultMath {
         uint256 totalSupply,
         uint256 totalBalance
     ) internal pure returns (uint256) {
-        return totalBalance != 0 ? (totalSupply * amount) / totalBalance : amount;
+        return (totalBalance != 0 && totalSupply != 0) ? (totalSupply * amount) / totalBalance : amount;
     }
 
     function computeFees(uint256 amount, uint256 fixedFee) internal pure returns (uint256 debt) {
