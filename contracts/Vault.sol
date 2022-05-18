@@ -155,9 +155,9 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     {
         checkWhitelisted(token);
 
-        (, uint256 received) = IERC20(token).transferTokens(msg.sender, address(this), amount);
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
 
-        vaults[token].insuranceReserveBalance += received;
+        vaults[token].insuranceReserveBalance += amount;
     }
 
     function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
