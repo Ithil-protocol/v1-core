@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 import { IVault } from "./interfaces/IVault.sol";
 import { IWETH } from "./interfaces/IWETH.sol";
 import { IWrappedToken } from "./interfaces/IWrappedToken.sol";

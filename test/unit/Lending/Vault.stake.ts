@@ -12,6 +12,8 @@ export function checkStaking(): void {
     const wrappedTokenAddress = (await this.vault.vaults(token.address)).wrappedToken;
     const wrappedToken = await ethers.getContractAt(ERC20.abi, wrappedTokenAddress);
 
+    expect(await wrappedToken.decimals()).to.equal(await token.decimals());
+
     // Amount to stake
     const amountToStake = expandTo18Decimals(1000);
     // Initial staker's liquidity
