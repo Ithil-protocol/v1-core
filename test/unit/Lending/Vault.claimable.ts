@@ -6,9 +6,12 @@ export function checkClaimable(): void {
     const token = this.mockWETH;
     const investor = this.signers.investor;
 
-    // Amount to stake
+    // Initial status
+    const initialClaimable = await this.vault.connect(investor).claimable(token.address);
+    expect(initialClaimable).to.equal(0);
+
+    // Stake and check claimable value
     const amountToStake = expandTo18Decimals(1000);
-    // Initial staker's liquidity
     const initialStakerLiquidity = expandTo18Decimals(10000);
     await mintAndStake(investor, this.vault, token, initialStakerLiquidity, amountToStake);
 
