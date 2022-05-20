@@ -24,7 +24,7 @@ jobs:
       - run: yarn install
       - name: Run yarn compile
         env:
-          INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         run: yarn compile
       - name: Configure git information
@@ -33,7 +33,7 @@ jobs:
           git config --global user.email $GITHUB_ACTOR@users.noreply.github.com
       - name: Deploy
         env:
-          INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
           REPORT_GAS: false
