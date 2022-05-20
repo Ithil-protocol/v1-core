@@ -1,6 +1,4 @@
-<div align="center">
 ![ithil](header.png)
-</div>
 
 <h1 align="center">Ithil Protocol V1</h1>
 
