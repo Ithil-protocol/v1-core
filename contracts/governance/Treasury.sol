@@ -11,6 +11,8 @@ import { IExchange } from "./interfaces/IExchange.sol";
 /// @author   Ithil
 /// @notice   Responsible for APY boosts and governance decisions
 contract Treasury is Ownable {
+    using SafeERC20 for IERC20;
+
     error Treasury__Insufficient_Wealth(address token, uint256 balance, uint256 wealth);
     error Treasury__Excessive_Airdrop(uint256 wealth, uint256 amount);
     error Treasury__Airdrop_Too_Recent(uint256 timestamp, uint256 lastAirdrop, uint256 interval);
@@ -69,7 +71,7 @@ contract Treasury is Ownable {
 
     function inject(address token, uint256 amount) external {
         treasuryWealth[token] += amount;
-        IERC20(token).transferFrom(msg.sender, address(this), amount);
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function boostVault(
@@ -82,7 +84,7 @@ contract Treasury is Ownable {
         uint256 balance = tkn.balanceOf(address(this));
         uint256 tWealth = treasuryWealth[fromToken];
 
-        if (balance < treasuryWealth[fromToken]) revert Treasury__Insufficient_Wealth(fromToken, balance, tWealth);
+        if (balance <= tWealth) revert Treasury__Insufficient_Wealth(fromToken, balance, tWealth);
         uint256 renounceAmount = balance - tWealth;
 
         if (fromToken != toToken) {
@@ -96,8 +98,8 @@ contract Treasury is Ownable {
             if (IERC20(toToken).balanceOf(address(this)) <= initialBalanceTo + minAmountIn)
                 revert Treasury__Swap_To_Taxed_Or_Wrong_Call();
 
-            tkn.transfer(address(vault), amountIn);
-        } else tkn.transfer(address(vault), renounceAmount);
+            tkn.safeTransfer(address(vault), amountIn);
+        } else tkn.safeTransfer(address(vault), renounceAmount);
     }
 
     function airdrop(address receiver, uint256 amount) external onlyOwner {
@@ -118,6 +120,6 @@ contract Treasury is Ownable {
         airdropParameters.latestAirdrop = block.timestamp;
         treasuryWealth[address(governanceToken)] -= amount;
 
-        governanceToken.transfer(receiver, amount);
+        governanceToken.safeTransfer(receiver, amount);
     }
 }
