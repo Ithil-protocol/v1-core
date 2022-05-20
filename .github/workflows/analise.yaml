@@ -27,7 +27,7 @@ jobs:
           FORK_URL: ${{ secrets.FORK_URL }}
           REPORT_GAS: false
           FORKING: true
-          INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         run: yarn compile
       - name: Set up Python 3.8
