@@ -12,7 +12,7 @@
 
 </div>
 
-> Ithil is the first decentralised DeFi hedge fund to perform undercollateralised leveraged investments on virtually any DeFi protocol.
+> Ithil is the first decentralised DeFi investment aggregator to perform undercollateralised leveraged trades on virtually any DeFi protocol.
 
 This repository contains the core smart contracts for Ithil V1.
 
