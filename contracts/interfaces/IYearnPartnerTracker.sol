@@ -2,6 +2,8 @@
 pragma solidity >=0.8.12;
 pragma experimental ABIEncoderV2;
 
+/// @title    Interface of the Yearn PartnerTracker contract
+/// @author   Yearn finance
 interface IYearnPartnerTracker {
     /**
      * @notice Deposit into a vault the specified amount from depositer

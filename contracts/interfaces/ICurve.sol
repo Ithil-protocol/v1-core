@@ -2,6 +2,8 @@
 pragma solidity >=0.8.12;
 pragma experimental ABIEncoderV2;
 
+/// @title    Interface of the Curve contract
+/// @author   Curve finance
 interface ICurve {
     function add_liquidity(uint256[2] memory amounts, uint256 deadline) external returns (uint256);
 

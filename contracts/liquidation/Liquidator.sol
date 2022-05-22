@@ -15,7 +15,6 @@ import { TransferHelper } from "../libraries/TransferHelper.sol";
 /// @notice   Base liquidation contract, can forcefully close base strategy's positions
 contract Liquidator is Ownable {
     using SafeERC20 for IERC20;
-    using TransferHelper for IERC20;
     using GeneralMath for uint256;
 
     IERC20 public immutable ithil;

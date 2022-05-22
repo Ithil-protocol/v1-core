@@ -2,7 +2,7 @@
 pragma solidity >=0.8.12;
 pragma experimental ABIEncoderV2;
 
-import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IVault } from "./interfaces/IVault.sol";
@@ -19,11 +19,8 @@ import { TransferHelper } from "./libraries/TransferHelper.sol";
 /// @author   Ithil
 /// @notice   Stores staked funds, issues loans and handles repayments to strategies
 contract Vault is IVault, ReentrancyGuard, Ownable {
-    using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
     using WToken for IWrappedToken;
-    // using SafeERC20 for IERC20;
-    using SafeERC20 for IWETH;
     using VaultMath for uint256;
     using GeneralMath for uint256;
     using GeneralMath for VaultState.VaultData;
@@ -61,7 +58,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         _;
     }
 
-    // only accept ETH via fallback from the WETH contract
+    // only accept ETH from the WETH contract
     receive() external payable {
         if (msg.sender != weth) revert Vault__ETH_Transfer_Failed(msg.sender, weth);
     }
@@ -110,6 +107,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     ) public override onlyOwner {
         if (vaults[token].supported) revert Vault__Token_Already_Supported(token);
 
+        // deploys a wrapped token contract
         vaults[token].wrappedToken = address(new WrappedToken(token));
         vaults[token].supported = true;
         vaults[token].creationTime = block.timestamp;
@@ -142,7 +140,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         toTransfer = insuranceReserveBalance - optimalIR;
         vault.insuranceReserveBalance -= toTransfer;
 
-        tkn.safeTransfer(treasury, toTransfer);
+        tkn.sendTokens(treasury, toTransfer);
     }
 
     function addInsurance(address token, uint256 amount)
@@ -156,7 +154,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         vaults[token].insuranceReserveBalance += amount;
 
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(token).transferTokens(msg.sender, address(this), amount);
     }
 
     function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
@@ -192,7 +190,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         uint256 toBurn = wToken.burnWrapped(amount, balance(token), msg.sender);
 
-        IERC20(token).safeTransfer(msg.sender, amount);
+        IERC20(token).sendTokens(msg.sender, amount);
         emit Withdrawal(msg.sender, token, amount, toBurn);
     }
 
@@ -232,7 +230,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         vault.treasuryLiquidity -= amount;
 
-        IERC20(token).safeTransfer(msg.sender, amount);
+        IERC20(token).sendTokens(msg.sender, amount);
     }
 
     function borrow(

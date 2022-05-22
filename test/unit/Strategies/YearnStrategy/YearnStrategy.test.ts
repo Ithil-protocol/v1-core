@@ -65,7 +65,7 @@ describe("Strategy tests", function () {
         this.vault.address, // vault
         this.liquidator.address, // liquidator
         this.mockYearnRegistry.address, // registry
-        this.vault.address, // partnerId
+        "0x0000000000000000000000000000000000000000", // partnerId
         this.mockYearnRegistry.address, // yearnPartnerTracker
       ]);
 

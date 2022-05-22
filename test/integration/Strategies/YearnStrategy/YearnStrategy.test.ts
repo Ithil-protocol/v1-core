@@ -5,7 +5,7 @@ import type { Vault } from "../../../../src/types/Vault";
 import { Signers } from "../../../types";
 import type { ERC20 } from "../../../../src/types/ERC20";
 
-import { tokens, yearnRegistry, yearnPartnerTracker } from "../../../common/mainnet";
+import { tokens, yearnRegistry, yearnPartnerTracker, yearnPartnerId } from "../../../common/mainnet";
 import { getTokens } from "../../../common/utils";
 import { marginTokenLiquidity } from "../../../common/params";
 
@@ -47,13 +47,15 @@ describe("Strategy integration tests", function () {
       );
 
       const ysArtifact: Artifact = await artifacts.readArtifact("YearnStrategy");
-      this.yearnStrategy = <YearnStrategy>await waffle.deployContract(this.signers.admin, ysArtifact, [
-        this.vault.address, // vault
-        this.liquidator.address, // liquidator
-        yearnRegistry, // registry
-        this.vault.address, // partnerId
-        yearnPartnerTracker, // yearnPartnerTracker
-      ]);
+      this.yearnStrategy = <YearnStrategy>(
+        await waffle.deployContract(this.signers.admin, ysArtifact, [
+          this.vault.address,
+          this.liquidator.address,
+          yearnRegistry,
+          yearnPartnerId,
+          yearnPartnerTracker,
+        ])
+      );
 
       await this.vault.addStrategy(this.yearnStrategy.address);
     });

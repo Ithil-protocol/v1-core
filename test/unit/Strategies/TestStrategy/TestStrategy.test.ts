@@ -6,18 +6,18 @@ import { Liquidator } from "../../../../src/types/Liquidator";
 import { MockKyberNetworkProxy } from "../../../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../../../src/types/MockWETH";
 import { Vault } from "../../../../src/types/Vault";
-import { UniversalStrategy } from "../../../../src/types/UniversalStrategy";
+import { TestStrategy } from "../../../../src/types/TestStrategy";
 
-import { checkSetRiskFactor } from "./UniversalStrategy.setRiskFactor";
-import { checkGetPosition } from "./UniversalStrategy.getPosition";
-import { checkTotalAllowance } from "./UniversalStrategy.totalAllowance";
-import { checkVaultAddress } from "./UniversalStrategy.vaultAddress";
-import { checkOpenPosition } from "./UniversalStrategy.openPosition";
-import { checkClosePosition } from "./UniversalStrategy.closePosition";
-import { checkEditPosition } from "./UniversalStrategy.editPosition";
-import { checkStatus } from "./UniversalStrategy.status";
-import { checkArbitraryBorrow } from "./UniversalStrategy.arbitraryBorrow";
-import { checkArbitraryRepay } from "./UniversalStrategy.arbitraryRepay";
+import { checkSetRiskFactor } from "./TestStrategy.setRiskFactor";
+import { checkGetPosition } from "./TestStrategy.getPosition";
+import { checkTotalAllowance } from "./TestStrategy.totalAllowance";
+import { checkVaultAddress } from "./TestStrategy.vaultAddress";
+import { checkOpenPosition } from "./TestStrategy.openPosition";
+import { checkClosePosition } from "./TestStrategy.closePosition";
+import { checkEditPosition } from "./TestStrategy.editPosition";
+import { checkStatus } from "./TestStrategy.status";
+import { checkArbitraryBorrow } from "./TestStrategy.arbitraryBorrow";
+import { checkArbitraryRepay } from "./TestStrategy.arbitraryRepay";
 
 describe("Strategy tests", function () {
   before(async function () {
@@ -30,7 +30,7 @@ describe("Strategy tests", function () {
     this.signers.liquidator = signers[3];
   });
 
-  describe("UniversalStrategy", function () {
+  describe("TestStrategy", function () {
     beforeEach(async function () {
       const liquidatorArtifact: Artifact = await artifacts.readArtifact("Liquidator");
       this.liquidator = <Liquidator>(
@@ -55,11 +55,11 @@ describe("Strategy tests", function () {
         ])
       );
 
-      const usArtifact: Artifact = await artifacts.readArtifact("UniversalStrategy");
-      this.universalStrategy = <UniversalStrategy>(
+      const usArtifact: Artifact = await artifacts.readArtifact("TestStrategy");
+      this.TestStrategy = <TestStrategy>(
         await waffle.deployContract(this.signers.admin, usArtifact, [this.vault.address, this.liquidator.address])
       );
-      await this.vault.addStrategy(this.universalStrategy.address);
+      await this.vault.addStrategy(this.TestStrategy.address);
     });
 
     // checkSetRiskFactor();
