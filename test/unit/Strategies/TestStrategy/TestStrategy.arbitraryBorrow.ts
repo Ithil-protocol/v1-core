@@ -2,8 +2,8 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
-export function checkArbitraryRepay(): void {
-  it("UniversalStrategy: arbitraryRepay", async function () {
+export function checkArbitraryBorrow(): void {
+  it("TestStrategy: arbitraryBorrow", async function () {
     const baseFee = 10;
     const fixedFee = 11;
     const token = this.mockWETH;
@@ -21,20 +21,26 @@ export function checkArbitraryRepay(): void {
       balance: await token.balanceOf(borrower.address),
     };
 
-    await this.universalStrategy.arbitraryBorrow(token.address, amount, riskFactor, borrower.address);
-
-    const rsp = await this.universalStrategy.arbitraryRepay(
-      token.address,
-      amount,
-      collateral,
-      fixedFee,
-      riskFactor,
-      borrower.address,
-    );
+    const rsp = await this.TestStrategy.arbitraryBorrow(token.address, amount, riskFactor, borrower.address);
     const events = (await rsp.wait()).events;
 
     const finalState = {
       balance: await token.balanceOf(borrower.address),
     };
+
+    // TODO: balance check
+    // expect(finalState.balance).to.equal(initialState.balance.sub(amount));
+    // console.log(initialState, finalState);
+
+    // TODO: event check
+
+    // const validEvents = events?.filter(
+    //   event =>
+    //     event.event === "LoanTaken" &&
+    //     event.args &&
+    //     event.args[0] === borrower.address &&
+    //     event.args[1] === token.address,
+    // );
+    // expect(validEvents?.length).equal(1);
   });
 }

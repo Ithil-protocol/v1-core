@@ -10,8 +10,9 @@ import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
 
-import "hardhat/console.sol";
-
+/// @title    YearnStrategy contract
+/// @author   Ithil
+/// @notice   A strategy to perform leveraged staking on any Yearn vault
 contract YearnStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;

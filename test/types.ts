@@ -9,7 +9,7 @@ import type { MockWETH } from "../src/types/MockWETH";
 import type { MockYearnRegistry } from "../src/types/MockYearnRegistry";
 import type { MockYearnVault } from "../src/types/MockYearnVault";
 import type { Liquidable } from "../src/types/Liquidable";
-import type { UniversalStrategy } from "../src/types/UniversalStrategy";
+import type { TestStrategy } from "../src/types/TestStrategy";
 import type { YearnStrategy } from "../src/types/YearnStrategy";
 import type { MarginTradingStrategy } from "../src/types/MarginTradingStrategy";
 import type { Vault } from "../src/types/Vault";
@@ -26,7 +26,7 @@ declare module "mocha" {
     liquidable: Liquidable;
     yearnStrategy: YearnStrategy;
     marginTradingStrategy: MarginTradingStrategy;
-    universalStrategy: UniversalStrategy;
+    TestStrategy: TestStrategy;
     vault: Vault;
     loadFixture: <T>(fixture: Fixture<T>) => Promise<T>;
     signers: Signers;

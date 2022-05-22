@@ -2,6 +2,8 @@
 pragma solidity >=0.8.12;
 pragma experimental ABIEncoderV2;
 
+/// @title    Interface of the parent Strategy contract
+/// @author   Ithil
 interface IStrategy {
     /// @param spentToken the token we spend to enter the investment
     /// @param obtainedToken the token obtained as result of the investment

@@ -14,10 +14,10 @@ import { BaseStrategy } from "./BaseStrategy.sol";
 
 /// @title    LidoStrategy contract
 /// @author   Ithil
-/// @notice   Stakes ETH on Lido, gets stETH, provides stETH to Curve as liquidity,
+/// @notice   A strategy to perform leveraged staking on Lido
+/// @dev      Stakes ETH on Lido, gets stETH, provides stETH to Curve as liquidity,
 ///           then stakes Curve LP tokens on Yearn.
 ///           Curve pool token indexes: ETH = 0, stETH = 1
-
 contract LidoStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
     using SafeERC20 for IStETH;
@@ -89,7 +89,10 @@ contract LidoStrategy is BaseStrategy {
         returns (uint256 amountIn, uint256 amountOut)
     {
         // Unstake crvstETH from Yearn
-        uint256 amount = yvault.withdraw(position.allowance, address(this), 1);
+        uint256 pricePerShare = yvault.pricePerShare();
+        uint256 maxLoss = ((position.allowance * pricePerShare - expectedCost) * 10000) /
+            (position.allowance * pricePerShare);
+        uint256 amount = yvault.withdraw(position.allowance, address(this), maxLoss);
 
         // Remove liquidity from Curve
         uint256 minAmount = crvPool.calc_token_amount([uint256(0), amount], false); // TODO should we run it off-chain?

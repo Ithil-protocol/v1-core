@@ -9,7 +9,8 @@ import { IWrappedToken } from "../interfaces/IWrappedToken.sol";
 
 /// @title    WrappedToken library
 /// @author   Ithil
-/// @notice   A library to collect functions related to actions with wrapped tokens
+/// @notice   A library to collect functions related to actions with wrapped token
+/// @dev      To be replaced by EIP4626 when the standard is mature enough
 library WToken {
     function mintWrapped(
         IWrappedToken wToken,

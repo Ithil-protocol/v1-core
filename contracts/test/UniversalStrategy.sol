@@ -5,20 +5,20 @@ pragma experimental ABIEncoderV2;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IKyberNetworkProxy } from "../interfaces/IKyberNetworkProxy.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
-import { BaseStrategy } from "./BaseStrategy.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
+import { BaseStrategy } from "../strategies/BaseStrategy.sol";
 
 /// @title    Universal strategy contract
 /// @author   Ithil
 /// @notice   For testing
-contract UniversalStrategy is BaseStrategy {
+contract TestStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
 
     constructor(address _vault, address _liquidator) BaseStrategy(_vault, _liquidator) {}
 
     function name() external pure override returns (string memory) {
-        return "UniversalStrategy";
+        return "TestStrategy";
     }
 
     function _openPosition(Order memory order) internal override returns (uint256 amountIn) {}

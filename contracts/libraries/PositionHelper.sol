@@ -3,9 +3,12 @@ pragma solidity >=0.8.12;
 pragma experimental ABIEncoderV2;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../interfaces/IStrategy.sol";
+import { IStrategy } from "../interfaces/IStrategy.sol";
 import { TransferHelper } from "./TransferHelper.sol";
 
+/// @title    PositionHelper library
+/// @author   Ithil
+/// @notice   A library to increase the collateral on existing positions
 library PositionHelper {
     using TransferHelper for IERC20;
 

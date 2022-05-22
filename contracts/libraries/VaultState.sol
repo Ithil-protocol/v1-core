@@ -7,7 +7,7 @@ import "./TransferHelper.sol";
 
 /// @title    VaultState library
 /// @author   Ithil
-/// @notice   A library to stora vault state
+/// @notice   A library to store the vault status
 library VaultState {
     using TransferHelper for IERC20;
     using GeneralMath for uint256;

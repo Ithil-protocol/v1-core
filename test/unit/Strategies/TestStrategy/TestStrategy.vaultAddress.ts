@@ -3,5 +3,5 @@ import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
 export function checkVaultAddress(): void {
-  it("UniversalStrategy: vaultAddress", async function () {});
+  it("TestStrategy: vaultAddress", async function () {});
 }
