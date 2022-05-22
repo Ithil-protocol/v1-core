@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
-pragma experimental ABIEncoderV2;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -12,7 +11,7 @@ import { VaultMath } from "./libraries/VaultMath.sol";
 import { VaultState } from "./libraries/VaultState.sol";
 import { GeneralMath } from "./libraries/GeneralMath.sol";
 import { WrappedToken } from "./WrappedToken.sol";
-import { WToken } from "./libraries/WToken.sol";
+import { WrappedTokenHelper } from "./libraries/WrappedTokenHelper.sol";
 import { TransferHelper } from "./libraries/TransferHelper.sol";
 
 /// @title    Vault contract
@@ -20,7 +19,7 @@ import { TransferHelper } from "./libraries/TransferHelper.sol";
 /// @notice   Stores staked funds, issues loans and handles repayments to strategies
 contract Vault is IVault, ReentrancyGuard, Ownable {
     using TransferHelper for IERC20;
-    using WToken for IWrappedToken;
+    using WrappedTokenHelper for IWrappedToken;
     using VaultMath for uint256;
     using GeneralMath for uint256;
     using GeneralMath for VaultState.VaultData;

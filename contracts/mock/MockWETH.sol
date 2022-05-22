@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
-pragma experimental ABIEncoderV2;
 
+import { IWETH } from "../interfaces/IWETH.sol";
 import { MockToken } from "./MockToken.sol";
-import "hardhat/console.sol";
 
-contract MockWETH is MockToken {
+/// @dev Used for testing, unaudited
+contract MockWETH is MockToken, IWETH {
     constructor() MockToken("Wrapped Ether", "WETH", 18) {}
 
     receive() external payable {

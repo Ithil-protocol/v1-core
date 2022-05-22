@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
-pragma experimental ABIEncoderV2;
 
 /// @title    Interface of the Yearn PartnerTracker contract
 /// @author   Yearn finance

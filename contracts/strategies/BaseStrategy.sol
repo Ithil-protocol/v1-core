@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
-pragma experimental ABIEncoderV2;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
@@ -149,7 +148,7 @@ abstract contract BaseStrategy is Liquidable {
 
         vaultRepaid = owedToken.balanceOf(address(vault)) - vaultRepaid;
 
-        /// The following check is important to prevent users from producing bad liquidations
+        /// The following check is important to prevent users from triggering bad liquidations
         if (vaultRepaid < position.principal) revert Strategy__Loan_Not_Repaid(vaultRepaid, position.principal);
 
         emit PositionWasClosed(positionId);

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
-pragma experimental ABIEncoderV2;
 
 /// @title    Interface of the parent Strategy contract
 /// @author   Ithil
@@ -45,12 +44,19 @@ interface IStrategy {
         uint256 createdAt;
     }
 
-    error Invalid_Position(uint256 id, address strategy);
-    error Restricted_Access(address owner, address sender);
-    error Insufficient_Collateral(uint256 collateral);
-    error Source_Eq_Dest(address source);
-    error Only_Liquidator(address sender, address liquidator);
-    error Maximum_Leverage_Exceeded();
+    /// @notice Emitted when a new position has been opened
+    event PositionWasOpened(
+        uint256 indexed id,
+        address indexed owner,
+        address owedToken,
+        address heldToken,
+        address collateralToken,
+        uint256 collateral,
+        uint256 principal,
+        uint256 allowance,
+        uint256 interestRtae,
+        uint256 createdAt
+    );
 
     function computePairRiskFactor(address token0, address token1) external view returns (uint256);
 
@@ -84,26 +90,13 @@ interface IStrategy {
 
     function vaultAddress() external view returns (address);
 
-    /// @notice Emitted when a new position has been opened
-    event PositionWasOpened(
-        uint256 indexed id,
-        address indexed owner,
-        address owedToken,
-        address heldToken,
-        address collateralToken,
-        uint256 collateral,
-        uint256 principal,
-        uint256 allowance,
-        uint256 interestRtae,
-        uint256 createdAt
-    );
-
     /// @notice Emitted when a position is closed
     event PositionWasClosed(uint256 indexed id);
 
     /// @notice Emitted when a position is liquidated
     event PositionWasLiquidated(uint256 indexed id);
 
+    error Strategy__Invalid_Position(uint256 id, address strategy);
     error Strategy__Order_Expired(uint256 timestamp, uint256 deadline);
     error Strategy__Source_Eq_Dest(address token);
     error Strategy__Insufficient_Collateral(uint256 collateral);

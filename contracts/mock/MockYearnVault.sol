@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
-pragma experimental ABIEncoderV2;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -8,19 +7,20 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IYearnVault } from "../interfaces/IYearnVault.sol";
 
+/// @dev Used for testing, unaudited
 contract MockYearnVault is IYearnVault, ERC20, Ownable {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable nativeToken;
     address public immutable registry;
 
-    constructor(address token)
+    constructor(address vaultToken)
         ERC20(
-            string(abi.encodePacked("Yearn ", IERC20Metadata(address(token)).name())),
-            string(abi.encodePacked("y", IERC20Metadata(address(token)).symbol()))
+            string(abi.encodePacked("Yearn ", IERC20Metadata(address(vaultToken)).name())),
+            string(abi.encodePacked("y", IERC20Metadata(address(vaultToken)).symbol()))
         )
     {
-        nativeToken = IERC20(token);
+        nativeToken = IERC20(vaultToken);
         registry = msg.sender;
     }
 

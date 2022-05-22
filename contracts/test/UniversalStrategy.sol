@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
-pragma experimental ABIEncoderV2;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IKyberNetworkProxy } from "../interfaces/IKyberNetworkProxy.sol";
@@ -8,9 +7,7 @@ import { VaultMath } from "../libraries/VaultMath.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
 import { BaseStrategy } from "../strategies/BaseStrategy.sol";
 
-/// @title    Universal strategy contract
-/// @author   Ithil
-/// @notice   For testing
+/// @dev Used for testing, unaudited
 contract TestStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
