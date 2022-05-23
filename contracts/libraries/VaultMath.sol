@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
-pragma experimental ABIEncoderV2;
 
 import { VaultState } from "./VaultState.sol";
 import { GeneralMath } from "./GeneralMath.sol";
@@ -13,7 +12,7 @@ library VaultMath {
 
     uint24 internal constant RESOLUTION = 10000;
     uint24 internal constant TIME_FEE_PERIOD = 86400;
-    uint40 internal constant APY_PERIOD = 31536000;
+    uint40 internal constant APY_PERIOD = 31536000; //todo: can be deleted
     uint24 internal constant MAX_RATE = 10000; //todo: adjust
 
     /// @notice Computes the maximum amount of money an investor can withdraw from the pool

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
-pragma experimental ABIEncoderV2;
 
-import "./VaultMath.sol";
-import "./TransferHelper.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { GeneralMath } from "./GeneralMath.sol";
+import { VaultMath } from "./VaultMath.sol";
+import { TransferHelper } from "./TransferHelper.sol";
 
 /// @title    VaultState library
 /// @author   Ithil

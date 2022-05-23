@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
-pragma experimental ABIEncoderV2;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
@@ -9,6 +8,7 @@ import { IYearnPartnerTracker } from "../interfaces/IYearnPartnerTracker.sol";
 import { IYearnVault } from "../interfaces/IYearnVault.sol";
 import { MockYearnVault } from "./MockYearnVault.sol";
 
+/// @dev Used for testing, unaudited
 contract MockYearnRegistry is IYearnRegistry, IYearnPartnerTracker, Ownable {
     using SafeERC20 for IERC20;
 
@@ -40,7 +40,7 @@ contract MockYearnRegistry is IYearnRegistry, IYearnPartnerTracker, Ownable {
 
     function deposit(
         address vault,
-        address partnerId,
+        address, /*partnerId*/
         uint256 amount
     ) external override returns (uint256) {
         IYearnVault yault = IYearnVault(vault);
