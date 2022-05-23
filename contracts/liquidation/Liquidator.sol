@@ -48,7 +48,6 @@ contract Liquidator is Ownable {
     }
 
     function liquidateSingle(IStrategy strategy, uint256 positionId) external {
-        //todo: add checks on liquidator
         uint256 reward = rewardPercentage();
         strategy.forcefullyClose(positionId, msg.sender, reward);
     }
@@ -58,7 +57,6 @@ contract Liquidator is Ownable {
         uint256 positionId,
         uint256 extraMargin
     ) external {
-        //todo: add checks on liquidator
         uint256 reward = rewardPercentage();
         strategy.modifyCollateralAndOwner(positionId, extraMargin, msg.sender, reward);
     }
@@ -68,7 +66,6 @@ contract Liquidator is Ownable {
         uint256 positionId,
         uint256 price
     ) external {
-        //todo: add checks on liquidator
         uint256 reward = rewardPercentage();
         strategy.forcefullyDelete(positionId, price, msg.sender, reward);
     }

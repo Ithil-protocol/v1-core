@@ -88,14 +88,10 @@ contract LidoStrategy is BaseStrategy {
         returns (uint256 amountIn, uint256 amountOut)
     {
         // Unstake crvstETH from Yearn
-        uint256 pricePerShare = yvault.pricePerShare();
-        uint256 maxLoss = ((position.allowance * pricePerShare - expectedCost) * 10000) /
-            (position.allowance * pricePerShare);
-        uint256 amount = yvault.withdraw(position.allowance, address(this), maxLoss);
+        (uint256 expectedIn, ) = quote(address(yvault), vault.weth(), expectedCost);
+        uint256 amount = yvault.withdraw(position.allowance, address(this), 100); // maximum loss, check is enforced in the next line
 
-        // Remove liquidity from Curve
-        uint256 minAmount = crvPool.calc_token_amount([uint256(0), amount], false); // TODO should we run it off-chain?
-        amountIn = crvPool.remove_liquidity_one_coin(amount, 0, minAmount);
+        amountIn = crvPool.remove_liquidity_one_coin(amount, 0, expectedIn);
 
         // Wrap ETH to WETH
         IWETH weth = IWETH(vault.weth());
