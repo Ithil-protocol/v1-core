@@ -90,7 +90,6 @@ abstract contract Liquidable is AbstractStrategy {
         Position memory position = positions[positionId];
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
-            //todo: properly repay the vault
             delete positions[positionId];
             (, uint256 received) = IERC20(position.owedToken).transferTokens(purchaser, address(vault), price);
             position.principal *= (2 * VaultMath.RESOLUTION - reward) / VaultMath.RESOLUTION;

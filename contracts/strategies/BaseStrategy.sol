@@ -28,9 +28,7 @@ abstract contract BaseStrategy is Liquidable {
     modifier validOrder(Order memory order) {
         if (block.timestamp > order.deadline) revert Strategy__Order_Expired(block.timestamp, order.deadline);
         if (order.spentToken == order.obtainedToken) revert Strategy__Source_Eq_Dest(order.spentToken);
-        if (order.collateral == 0)
-            // @todo should add minimum margin check here
-            revert Strategy__Insufficient_Collateral(order.collateral);
+        if (order.collateral == 0) revert Strategy__Insufficient_Collateral(order.collateral);
         _;
 
         vault.checkWhitelisted(order.spentToken);
