@@ -64,7 +64,6 @@ export const compareVaultStates = (state1: any, state2: any) => {
   expect(state1.netLoans).to.equal(state2.netLoans);
   expect(state1.insuranceReserveBalance).to.equal(state2.insuranceReserveBalance);
   expect(state1.optimalRatio).to.equal(state2.optimalRatio);
-  expect(state1.treasuryLiquidity).to.equal(state2.treasuryLiquidity);
 };
 
 export function expandTo18Decimals(n: number): BigNumber {
