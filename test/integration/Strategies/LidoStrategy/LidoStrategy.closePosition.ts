@@ -34,8 +34,14 @@ export function checkClosePosition(): void {
       deadline: deadline,
     };
 
-    const position = await this.LidoStrategy.connect(trader).openPosition(order);
-    //const maxSpent = position.allowance;
+    await this.LidoStrategy.connect(trader).openPosition(order);
+
+    const position = await this.LidoStrategy.connect(trader).positions(1);
+    const quoted = await this.LidoStrategy.connect(trader).quote(
+      investmentToken.address,
+      marginToken.address,
+      position.allowance,
+    );
 
     await this.LidoStrategy.connect(trader).closePosition(1, 0);
 

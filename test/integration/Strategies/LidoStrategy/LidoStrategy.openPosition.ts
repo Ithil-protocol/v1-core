@@ -22,6 +22,7 @@ export function checkOpenPosition(): void {
       trader_inv: await investmentToken.balanceOf(trader.address),
       vault_margin: await marginToken.balanceOf(this.vault.address),
       vault_inv: await investmentToken.balanceOf(this.vault.address),
+      strategy_bal: await investmentToken.balanceOf(this.LidoStrategy.address),
     };
 
     const order = {
@@ -34,6 +35,12 @@ export function checkOpenPosition(): void {
       deadline: deadline,
     };
 
+    const quoted = await this.LidoStrategy.connect(trader).quote(
+      marginToken.address,
+      investmentToken.address,
+      marginTokenMargin.mul(leverage + 1),
+    );
+
     await this.LidoStrategy.connect(trader).openPosition(order);
 
     const finalState = {
@@ -41,6 +48,7 @@ export function checkOpenPosition(): void {
       trader_inv: await investmentToken.balanceOf(trader.address),
       vault_margin: await marginToken.balanceOf(this.vault.address),
       vault_inv: await investmentToken.balanceOf(this.vault.address),
+      strategy_bal: await investmentToken.balanceOf(this.LidoStrategy.address),
     };
 
     //expect(initialState.trader_margin).to.lt(finalState.trader_margin);
