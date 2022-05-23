@@ -191,6 +191,10 @@ abstract contract BaseStrategy is Liquidable {
         collateralToken = order.collateralIsSpentToken ? order.spentToken : order.obtainedToken;
 
         (collateralReceived, toBorrow, originalCollBal) = IERC20(collateralToken).transferAsCollateral(order);
+
+        if (collateralReceived < vault.getMinimumMargin(spentToken))
+            revert Strategy__Margin_Below_Minimum(collateralReceived, vault.getMinimumMargin(spentToken));
+
         toSpend = originalCollBal + collateralReceived;
         if (!order.collateralIsSpentToken) {
             toSpend = spentTkn.balanceOf(address(this));
