@@ -27,7 +27,6 @@ export function checkWhiteList(): void {
       netLoans: BigNumber.from(0),
       insuranceReserveBalance: BigNumber.from(0),
       optimalRatio: BigNumber.from(0),
-      treasuryLiquidity: BigNumber.from(0),
     };
 
     // Final state as expected

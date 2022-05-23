@@ -26,15 +26,13 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     using VaultState for VaultState.VaultData;
 
     address public immutable override weth;
-    address internal immutable treasury;
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     mapping(address => VaultState.VaultData) public vaults;
     mapping(address => bool) public strategies;
 
-    constructor(address _weth, address _treasury) {
+    constructor(address _weth) {
         weth = _weth;
-        treasury = _treasury;
     }
 
     modifier isValidAmount(uint256 amount) {
@@ -52,11 +50,6 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         _;
     }
 
-    modifier onlyTreasury() {
-        if (msg.sender != treasury) revert Vault__Restricted_Access(msg.sender);
-        _;
-    }
-
     // only accept ETH from the WETH contract
     receive() external payable {
         if (msg.sender != weth) revert Vault__ETH_Transfer_Failed(msg.sender, weth);
@@ -71,11 +64,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     }
 
     function balance(address token) public view override returns (uint256) {
-        return
-            IERC20(token).balanceOf(address(this)) +
-            vaults[token].netLoans -
-            vaults[token].insuranceReserveBalance -
-            vaults[token].treasuryLiquidity;
+        return IERC20(token).balanceOf(address(this)) + vaults[token].netLoans - vaults[token].insuranceReserveBalance;
     }
 
     function claimable(address token) external view override returns (uint256) {
@@ -142,35 +131,6 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         emit MinimumMarginWasChanged(token, minimumMargin);
     }
 
-    function rebalanceInsurance(address token) external override returns (uint256 toTransfer) {
-        VaultState.VaultData storage vault = vaults[token];
-        IERC20 tkn = IERC20(token);
-        uint256 optimalIR = ((tkn.balanceOf(address(this)) + vault.netLoans) * vault.optimalRatio) /
-            VaultMath.RESOLUTION;
-        uint256 insuranceReserveBalance = vault.insuranceReserveBalance;
-
-        if (insuranceReserveBalance < optimalIR) revert Vault__Insurance_Below_OR(insuranceReserveBalance, optimalIR);
-
-        toTransfer = insuranceReserveBalance - optimalIR;
-        vault.insuranceReserveBalance -= toTransfer;
-
-        tkn.sendTokens(treasury, toTransfer);
-    }
-
-    function addInsurance(address token, uint256 amount)
-        external
-        override
-        unlocked(token)
-        isValidAmount(amount)
-        onlyTreasury
-    {
-        checkWhitelisted(token);
-
-        vaults[token].insuranceReserveBalance += amount;
-
-        IERC20(token).transferTokens(msg.sender, address(this), amount);
-    }
-
     function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
         checkWhitelisted(token);
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
@@ -220,31 +180,6 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (!success) revert Vault__ETH_Unstake_Failed(data); // reverts if unsuccessful
 
         emit Withdrawal(msg.sender, weth, amount, toBurn);
-    }
-
-    function treasuryStake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
-        checkWhitelisted(token);
-
-        vaults[token].addTreasuryLiquidity(IERC20(token), amount);
-    }
-
-    function treasuryUnstake(address token, uint256 amount)
-        external
-        override
-        unlocked(token)
-        isValidAmount(amount)
-        onlyTreasury
-    {
-        checkWhitelisted(token);
-
-        VaultState.VaultData storage vault = vaults[token];
-        uint256 tol = vault.treasuryLiquidity;
-
-        if (tol < amount) revert Vault__Insufficient_TOL(tol);
-
-        vault.treasuryLiquidity -= amount;
-
-        IERC20(token).sendTokens(msg.sender, amount);
     }
 
     function borrow(
