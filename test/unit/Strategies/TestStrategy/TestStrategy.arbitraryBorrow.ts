@@ -1,11 +1,10 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+import { baseFee, fixedFee, minimumMargin } from "../../../common/params";
 
 export function checkArbitraryBorrow(): void {
   it("TestStrategy: arbitraryBorrow", async function () {
-    const baseFee = 10;
-    const fixedFee = 11;
     const token = this.mockWETH;
     const borrower = this.signers.trader;
     const amount = ethers.utils.parseUnits("1.0", 18);
@@ -15,7 +14,7 @@ export function checkArbitraryBorrow(): void {
     await token.mintTo(borrower.address, amount.mul(2));
     await token.connect(borrower).approve(this.vault.address, amount);
     await token.mintTo(this.vault.address, amount.mul(100));
-    await this.vault.whitelistToken(token.address, baseFee, fixedFee);
+    await this.vault.whitelistToken(token.address, baseFee, fixedFee, minimumMargin);
 
     const initialState = {
       balance: await token.balanceOf(borrower.address),

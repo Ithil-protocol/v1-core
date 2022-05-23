@@ -2,7 +2,14 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { fundVault } from "../../../common/utils";
-import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
+import {
+  marginTokenLiquidity,
+  marginTokenMargin,
+  leverage,
+  baseFee,
+  fixedFee,
+  minimumMargin,
+} from "../../../common/params";
 
 export function checkOpenPosition(): void {
   it("YearnStrategy: openPosition", async function () {
@@ -14,8 +21,9 @@ export function checkOpenPosition(): void {
     const borrowed = marginTokenMargin.div(2);
     const collateralReceived = marginTokenMargin.div(2);
 
-    await this.vault.whitelistToken(marginToken.address, 10, 10);
-    await this.vault.whitelistToken(investmentToken.address, 10, 10);
+    await this.vault.whitelistToken(marginToken.address, baseFee, fixedFee, minimumMargin);
+    await this.vault.whitelistToken(investmentToken.address, baseFee, fixedFee, minimumMargin);
+
     await marginToken.mintTo(investor.address, marginTokenLiquidity);
     await marginToken.mintTo(trader.address, marginTokenLiquidity);
 

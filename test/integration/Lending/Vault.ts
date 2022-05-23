@@ -2,16 +2,23 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
 
+import {
+  marginTokenLiquidity,
+  marginTokenMargin,
+  leverage,
+  baseFee,
+  fixedFee,
+  minimumMargin,
+} from "../../common/params";
+
 export function checkStaking(): void {
   it("Vault: stake", async function () {
-    const baseFee = 10;
-    const fixedFee = 11;
     const token = this.token;
     const investor = this.signers.investor;
     const amount = this.tokensAmount;
 
     await token.connect(investor).approve(this.vault.address, amount);
-    await this.vault.whitelistToken(token.address, baseFee, fixedFee);
+    await this.vault.whitelistToken(token.address, baseFee, fixedFee, minimumMargin);
 
     const initialState = {
       balance: await token.balanceOf(investor.address),
@@ -41,7 +48,7 @@ export function checkStaking(): void {
     const amountBack = ethers.utils.parseUnits("5.0", 17);
 
     await token.connect(investor).approve(this.vault.address, amount);
-    await this.vault.whitelistToken(token.address, baseFee, fixedFee);
+    await this.vault.whitelistToken(token.address, baseFee, fixedFee, amount);
 
     const initialState = {
       balance: await token.balanceOf(investor.address),
@@ -77,7 +84,7 @@ export function checkWhitelist(): void {
       vaultState: await this.vault.vaults(OUSD),
     };
 
-    await this.vault.whitelistTokenAndExec(OUSD, baseFee, fixedFee, data);
+    await this.vault.whitelistTokenAndExec(OUSD, baseFee, fixedFee, ethers.utils.parseEther("100000"), data);
 
     const finalState = {
       vaultState: await this.vault.vaults(OUSD),

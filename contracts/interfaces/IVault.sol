@@ -10,6 +10,10 @@ interface IVault {
     /// @param token the token to check the status against
     function checkWhitelisted(address token) external view;
 
+    /// @notice Get minimum margin data about a specific token
+    /// @param token the token to get data from
+    function getMinimumMargin(address token) external view returns (uint256);
+
     /// ==== STAKING ==== ///
 
     function weth() external view returns (address);
@@ -74,19 +78,28 @@ interface IVault {
 
     /// @notice adds a new supported token
     /// @param token the token to whitelist
+    /// @param baseFee the minimum fee
+    /// @param fixedFee the constant fee
+    /// @param minimumMargin the min margin needed to open a position
     function whitelistToken(
         address token,
         uint256 baseFee,
-        uint256 fixedFee
+        uint256 fixedFee,
+        uint256 minimumMargin
     ) external;
 
     /// @notice adds a new supported token and executes an arbitrary function on it
+    /// @param data Arbitrary data to be executed
     function whitelistTokenAndExec(
         address token,
         uint256 baseFee,
         uint256 fixedFee,
+        uint256 minimumMargin,
         bytes calldata data
     ) external;
+
+    /// @notice edits the current min margin for a specific token
+    function editMinimumMargin(address token, uint256 minimumMargin) external;
 
     /// ==== LENDING ==== ///
 
@@ -123,6 +136,9 @@ interface IVault {
     ) external;
 
     /// ==== EVENTS ==== ///
+
+    /// @notice Emitted when the governance changes the min margin requirement for a token
+    event MinimumMarginWasChanged(address indexed token, uint256 minimumMargin);
 
     /// @notice Emitted when a deposit has been performed
     event Deposit(address indexed user, address indexed token, uint256 amount, uint256 minted);

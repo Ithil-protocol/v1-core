@@ -1,6 +1,14 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { fundVault, changeRate } from "../../../common/utils";
+import {
+  marginTokenLiquidity,
+  marginTokenMargin,
+  leverage,
+  baseFee,
+  fixedFee,
+  minimumMargin,
+} from "../../../common/params";
 
 export function checkDeadline(): void {
   it("MarginTradingStrategy: deadline", async function () {
@@ -13,8 +21,9 @@ export function checkDeadline(): void {
     const leverage = 10;
     const deadline = 0;
 
-    await this.vault.whitelistToken(marginToken.address, 10, 10);
-    await this.vault.whitelistToken(investmentToken.address, 10, 10);
+    await this.vault.whitelistToken(marginToken.address, baseFee, fixedFee, minimumMargin);
+    await this.vault.whitelistToken(investmentToken.address, baseFee, fixedFee, minimumMargin);
+
     await marginToken.mintTo(investor.address, marginTokenLiquidity);
     await marginToken.mintTo(trader.address, marginTokenLiquidity);
 

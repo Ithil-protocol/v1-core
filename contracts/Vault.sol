@@ -66,6 +66,10 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (!vaults[token].supported && token != ETH) revert Vault__Unsupported_Token(token);
     }
 
+    function getMinimumMargin(address token) external view returns (uint256) {
+        return vaults[token].minimumMargin;
+    }
+
     function balance(address token) public view override returns (uint256) {
         return
             IERC20(token).balanceOf(address(this)) +
@@ -102,7 +106,8 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     function whitelistToken(
         address token,
         uint256 baseFee,
-        uint256 fixedFee
+        uint256 fixedFee,
+        uint256 minimumMargin
     ) public override onlyOwner {
         if (vaults[token].supported) revert Vault__Token_Already_Supported(token);
 
@@ -112,6 +117,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         vaults[token].creationTime = block.timestamp;
         vaults[token].baseFee = baseFee;
         vaults[token].fixedFee = fixedFee;
+        vaults[token].minimumMargin = minimumMargin;
 
         emit TokenWasWhitelisted(token);
     }
@@ -120,11 +126,20 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         address token,
         uint256 baseFee,
         uint256 fixedFee,
+        uint256 minimumMargin,
         bytes calldata data
     ) external override onlyOwner {
-        whitelistToken(token, baseFee, fixedFee);
+        whitelistToken(token, baseFee, fixedFee, minimumMargin);
         (bool success, ) = token.delegatecall(data);
         assert(success);
+    }
+
+    function editMinimumMargin(address token, uint256 minimumMargin) external override onlyOwner {
+        checkWhitelisted(token);
+
+        vaults[token].minimumMargin = minimumMargin;
+
+        emit MinimumMarginWasChanged(token, minimumMargin);
     }
 
     function rebalanceInsurance(address token) external override returns (uint256 toTransfer) {
