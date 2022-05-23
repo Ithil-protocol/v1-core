@@ -110,8 +110,9 @@ contract LidoStrategy is BaseStrategy {
         address dst,
         uint256 amount
     ) public view override returns (uint256, uint256) {
-        uint256 obtained = yvault.pricePerShare();
-        obtained *= amount * crvPool.get_virtual_price(); // TODO check math
+        uint256 obtained;
+        if (dst != vault.weth()) obtained = (amount * 10**36) / (crvPool.get_virtual_price() * yvault.pricePerShare());
+        else obtained = (amount * crvPool.get_virtual_price() * yvault.pricePerShare()) / (10**36);
         return (obtained, obtained);
     }
 }
