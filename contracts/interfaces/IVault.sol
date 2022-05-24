@@ -61,11 +61,13 @@ interface IVault {
     /// @param baseFee the minimum fee
     /// @param fixedFee the constant fee
     /// @param minimumMargin the min margin needed to open a position
+    /// @param stakingCap the maximum full amount of assets which can be staked (including loans)
     function whitelistToken(
         address token,
         uint256 baseFee,
         uint256 fixedFee,
-        uint256 minimumMargin
+        uint256 minimumMargin,
+        uint256 stakingCap
     ) external;
 
     /// @notice adds a new supported token and executes an arbitrary function on it
@@ -75,11 +77,15 @@ interface IVault {
         uint256 baseFee,
         uint256 fixedFee,
         uint256 minimumMargin,
+        uint256 stakingCap,
         bytes calldata data
     ) external;
 
     /// @notice edits the current min margin for a specific token
     function editMinimumMargin(address token, uint256 minimumMargin) external;
+
+    /// @notice edits the current staking cap for a specific token
+    function editCap(address token, uint256 stakingCap) external;
 
     /// ==== LENDING ==== ///
 
@@ -120,6 +126,9 @@ interface IVault {
     /// @notice Emitted when the governance changes the min margin requirement for a token
     event MinimumMarginWasChanged(address indexed token, uint256 minimumMargin);
 
+    /// @notice Emitted when the governance changes the min margin requirement for a token
+    event StakingCapWasChanged(address indexed token, uint256 stakingCap);
+
     /// @notice Emitted when a deposit has been performed
     event Deposit(address indexed user, address indexed token, uint256 amount, uint256 minted);
 
@@ -158,4 +167,5 @@ interface IVault {
     error Vault__ETH_Unstake_Failed(bytes data);
     error Vault__Insufficient_TOL(uint256 tol);
     error Vault__Insurance_Below_OR(uint256 insuranceReserve, uint256 optimalRatio);
+    error Vault__Staking_Cap_Exceeded(address token, uint256 totalWealth, uint256 stakingCap);
 }

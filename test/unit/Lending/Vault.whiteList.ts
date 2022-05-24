@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { INITIAL_VAULT_STATE, compareVaultStates } from "../../common/utils";
-import { baseFee, fixedFee, minimumMargin } from "../../common/params";
+import { baseFee, fixedFee, minimumMargin, stakingCap } from "../../common/params";
 
 export function checkWhiteList(): void {
   it("Vault: whitelistToken", async function () {
@@ -13,7 +13,7 @@ export function checkWhiteList(): void {
     compareVaultStates(initialState, INITIAL_VAULT_STATE);
 
     // Whitelist
-    await this.vault.whitelistToken(token, baseFee, fixedFee, minimumMargin);
+    await this.vault.whitelistToken(token, baseFee, fixedFee, minimumMargin, stakingCap);
 
     const finalState = await this.vault.vaults(token);
 

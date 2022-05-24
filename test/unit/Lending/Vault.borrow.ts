@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { baseFee, fixedFee, minimumMargin } from "../../common/params";
+import { baseFee, fixedFee, minimumMargin, stakingCap } from "../../common/params";
 
 export function checkBorrow(): void {
   it("Vault: borrow", async function () {
@@ -12,7 +12,7 @@ export function checkBorrow(): void {
 
     await token.mintTo(borrower.address, amount.mul(2));
     await token.connect(borrower).approve(this.vault.address, amount);
-    await this.vault.whitelistToken(token.address, baseFee, fixedFee, minimumMargin);
+    await this.vault.whitelistToken(token.address, baseFee, fixedFee, minimumMargin, stakingCap);
 
     const initialState = {
       balance: await token.balanceOf(borrower.address),
