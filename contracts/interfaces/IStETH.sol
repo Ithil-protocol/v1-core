@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.10;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.12;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+/// @title    Interface of the stETH token contract
+/// @author   Lido finance
 interface IStETH is IERC20 {
     // Send funds to the pool with optional _referral parameter
     function submit(address _referral) external payable returns (uint256);

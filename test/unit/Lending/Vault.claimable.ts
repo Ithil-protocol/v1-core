@@ -17,6 +17,6 @@ export function checkClaimable(): void {
 
     const claimable = await this.vault.connect(investor).claimable(token.address);
 
-    expect(claimable).to.be.above(amountToStake);
+    expect(claimable).to.equal(amountToStake);
   });
 }

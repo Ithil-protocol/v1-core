@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.10;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.12;
 
-import "./VaultMath.sol";
-import "./TransferHelper.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { GeneralMath } from "./GeneralMath.sol";
+import { VaultMath } from "./VaultMath.sol";
+import { TransferHelper } from "./TransferHelper.sol";
 
 /// @title    VaultState library
 /// @author   Ithil
-/// @notice   A library to stora vault state
+/// @notice   A library to store the vault status
 library VaultState {
     using TransferHelper for IERC20;
     using GeneralMath for uint256;
@@ -18,10 +19,11 @@ library VaultState {
     /// @notice store data about whitelisted tokens
     /// @param supported Easily check if a token is supported or not (null VaultData struct)
     /// @param locked Whether the token is locked - can only be withdrawn
-    /// @param wrappedToken Address of the corresponding iToken
-    /// @param creationTime block timestamp of the subvault and relative iToken creation
+    /// @param wrappedToken Address of the corresponding WrappedToken
+    /// @param creationTime block timestamp of the subvault and relative WrappedToken creation
     /// @param baseFee
     /// @param fixedFee
+    /// @param minimumMargin The minimum margin needed to open a position
     /// @param netLoans Total amount of liquidity currently lent to traders
     /// @param insuranceReserveBalance Total amount of liquidity left as insurance
     /// @param optimalRatio The optimal ratio of the insurance reserve
@@ -33,10 +35,11 @@ library VaultState {
         uint256 creationTime;
         uint256 baseFee;
         uint256 fixedFee;
+        uint256 minimumMargin;
+        uint256 stakingCap;
         uint256 netLoans;
         uint256 insuranceReserveBalance;
         uint256 optimalRatio;
-        uint256 treasuryLiquidity;
     }
 
     function addInsuranceReserve(
@@ -76,15 +79,6 @@ library VaultState {
     function subtractInsuranceReserve(VaultState.VaultData storage self, uint256 b) private {
         if (self.insuranceReserveBalance > b) self.insuranceReserveBalance -= b;
         else self.insuranceReserveBalance = 0;
-    }
-
-    function addTreasuryLiquidity(
-        VaultState.VaultData storage self,
-        IERC20 token,
-        uint256 amount
-    ) internal {
-        (, amount) = token.transferTokens(msg.sender, address(this), amount);
-        self.treasuryLiquidity += amount;
     }
 
     function repayLoan(

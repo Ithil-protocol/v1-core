@@ -2,7 +2,15 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { fundVault, changeRate } from "../../../common/utils";
-import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
+import {
+  marginTokenLiquidity,
+  marginTokenMargin,
+  leverage,
+  baseFee,
+  fixedFee,
+  minimumMargin,
+  stakingCap,
+} from "../../../common/params";
 
 export function checkClosePosition(): void {
   it("LidoStrategy: closePosition", async function () {
@@ -11,8 +19,8 @@ export function checkClosePosition(): void {
     const investmentToken = this.dai;
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
-    await this.vault.whitelistToken(marginToken.address, 10, 10);
-    await this.vault.whitelistToken(investmentToken.address, 10, 10);
+    await this.vault.whitelistToken(marginToken.address, baseFee, fixedFee, minimumMargin, stakingCap);
+    await this.vault.whitelistToken(investmentToken.address, baseFee, fixedFee, minimumMargin, stakingCap);
 
     await fundVault(investor, this.vault, marginToken, marginTokenLiquidity);
     await marginToken.connect(trader).approve(this.LidoStrategy.address, marginTokenMargin);
@@ -34,8 +42,14 @@ export function checkClosePosition(): void {
       deadline: deadline,
     };
 
-    const position = await this.LidoStrategy.connect(trader).openPosition(order);
-    //const maxSpent = position.allowance;
+    await this.LidoStrategy.connect(trader).openPosition(order);
+
+    const position = await this.LidoStrategy.connect(trader).positions(1);
+    const quoted = await this.LidoStrategy.connect(trader).quote(
+      investmentToken.address,
+      marginToken.address,
+      position.allowance,
+    );
 
     await this.LidoStrategy.connect(trader).closePosition(1, 0);
 

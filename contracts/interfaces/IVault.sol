@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.10;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.12;
 
 import { VaultState } from "../libraries/VaultState.sol";
 
@@ -10,6 +9,10 @@ interface IVault {
     /// @notice Checks if a token is supported
     /// @param token the token to check the status against
     function checkWhitelisted(address token) external view;
+
+    /// @notice Get minimum margin data about a specific token
+    /// @param token the token to get data from
+    function getMinimumMargin(address token) external view returns (uint256);
 
     /// ==== STAKING ==== ///
 
@@ -38,31 +41,11 @@ interface IVault {
     /// @param amount the amount of tokens to be withdrawn
     function unstakeETH(uint256 amount) external;
 
-    /// @notice Add tokens to the vault as treasury-owned liquidity (does not accumulate APY)
-    /// @param token the token to deposit
-    /// @param amount the amount of tokens to be deposited
-    function treasuryStake(address token, uint256 amount) external;
-
-    /// @notice Remove tokens from the treasury-owned liquidity
-    /// @param token the token to deposit
-    /// @param amount the amount of tokens to be withdrawn
-    function treasuryUnstake(address token, uint256 amount) external;
-
-    /// @notice If the insurance reserve is higher than the optimal ratio, transfers the extra amount to the treasury
-    /// @param token the token to withdraw
-    /// @return toTransfer the amount withdrawn
-    function rebalanceInsurance(address token) external returns (uint256 toTransfer);
-
     /// ==== ADMIN ==== ///
 
     /// @notice Adds a new strategy address to the list
     /// @param strategy the strategy to add
     function addStrategy(address strategy) external;
-
-    /// @notice Adds tokens in the insurance reserve
-    /// @param token the token to add
-    /// @param amount the amount to add
-    function addInsurance(address token, uint256 amount) external;
 
     /// @notice Removes a strategy address from the list
     /// @param strategy the strategy to remove
@@ -75,19 +58,34 @@ interface IVault {
 
     /// @notice adds a new supported token
     /// @param token the token to whitelist
+    /// @param baseFee the minimum fee
+    /// @param fixedFee the constant fee
+    /// @param minimumMargin the min margin needed to open a position
+    /// @param stakingCap the maximum full amount of assets which can be staked (including loans)
     function whitelistToken(
         address token,
         uint256 baseFee,
-        uint256 fixedFee
+        uint256 fixedFee,
+        uint256 minimumMargin,
+        uint256 stakingCap
     ) external;
 
     /// @notice adds a new supported token and executes an arbitrary function on it
+    /// @param data Arbitrary data to be executed
     function whitelistTokenAndExec(
         address token,
         uint256 baseFee,
         uint256 fixedFee,
+        uint256 minimumMargin,
+        uint256 stakingCap,
         bytes calldata data
     ) external;
+
+    /// @notice edits the current min margin for a specific token
+    function editMinimumMargin(address token, uint256 minimumMargin) external;
+
+    /// @notice edits the current staking cap for a specific token
+    function editCap(address token, uint256 stakingCap) external;
 
     /// ==== LENDING ==== ///
 
@@ -124,6 +122,12 @@ interface IVault {
     ) external;
 
     /// ==== EVENTS ==== ///
+
+    /// @notice Emitted when the governance changes the min margin requirement for a token
+    event MinimumMarginWasChanged(address indexed token, uint256 minimumMargin);
+
+    /// @notice Emitted when the governance changes the min margin requirement for a token
+    event StakingCapWasChanged(address indexed token, uint256 stakingCap);
 
     /// @notice Emitted when a deposit has been performed
     event Deposit(address indexed user, address indexed token, uint256 amount, uint256 minted);
@@ -163,4 +167,5 @@ interface IVault {
     error Vault__ETH_Unstake_Failed(bytes data);
     error Vault__Insufficient_TOL(uint256 tol);
     error Vault__Insurance_Below_OR(uint256 insuranceReserve, uint256 optimalRatio);
+    error Vault__Staking_Cap_Exceeded(address token, uint256 totalWealth, uint256 stakingCap);
 }

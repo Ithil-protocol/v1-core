@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.10;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.12;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
@@ -29,9 +28,7 @@ abstract contract BaseStrategy is Liquidable {
     modifier validOrder(Order memory order) {
         if (block.timestamp > order.deadline) revert Strategy__Order_Expired(block.timestamp, order.deadline);
         if (order.spentToken == order.obtainedToken) revert Strategy__Source_Eq_Dest(order.spentToken);
-        if (order.collateral == 0)
-            // @todo should add minimum margin check here
-            revert Strategy__Insufficient_Collateral(order.collateral);
+        if (order.collateral == 0) revert Strategy__Insufficient_Collateral(order.collateral);
         _;
 
         vault.checkWhitelisted(order.spentToken);
@@ -149,7 +146,7 @@ abstract contract BaseStrategy is Liquidable {
 
         vaultRepaid = owedToken.balanceOf(address(vault)) - vaultRepaid;
 
-        /// The following check is important to prevent users from producing bad liquidations
+        /// The following check is important to prevent users from triggering bad liquidations
         if (vaultRepaid < position.principal) revert Strategy__Loan_Not_Repaid(vaultRepaid, position.principal);
 
         emit PositionWasClosed(positionId);
@@ -192,6 +189,10 @@ abstract contract BaseStrategy is Liquidable {
         collateralToken = order.collateralIsSpentToken ? order.spentToken : order.obtainedToken;
 
         (collateralReceived, toBorrow, originalCollBal) = IERC20(collateralToken).transferAsCollateral(order);
+
+        if (collateralReceived < vault.getMinimumMargin(spentToken))
+            revert Strategy__Margin_Below_Minimum(collateralReceived, vault.getMinimumMargin(spentToken));
+
         toSpend = originalCollBal + collateralReceived;
         if (!order.collateralIsSpentToken) {
             toSpend = spentTkn.balanceOf(address(this));

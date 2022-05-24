@@ -1,11 +1,10 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+import { baseFee, fixedFee, minimumMargin, stakingCap } from "../../../common/params";
 
 export function checkArbitraryRepay(): void {
-  it("UniversalStrategy: arbitraryRepay", async function () {
-    const baseFee = 10;
-    const fixedFee = 11;
+  it("TestStrategy: arbitraryRepay", async function () {
     const token = this.mockWETH;
     const borrower = this.signers.trader;
     const amount = ethers.utils.parseUnits("1.0", 18);
@@ -15,15 +14,15 @@ export function checkArbitraryRepay(): void {
     await token.mintTo(borrower.address, amount.mul(2));
     await token.connect(borrower).approve(this.vault.address, amount);
     await token.mintTo(this.vault.address, amount.mul(100));
-    await this.vault.whitelistToken(token.address, baseFee, fixedFee);
+    await this.vault.whitelistToken(token.address, baseFee, fixedFee, minimumMargin, stakingCap);
 
     const initialState = {
       balance: await token.balanceOf(borrower.address),
     };
 
-    await this.universalStrategy.arbitraryBorrow(token.address, amount, riskFactor, borrower.address);
+    await this.TestStrategy.arbitraryBorrow(token.address, amount, riskFactor, borrower.address);
 
-    const rsp = await this.universalStrategy.arbitraryRepay(
+    const rsp = await this.TestStrategy.arbitraryRepay(
       token.address,
       amount,
       collateral,

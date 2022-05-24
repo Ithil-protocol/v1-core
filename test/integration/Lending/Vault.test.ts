@@ -25,12 +25,10 @@ describe("Lending integration tests", function () {
   describe("Lending", function () {
     beforeEach(async function () {
       const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
-      this.vault = <Vault>(
-        await waffle.deployContract(this.signers.admin, vaultArtifact, [
-          tokens.WETH.address,
-          this.signers.admin.address,
-        ])
-      );
+      this.vault = <Vault>await waffle.deployContract(this.signers.admin, vaultArtifact, [
+        tokens.WETH.address,
+        // this.signers.admin.address,
+      ]);
 
       const tokenArtifact: Artifact = await artifacts.readArtifact("ERC20");
       this.token = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.WETH.address);

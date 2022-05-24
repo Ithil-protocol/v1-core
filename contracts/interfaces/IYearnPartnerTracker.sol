@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.10;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.12;
 
+/// @title    Interface of the Yearn PartnerTracker contract
+/// @author   Yearn finance
 interface IYearnPartnerTracker {
     /**
      * @notice Deposit into a vault the specified amount from depositer

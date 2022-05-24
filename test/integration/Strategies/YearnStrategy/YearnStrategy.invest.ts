@@ -2,7 +2,15 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { fundVault } from "../../../common/utils";
-import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
+import {
+  marginTokenLiquidity,
+  marginTokenMargin,
+  leverage,
+  baseFee,
+  fixedFee,
+  minimumMargin,
+  stakingCap,
+} from "../../../common/params";
 
 export function checkPerformInvestment(): void {
   it("YearnStrategy: trade", async function () {
@@ -11,8 +19,8 @@ export function checkPerformInvestment(): void {
     const investmentToken = this.weth;
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
-    await this.vault.whitelistToken(marginToken.address, 10, 10);
-    await this.vault.whitelistToken(investmentToken.address, 10, 10);
+    await this.vault.whitelistToken(marginToken.address, baseFee, fixedFee, minimumMargin, stakingCap);
+    await this.vault.whitelistToken(investmentToken.address, baseFee, fixedFee, minimumMargin, stakingCap);
 
     await fundVault(investor, this.vault, marginToken, marginTokenLiquidity);
     await marginToken.connect(trader).approve(this.yearnStrategy.address, marginTokenMargin);

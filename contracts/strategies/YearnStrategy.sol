@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.10;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.12;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IYearnRegistry } from "../interfaces/IYearnRegistry.sol";
@@ -10,8 +9,9 @@ import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
 
-import "hardhat/console.sol";
-
+/// @title    YearnStrategy contract
+/// @author   Ithil
+/// @notice   A strategy to perform leveraged staking on any Yearn vault
 contract YearnStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;

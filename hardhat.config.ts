@@ -26,13 +26,13 @@ if (!privateKey) {
   throw new Error("Please set your PRIVATE_KEY in a .env file");
 }
 
-const infuraApiKey: string | undefined = process.env.INFURA_API_KEY;
-if (!infuraApiKey) {
-  throw new Error("Please set your INFURA_API_KEY in a .env file");
+const alchemyApiKey: string | undefined = process.env.ALCHEMY_API_KEY;
+if (!alchemyApiKey) {
+  throw new Error("Please set your ALCHEMY_API_KEY in a .env file");
 }
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
-  const url: string = "https://" + network + ".infura.io/v3/" + infuraApiKey;
+  const url: string = "https://" + network + ".alchemyapi.io/v2/" + alchemyApiKey;
   return {
     accounts: [`${privateKey}`],
     chainId: chainIds[network],
@@ -80,7 +80,7 @@ const config: HardhatUserConfig = {
     tests: "./test",
   },
   solidity: {
-    version: "0.8.10",
+    version: "0.8.12",
     settings: {
       metadata: {
         // Not including the metadata hash

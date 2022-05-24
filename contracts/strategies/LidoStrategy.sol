@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.10;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.12;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IWETH } from "../interfaces/IWETH.sol";
@@ -14,10 +13,10 @@ import { BaseStrategy } from "./BaseStrategy.sol";
 
 /// @title    LidoStrategy contract
 /// @author   Ithil
-/// @notice   Stakes ETH on Lido, gets stETH, provides stETH to Curve as liquidity,
+/// @notice   A strategy to perform leveraged staking on Lido
+/// @dev      Stakes ETH on Lido, gets stETH, provides stETH to Curve as liquidity,
 ///           then stakes Curve LP tokens on Yearn.
 ///           Curve pool token indexes: ETH = 0, stETH = 1
-
 contract LidoStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
     using SafeERC20 for IStETH;
@@ -89,11 +88,12 @@ contract LidoStrategy is BaseStrategy {
         returns (uint256 amountIn, uint256 amountOut)
     {
         // Unstake crvstETH from Yearn
-        uint256 amount = yvault.withdraw(position.allowance, address(this), 1);
+        (uint256 expectedIn, ) = quote(address(yvault), vault.weth(), expectedCost);
 
-        // Remove liquidity from Curve
-        uint256 minAmount = crvPool.calc_token_amount([uint256(0), amount], false); // TODO should we run it off-chain?
-        amountIn = crvPool.remove_liquidity_one_coin(amount, 0, minAmount);
+        // maximum loss, check is enforced in the next line
+        uint256 amount = yvault.withdraw(position.allowance, address(this), 100);
+
+        amountIn = crvPool.remove_liquidity_one_coin(amount, 0, expectedIn);
 
         // Wrap ETH to WETH
         IWETH weth = IWETH(vault.weth());
@@ -108,8 +108,9 @@ contract LidoStrategy is BaseStrategy {
         address dst,
         uint256 amount
     ) public view override returns (uint256, uint256) {
-        uint256 obtained = yvault.pricePerShare();
-        obtained *= amount * crvPool.get_virtual_price(); // TODO check math
+        uint256 obtained;
+        if (dst != vault.weth()) obtained = (amount * 10**36) / (crvPool.get_virtual_price() * yvault.pricePerShare());
+        else obtained = (amount * crvPool.get_virtual_price() * yvault.pricePerShare()) / (10**36);
         return (obtained, obtained);
     }
 }

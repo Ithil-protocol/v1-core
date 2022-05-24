@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.10;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.12;
 
-import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IVault } from "./interfaces/IVault.sol";
@@ -12,33 +11,28 @@ import { VaultMath } from "./libraries/VaultMath.sol";
 import { VaultState } from "./libraries/VaultState.sol";
 import { GeneralMath } from "./libraries/GeneralMath.sol";
 import { WrappedToken } from "./WrappedToken.sol";
-import { WToken } from "./libraries/WToken.sol";
+import { WrappedTokenHelper } from "./libraries/WrappedTokenHelper.sol";
 import { TransferHelper } from "./libraries/TransferHelper.sol";
 
 /// @title    Vault contract
 /// @author   Ithil
 /// @notice   Stores staked funds, issues loans and handles repayments to strategies
 contract Vault is IVault, ReentrancyGuard, Ownable {
-    using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
-    using WToken for IWrappedToken;
-    // using SafeERC20 for IERC20;
-    using SafeERC20 for IWETH;
+    using WrappedTokenHelper for IWrappedToken;
     using VaultMath for uint256;
     using GeneralMath for uint256;
     using GeneralMath for VaultState.VaultData;
     using VaultState for VaultState.VaultData;
 
     address public immutable override weth;
-    address internal immutable treasury;
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     mapping(address => VaultState.VaultData) public vaults;
     mapping(address => bool) public strategies;
 
-    constructor(address _weth, address _treasury) {
+    constructor(address _weth) {
         weth = _weth;
-        treasury = _treasury;
     }
 
     modifier isValidAmount(uint256 amount) {
@@ -56,12 +50,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         _;
     }
 
-    modifier onlyTreasury() {
-        if (msg.sender != treasury) revert Vault__Restricted_Access(msg.sender);
-        _;
-    }
-
-    // only accept ETH via fallback from the WETH contract
+    // only accept ETH from the WETH contract
     receive() external payable {
         if (msg.sender != weth) revert Vault__ETH_Transfer_Failed(msg.sender, weth);
     }
@@ -70,12 +59,12 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (!vaults[token].supported && token != ETH) revert Vault__Unsupported_Token(token);
     }
 
+    function getMinimumMargin(address token) external view returns (uint256) {
+        return vaults[token].minimumMargin;
+    }
+
     function balance(address token) public view override returns (uint256) {
-        return
-            IERC20(token).balanceOf(address(this)) +
-            vaults[token].netLoans -
-            vaults[token].insuranceReserveBalance -
-            vaults[token].treasuryLiquidity;
+        return IERC20(token).balanceOf(address(this)) + vaults[token].netLoans - vaults[token].insuranceReserveBalance;
     }
 
     function claimable(address token) external view override returns (uint256) {
@@ -106,15 +95,20 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     function whitelistToken(
         address token,
         uint256 baseFee,
-        uint256 fixedFee
+        uint256 fixedFee,
+        uint256 minimumMargin,
+        uint256 stakingCap
     ) public override onlyOwner {
         if (vaults[token].supported) revert Vault__Token_Already_Supported(token);
 
+        // deploys a wrapped token contract
         vaults[token].wrappedToken = address(new WrappedToken(token));
         vaults[token].supported = true;
         vaults[token].creationTime = block.timestamp;
         vaults[token].baseFee = baseFee;
         vaults[token].fixedFee = fixedFee;
+        vaults[token].minimumMargin = minimumMargin;
+        vaults[token].stakingCap = stakingCap;
 
         emit TokenWasWhitelisted(token);
     }
@@ -123,46 +117,38 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         address token,
         uint256 baseFee,
         uint256 fixedFee,
+        uint256 minimumMargin,
+        uint256 stakingCap,
         bytes calldata data
     ) external override onlyOwner {
-        whitelistToken(token, baseFee, fixedFee);
+        whitelistToken(token, baseFee, fixedFee, minimumMargin, stakingCap);
         (bool success, ) = token.delegatecall(data);
         assert(success);
     }
 
-    function rebalanceInsurance(address token) external override returns (uint256 toTransfer) {
-        VaultState.VaultData storage vault = vaults[token];
-        IERC20 tkn = IERC20(token);
-        uint256 optimalIR = ((tkn.balanceOf(address(this)) + vault.netLoans) * vault.optimalRatio) /
-            VaultMath.RESOLUTION;
-        uint256 insuranceReserveBalance = vault.insuranceReserveBalance;
-
-        if (insuranceReserveBalance < optimalIR) revert Vault__Insurance_Below_OR(insuranceReserveBalance, optimalIR);
-
-        toTransfer = insuranceReserveBalance - optimalIR;
-        vault.insuranceReserveBalance -= toTransfer;
-
-        tkn.safeTransfer(treasury, toTransfer);
-    }
-
-    function addInsurance(address token, uint256 amount)
-        external
-        override
-        unlocked(token)
-        isValidAmount(amount)
-        onlyTreasury
-    {
+    function editMinimumMargin(address token, uint256 minimumMargin) external override onlyOwner {
         checkWhitelisted(token);
 
-        vaults[token].insuranceReserveBalance += amount;
+        vaults[token].minimumMargin = minimumMargin;
 
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        emit MinimumMarginWasChanged(token, minimumMargin);
+    }
+
+    function editCap(address token, uint256 stakingCap) external override onlyOwner {
+        checkWhitelisted(token);
+
+        vaults[token].stakingCap = stakingCap;
+
+        emit StakingCapWasChanged(token, stakingCap);
     }
 
     function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
         checkWhitelisted(token);
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
         uint256 totalWealth = balance(token);
+        uint256 stakingCap = vaults[token].stakingCap;
+
+        if (totalWealth + amount > stakingCap) revert Vault__Staking_Cap_Exceeded(token, totalWealth, stakingCap);
 
         (, amount) = IERC20(token).transferTokens(msg.sender, address(this), amount);
 
@@ -192,7 +178,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         uint256 toBurn = wToken.burnWrapped(amount, balance(token), msg.sender);
 
-        IERC20(token).safeTransfer(msg.sender, amount);
+        IERC20(token).sendTokens(msg.sender, amount);
         emit Withdrawal(msg.sender, token, amount, toBurn);
     }
 
@@ -208,31 +194,6 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (!success) revert Vault__ETH_Unstake_Failed(data); // reverts if unsuccessful
 
         emit Withdrawal(msg.sender, weth, amount, toBurn);
-    }
-
-    function treasuryStake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
-        checkWhitelisted(token);
-
-        vaults[token].addTreasuryLiquidity(IERC20(token), amount);
-    }
-
-    function treasuryUnstake(address token, uint256 amount)
-        external
-        override
-        unlocked(token)
-        isValidAmount(amount)
-        onlyTreasury
-    {
-        checkWhitelisted(token);
-
-        VaultState.VaultData storage vault = vaults[token];
-        uint256 tol = vault.treasuryLiquidity;
-
-        if (tol < amount) revert Vault__Insufficient_TOL(tol);
-
-        vault.treasuryLiquidity -= amount;
-
-        IERC20(token).safeTransfer(msg.sender, amount);
     }
 
     function borrow(

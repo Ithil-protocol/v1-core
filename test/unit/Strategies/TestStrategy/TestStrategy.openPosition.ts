@@ -2,6 +2,6 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
-export function checkGetPosition(): void {
-  it("UniversalStrategy: getPosition", async function () {});
+export function checkOpenPosition(): void {
+  it("TestStrategy: openPosition", async function () {});
 }

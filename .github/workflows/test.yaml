@@ -23,7 +23,7 @@ jobs:
       - run: yarn install
       - name: Run yarn compile
         env:
-          INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         run: yarn compile
       - name: Run integration tests
@@ -32,6 +32,5 @@ jobs:
           FORK_URL: ${{ secrets.FORK_URL }}
           REPORT_GAS: false
           FORKING: true
-          INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         run: yarn test

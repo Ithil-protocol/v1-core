@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.10;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.12;
 
-import "./VaultMath.sol";
-import "./TransferHelper.sol";
-
+import { VaultMath } from "./VaultMath.sol";
+import { TransferHelper } from "./TransferHelper.sol";
 import { IWrappedToken } from "../interfaces/IWrappedToken.sol";
 
-/// @title    WrappedToken library
+/// @title    WrappedTokenHelper library
 /// @author   Ithil
-/// @notice   A library to collect functions related to actions with wrapped tokens
-library WToken {
+/// @notice   A library to collect functions related to actions with wrapped token
+/// @dev      To be replaced by EIP4626 when the standard is mature enough
+library WrappedTokenHelper {
     function mintWrapped(
         IWrappedToken wToken,
         uint256 amount,

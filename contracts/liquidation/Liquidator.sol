@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.10;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.12;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
@@ -15,7 +14,6 @@ import { TransferHelper } from "../libraries/TransferHelper.sol";
 /// @notice   Base liquidation contract, can forcefully close base strategy's positions
 contract Liquidator is Ownable {
     using SafeERC20 for IERC20;
-    using TransferHelper for IERC20;
     using GeneralMath for uint256;
 
     IERC20 public immutable ithil;
@@ -50,7 +48,6 @@ contract Liquidator is Ownable {
     }
 
     function liquidateSingle(IStrategy strategy, uint256 positionId) external {
-        //todo: add checks on liquidator
         uint256 reward = rewardPercentage();
         strategy.forcefullyClose(positionId, msg.sender, reward);
     }
@@ -60,7 +57,6 @@ contract Liquidator is Ownable {
         uint256 positionId,
         uint256 extraMargin
     ) external {
-        //todo: add checks on liquidator
         uint256 reward = rewardPercentage();
         strategy.modifyCollateralAndOwner(positionId, extraMargin, msg.sender, reward);
     }
@@ -70,7 +66,6 @@ contract Liquidator is Ownable {
         uint256 positionId,
         uint256 price
     ) external {
-        //todo: add checks on liquidator
         uint256 reward = rewardPercentage();
         strategy.forcefullyDelete(positionId, price, msg.sender, reward);
     }

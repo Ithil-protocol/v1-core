@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.10;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.12;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { AbstractStrategy } from "./AbstractStrategy.sol";
@@ -12,7 +11,6 @@ import { VaultState } from "../libraries/VaultState.sol";
 /// @title    Liquidable contract
 /// @author   Ithil
 /// @notice   Liquidable contract to collect liquidator data and functions
-
 abstract contract Liquidable is AbstractStrategy {
     using TransferHelper for IERC20;
     using PositionHelper for Position;
@@ -92,7 +90,6 @@ abstract contract Liquidable is AbstractStrategy {
         Position memory position = positions[positionId];
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
-            //todo: properly repay the vault
             delete positions[positionId];
             (, uint256 received) = IERC20(position.owedToken).transferTokens(purchaser, address(vault), price);
             position.principal *= (2 * VaultMath.RESOLUTION - reward) / VaultMath.RESOLUTION;

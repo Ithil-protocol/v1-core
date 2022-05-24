@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.10;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.12;
 
 import { MockToken } from "./MockToken.sol";
 
+/// @dev Used for testing, unaudited
 contract MockTaxedToken is MockToken {
     uint256 public taxFee;
 

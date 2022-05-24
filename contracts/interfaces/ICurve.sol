@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.10;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.12;
 
+/// @title    Interface of the Curve contract
+/// @author   Curve finance
 interface ICurve {
     function add_liquidity(uint256[2] memory amounts, uint256 deadline) external returns (uint256);
 
