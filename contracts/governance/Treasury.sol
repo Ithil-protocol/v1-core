@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.10;
-pragma experimental ABIEncoderV2;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IVault } from "../interfaces/IVault.sol";
-import { IExchange } from "./interfaces/IExchange.sol";
 
 /// @title    Treasury contract
 /// @author   Ithil
@@ -13,17 +11,18 @@ import { IExchange } from "./interfaces/IExchange.sol";
 contract Treasury is Ownable {
     using SafeERC20 for IERC20;
 
+    event DexWasChanged();
+
     error Treasury__Insufficient_Wealth(address token, uint256 balance, uint256 wealth);
     error Treasury__Excessive_Airdrop(uint256 wealth, uint256 amount);
     error Treasury__Airdrop_Too_Recent(uint256 timestamp, uint256 lastAirdrop, uint256 interval);
-
     error Treasury__Swap_From_Taxed_Or_Wrong_Call();
     error Treasury__Swap_To_Taxed_Or_Wrong_Call();
 
     IVault public immutable vault;
     IERC20 public immutable governanceToken;
     address public immutable backingContract;
-    IExchange public exchange;
+    address public dex;
 
     struct AirdropParameters {
         uint256 latestAirdrop;
@@ -38,10 +37,12 @@ contract Treasury is Ownable {
 
     constructor(
         address _vault,
+        address _dex,
         address _governanceToken,
         address _backingContract
     ) {
         vault = IVault(_vault);
+        dex = _dex;
         governanceToken = IERC20(_governanceToken);
         backingContract = _backingContract;
     }
@@ -56,8 +57,10 @@ contract Treasury is Ownable {
         airdropParameters.airdropInterval = _airdropInterval;
     }
 
-    function setExchange(address _exchange) external onlyOwner {
-        exchange = IExchange(_exchange);
+    function setDex(address _dex) external onlyOwner {
+        dex = _dex;
+
+        emit DexWasChanged();
     }
 
     // Stake and unstake functions do not distinguish between treasury and another LP
@@ -87,10 +90,15 @@ contract Treasury is Ownable {
         if (balance <= tWealth) revert Treasury__Insufficient_Wealth(fromToken, balance, tWealth);
         uint256 renounceAmount = balance - tWealth;
 
+        IERC20 to = IERC20(toToken);
         if (fromToken != toToken) {
             uint256 initialBalanceFrom = tkn.balanceOf(address(this));
-            uint256 initialBalanceTo = IERC20(toToken).balanceOf(address(this));
-            uint256 amountIn = exchange.swap(renounceAmount, minAmountIn, data);
+            uint256 initialBalanceTo = to.balanceOf(address(this));
+
+            (bool success, ) = dex.delegatecall(data);
+            assert(success);
+
+            uint256 amountIn = to.balanceOf(address(this));
 
             if (tkn.balanceOf(address(this)) != initialBalanceFrom - renounceAmount)
                 revert Treasury__Swap_From_Taxed_Or_Wrong_Call();
