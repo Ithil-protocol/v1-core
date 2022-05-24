@@ -96,7 +96,8 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         address token,
         uint256 baseFee,
         uint256 fixedFee,
-        uint256 minimumMargin
+        uint256 minimumMargin,
+        uint256 stakingCap
     ) public override onlyOwner {
         if (vaults[token].supported) revert Vault__Token_Already_Supported(token);
 
@@ -107,6 +108,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         vaults[token].baseFee = baseFee;
         vaults[token].fixedFee = fixedFee;
         vaults[token].minimumMargin = minimumMargin;
+        vaults[token].stakingCap = stakingCap;
 
         emit TokenWasWhitelisted(token);
     }
@@ -116,9 +118,10 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 baseFee,
         uint256 fixedFee,
         uint256 minimumMargin,
+        uint256 stakingCap,
         bytes calldata data
     ) external override onlyOwner {
-        whitelistToken(token, baseFee, fixedFee, minimumMargin);
+        whitelistToken(token, baseFee, fixedFee, minimumMargin, stakingCap);
         (bool success, ) = token.delegatecall(data);
         assert(success);
     }
@@ -131,10 +134,21 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         emit MinimumMarginWasChanged(token, minimumMargin);
     }
 
+    function editCap(address token, uint256 stakingCap) external override onlyOwner {
+        checkWhitelisted(token);
+
+        vaults[token].stakingCap = stakingCap;
+
+        emit StakingCapWasChanged(token, stakingCap);
+    }
+
     function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
         checkWhitelisted(token);
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
         uint256 totalWealth = balance(token);
+        uint256 stakingCap = vaults[token].stakingCap;
+
+        if (totalWealth + amount > stakingCap) revert Vault__Staking_Cap_Exceeded(token, totalWealth, stakingCap);
 
         (, amount) = IERC20(token).transferTokens(msg.sender, address(this), amount);
 

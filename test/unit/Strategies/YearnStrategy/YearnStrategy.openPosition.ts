@@ -9,6 +9,7 @@ import {
   baseFee,
   fixedFee,
   minimumMargin,
+  stakingCap,
 } from "../../../common/params";
 
 export function checkOpenPosition(): void {
@@ -21,8 +22,8 @@ export function checkOpenPosition(): void {
     const borrowed = marginTokenMargin.div(2);
     const collateralReceived = marginTokenMargin.div(2);
 
-    await this.vault.whitelistToken(marginToken.address, baseFee, fixedFee, minimumMargin);
-    await this.vault.whitelistToken(investmentToken.address, baseFee, fixedFee, minimumMargin);
+    await this.vault.whitelistToken(marginToken.address, baseFee, fixedFee, minimumMargin, stakingCap);
+    await this.vault.whitelistToken(investmentToken.address, baseFee, fixedFee, minimumMargin, stakingCap);
 
     await marginToken.mintTo(investor.address, marginTokenLiquidity);
     await marginToken.mintTo(trader.address, marginTokenLiquidity);

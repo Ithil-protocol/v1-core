@@ -9,6 +9,7 @@ import {
   baseFee,
   fixedFee,
   minimumMargin,
+  stakingCap,
 } from "../../common/params";
 
 export function checkStaking(): void {
@@ -18,7 +19,7 @@ export function checkStaking(): void {
     const amount = this.tokensAmount;
 
     await token.connect(investor).approve(this.vault.address, amount);
-    await this.vault.whitelistToken(token.address, baseFee, fixedFee, minimumMargin);
+    await this.vault.whitelistToken(token.address, baseFee, fixedFee, minimumMargin, stakingCap);
 
     const initialState = {
       balance: await token.balanceOf(investor.address),
@@ -48,7 +49,7 @@ export function checkStaking(): void {
     const amountBack = ethers.utils.parseUnits("5.0", 17);
 
     await token.connect(investor).approve(this.vault.address, amount);
-    await this.vault.whitelistToken(token.address, baseFee, fixedFee, amount);
+    await this.vault.whitelistToken(token.address, baseFee, fixedFee, amount, stakingCap);
 
     const initialState = {
       balance: await token.balanceOf(investor.address),
@@ -84,7 +85,14 @@ export function checkWhitelist(): void {
       vaultState: await this.vault.vaults(OUSD),
     };
 
-    await this.vault.whitelistTokenAndExec(OUSD, baseFee, fixedFee, ethers.utils.parseEther("100000"), data);
+    await this.vault.whitelistTokenAndExec(
+      OUSD,
+      baseFee,
+      fixedFee,
+      ethers.utils.parseEther("100000"),
+      stakingCap,
+      data,
+    );
 
     const finalState = {
       vaultState: await this.vault.vaults(OUSD),

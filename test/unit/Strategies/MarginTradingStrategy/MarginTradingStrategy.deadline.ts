@@ -8,6 +8,7 @@ import {
   baseFee,
   fixedFee,
   minimumMargin,
+  stakingCap,
 } from "../../../common/params";
 
 export function checkDeadline(): void {
@@ -21,8 +22,8 @@ export function checkDeadline(): void {
     const leverage = 10;
     const deadline = 0;
 
-    await this.vault.whitelistToken(marginToken.address, baseFee, fixedFee, minimumMargin);
-    await this.vault.whitelistToken(investmentToken.address, baseFee, fixedFee, minimumMargin);
+    await this.vault.whitelistToken(marginToken.address, baseFee, fixedFee, minimumMargin, stakingCap);
+    await this.vault.whitelistToken(investmentToken.address, baseFee, fixedFee, minimumMargin, stakingCap);
 
     await marginToken.mintTo(investor.address, marginTokenLiquidity);
     await marginToken.mintTo(trader.address, marginTokenLiquidity);

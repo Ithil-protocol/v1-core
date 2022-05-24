@@ -9,6 +9,7 @@ import {
   baseFee,
   fixedFee,
   minimumMargin,
+  stakingCap,
 } from "../../../common/params";
 
 export function checkPerformInvestment(): void {
@@ -18,8 +19,8 @@ export function checkPerformInvestment(): void {
     const { investor, trader } = this.signers;
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
-    await this.vault.whitelistToken(marginToken.address, baseFee, fixedFee, minimumMargin);
-    await this.vault.whitelistToken(investmentToken.address, baseFee, fixedFee, minimumMargin);
+    await this.vault.whitelistToken(marginToken.address, baseFee, fixedFee, minimumMargin, stakingCap);
+    await this.vault.whitelistToken(investmentToken.address, baseFee, fixedFee, minimumMargin, stakingCap);
 
     await fundVault(investor, this.vault, marginToken, marginTokenLiquidity);
     await marginToken.connect(trader).approve(this.marginTradingStrategy.address, marginTokenMargin);
