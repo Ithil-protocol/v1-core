@@ -14,7 +14,7 @@ export const tokens = {
   USDC: {
     symbol: "USDC",
     address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-    decimals: 18,
+    decimals: 6,
     whale: "0x7abE0cE388281d2aCF297Cb089caef3819b13448",
   },
   WETH: {
@@ -42,6 +42,6 @@ export const yearnRegistry = "0x50c1a2eA0a861A967D9d0FFE2AE4012c2E053804";
 export const stETH = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84";
 export const stETHcrvPool = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022";
 export const ycrvETHPool = "0xdCD90C7f6324cfa40d7169ef80b12031770B4325";
-export const crvLPtoken = "0x06325440d014e39736583c165c2963ba99faf14e";
 export const yearnPartnerTracker = "0x8ee392a4787397126C163Cb9844d7c447da419D8";
 export const yearnPartnerId = "0x0000000000000000000000000000000000000000";
+export const crvEURSUSDC = "0x98a7F18d4E56Cfe84E3D081B40001B3d5bD3eB8B";
