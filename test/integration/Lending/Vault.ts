@@ -1,6 +1,8 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
+import type { ERC20 } from "../../../src/types/ERC20";
+import type { Vault } from "../../../src/types/Vault";
 
 import {
   marginTokenLiquidity,
@@ -12,20 +14,19 @@ import {
   stakingCap,
 } from "../../common/params";
 
-export function checkStaking(): void {
+export function checkStaking(vault: Vault, token: ERC20): void {
   it("Vault: stake", async function () {
-    const token = this.token;
     const investor = this.signers.investor;
     const amount = this.tokensAmount;
 
-    await token.connect(investor).approve(this.vault.address, amount);
-    await this.vault.whitelistToken(token.address, baseFee, fixedFee, minimumMargin, stakingCap);
+    await token.connect(investor).approve(vault.address, amount);
+    await vault.whitelistToken(token.address, baseFee, fixedFee, minimumMargin, stakingCap);
 
     const initialState = {
       balance: await token.balanceOf(investor.address),
     };
 
-    const rsp = await this.vault.connect(investor).stake(token.address, amount);
+    const rsp = await vault.connect(investor).stake(token.address, amount);
     const events = (await rsp.wait()).events;
 
     const finalState = {
@@ -43,20 +44,19 @@ export function checkStaking(): void {
   it("Vault: unstake", async function () {
     const baseFee = 10;
     const fixedFee = 11;
-    const token = this.token;
     const investor = this.signers.investor;
     const amount = ethers.utils.parseUnits("1.0", 18);
     const amountBack = ethers.utils.parseUnits("5.0", 17);
 
-    await token.connect(investor).approve(this.vault.address, amount);
-    await this.vault.whitelistToken(token.address, baseFee, fixedFee, amount, stakingCap);
+    await token.connect(investor).approve(vault.address, amount);
+    await vault.whitelistToken(token.address, baseFee, fixedFee, amount, stakingCap);
 
     const initialState = {
       balance: await token.balanceOf(investor.address),
     };
 
-    await this.vault.connect(investor).stake(token.address, amount);
-    const rsp = await this.vault.connect(investor).unstake(token.address, amountBack);
+    await vault.connect(investor).stake(token.address, amount);
+    const rsp = await vault.connect(investor).unstake(token.address, amountBack);
     const events = (await rsp.wait()).events;
 
     const finalState = {
@@ -72,7 +72,7 @@ export function checkStaking(): void {
   });
 }
 
-export function checkWhitelist(): void {
+export function checkWhitelist(vault: Vault): void {
   it("Vault: whitelistTokenAndExec", async function () {
     const baseFee = 10;
     const fixedFee = 11;
@@ -82,20 +82,13 @@ export function checkWhitelist(): void {
     const data = iface.encodeFunctionData("rebaseOptIn");
 
     const initialState = {
-      vaultState: await this.vault.vaults(OUSD),
+      vaultState: await vault.vaults(OUSD),
     };
 
-    await this.vault.whitelistTokenAndExec(
-      OUSD,
-      baseFee,
-      fixedFee,
-      ethers.utils.parseEther("100000"),
-      stakingCap,
-      data,
-    );
+    await vault.whitelistTokenAndExec(OUSD, baseFee, fixedFee, ethers.utils.parseEther("100000"), stakingCap, data);
 
     const finalState = {
-      vaultState: await this.vault.vaults(OUSD),
+      vaultState: await vault.vaults(OUSD),
     };
 
     expect(initialState.vaultState.supported).to.equal(false);
