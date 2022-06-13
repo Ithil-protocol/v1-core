@@ -164,6 +164,9 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         IWrappedToken wToken = IWrappedToken(vaults[weth].wrappedToken);
         uint256 totalWealth = balance(weth);
+        uint256 stakingCap = vaults[weth].stakingCap;
+        if (totalWealth + amount > stakingCap) revert Vault__Staking_Cap_Exceeded(weth, totalWealth, stakingCap);
+
         IWETH(weth).deposit{ value: amount }();
 
         uint256 toMint = wToken.mintWrapped(amount, msg.sender, totalWealth);
