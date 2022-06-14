@@ -14,23 +14,22 @@ import {
   stakingCap,
 } from "../../common/params";
 
-export function checkStaking(vault: Vault, token: ERC20): void {
+export function checkStaking(): void {
   it("Vault: stake", async function () {
-    const investor = this.signers.investor;
+    const investor = this.investor;
     const amount = this.tokensAmount;
-
-    await token.connect(investor).approve(vault.address, amount);
-    await vault.whitelistToken(token.address, baseFee, fixedFee, minimumMargin, stakingCap);
+    await this.WETH.connect(investor).approve(this.vault.address, amount);
+    await this.vault.whitelistToken(this.WETH.address, baseFee, fixedFee, minimumMargin, stakingCap);
 
     const initialState = {
-      balance: await token.balanceOf(investor.address),
+      balance: await this.WETH.balanceOf(investor.address),
     };
 
-    const rsp = await vault.connect(investor).stake(token.address, amount);
+    const rsp = await this.vault.connect(investor).stake(this.WETH.address, amount);
     const events = (await rsp.wait()).events;
 
     const finalState = {
-      balance: await token.balanceOf(investor.address),
+      balance: await this.WETH.balanceOf(investor.address),
     };
 
     expect(finalState.balance).to.equal(initialState.balance.sub(amount));
@@ -44,23 +43,23 @@ export function checkStaking(vault: Vault, token: ERC20): void {
   it("Vault: unstake", async function () {
     const baseFee = 10;
     const fixedFee = 11;
-    const investor = this.signers.investor;
+    const investor = this.investor;
     const amount = ethers.utils.parseUnits("1.0", 18);
     const amountBack = ethers.utils.parseUnits("5.0", 17);
 
-    await token.connect(investor).approve(vault.address, amount);
-    await vault.whitelistToken(token.address, baseFee, fixedFee, amount, stakingCap);
+    await this.WETH.connect(investor).approve(this.vault.address, amount);
+    await this.vault.whitelistToken(this.WETH.address, baseFee, fixedFee, amount, stakingCap);
 
     const initialState = {
-      balance: await token.balanceOf(investor.address),
+      balance: await this.WETH.balanceOf(investor.address),
     };
 
-    await vault.connect(investor).stake(token.address, amount);
-    const rsp = await vault.connect(investor).unstake(token.address, amountBack);
+    await this.vault.connect(investor).stake(this.WETH.address, amount);
+    const rsp = await this.vault.connect(investor).unstake(this.WETH.address, amountBack);
     const events = (await rsp.wait()).events;
 
     const finalState = {
-      balance: await token.balanceOf(investor.address),
+      balance: await this.WETH.balanceOf(investor.address),
     };
 
     expect(finalState.balance).to.equal(initialState.balance.sub(amount).add(amountBack));

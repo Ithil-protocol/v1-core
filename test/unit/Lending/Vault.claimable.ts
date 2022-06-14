@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { mintAndStake, expandTo18Decimals } from "../../common/utils";
+import { mintAndStake, expandToNDecimals } from "../../common/utils";
 
 export function checkClaimable(): void {
   it("Vault: claimable", async function () {
@@ -11,8 +11,8 @@ export function checkClaimable(): void {
     expect(initialClaimable).to.equal(0);
 
     // Stake and check claimable value
-    const amountToStake = expandTo18Decimals(1000);
-    const initialStakerLiquidity = expandTo18Decimals(10000);
+    const amountToStake = expandToNDecimals(1000, 18);
+    const initialStakerLiquidity = expandToNDecimals(10000, 18);
     await mintAndStake(investor, this.vault, token, initialStakerLiquidity, amountToStake);
 
     const claimable = await this.vault.connect(investor).claimable(token.address);
