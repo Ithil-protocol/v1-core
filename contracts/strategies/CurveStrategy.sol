@@ -30,19 +30,19 @@ contract CurveStrategy is BaseStrategy {
         uint8 n; // number of tokens
     }
     mapping(address => Pool) internal pools; // token => Curve pool
-    IYearnRegistry internal immutable registry;
+    IYearnRegistry internal immutable yRegistry;
     IYearnPartnerTracker internal immutable yearnPartnerTracker;
     address internal immutable partnerId;
 
     constructor(
         address _vault,
         address _liquidator,
-        address _registry,
+        address _yRegistry,
         address _partnerId,
         address _yearnPartnerTracker
     ) BaseStrategy(_vault, _liquidator) {
         partnerId = _partnerId;
-        registry = IYearnRegistry(_registry);
+        yRegistry = IYearnRegistry(_yRegistry);
         yearnPartnerTracker = IYearnPartnerTracker(_yearnPartnerTracker);
     }
 
@@ -66,7 +66,7 @@ contract CurveStrategy is BaseStrategy {
             ? _addLiquidityAdapterAPool(order.spentToken, order.maxSpent)
             : _addLiquidityAdapterYPool(order.spentToken, order.maxSpent);
 
-        IYearnVault yvault = IYearnVault(registry.latestVault(lpToken));
+        IYearnVault yvault = IYearnVault(yRegistry.latestVault(lpToken));
         amountIn = yearnPartnerTracker.deposit(address(yvault), partnerId, lpTokenAmount);
     }
 
@@ -77,7 +77,7 @@ contract CurveStrategy is BaseStrategy {
     {
         ICurve pool = ICurve(pools[position.heldToken].pool);
 
-        IYearnVault yvault = IYearnVault(registry.latestVault(pool.lp_token()));
+        IYearnVault yvault = IYearnVault(yRegistry.latestVault(pool.lp_token()));
         (uint256 expectedIn, ) = quote(address(yvault), position.heldToken, expectedCost);
 
         uint256 amount = yvault.withdraw(position.allowance, address(this), 100);

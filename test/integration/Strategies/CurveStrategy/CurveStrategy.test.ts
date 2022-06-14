@@ -5,7 +5,7 @@ import type { Vault } from "../../../../src/types/Vault";
 import { Signers } from "../../../types";
 import type { ERC20 } from "../../../../src/types/ERC20";
 
-import { tokens, crvEURSUSDC, yearnRegistry, yearnPartnerTracker } from "../../../common/mainnet";
+import { tokens, crvUSDCDAI, yearnRegistry, yearnPartnerTracker } from "../../../common/mainnet";
 import { getTokens } from "../../../common/utils";
 import { marginTokenLiquidityUSDC } from "../../../common/params";
 
@@ -57,7 +57,7 @@ describe("Strategy tests", function () {
 
       await this.vault.addStrategy(this.CurveStrategy.address);
 
-      await this.CurveStrategy.addCurvePool(this.usdc.address, crvEURSUSDC, false, 2); // Yearn-style pool, 2 tokens
+      await this.CurveStrategy.addCurvePool(this.usdc.address, crvUSDCDAI, false, 3); // Yearn-style pool, 2 tokens
     });
 
     checkOpenPosition();

@@ -4,7 +4,7 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IWETH } from "../interfaces/IWETH.sol";
 import { IStETH } from "../interfaces/IStETH.sol";
-import { ICurve } from "../interfaces/ICurve.sol";
+import { ICurveY } from "../interfaces/ICurve.sol";
 import { IYearnVault } from "../interfaces/IYearnVault.sol";
 import { IYearnRegistry } from "../interfaces/IYearnRegistry.sol";
 import { IYearnPartnerTracker } from "../interfaces/IYearnPartnerTracker.sol";
@@ -26,7 +26,7 @@ contract LidoStrategy is BaseStrategy {
     error LidoStrategy__Not_Enough_Liquidity();
 
     IStETH internal immutable stETH;
-    ICurve internal immutable crvPool;
+    ICurveY internal immutable crvPool;
     IERC20 internal immutable crvLP;
     IYearnVault internal immutable yvault;
     IYearnPartnerTracker internal immutable yearnPartnerTracker;
@@ -43,7 +43,7 @@ contract LidoStrategy is BaseStrategy {
         address _yearnPartnerTracker
     ) BaseStrategy(_vault, _liquidator) {
         stETH = IStETH(_stETH);
-        crvPool = ICurve(_crvPool);
+        crvPool = ICurveY(_crvPool);
         crvLP = IERC20(_crvLP);
         partnerId = _partnerId;
         yearnPartnerTracker = IYearnPartnerTracker(_yearnPartnerTracker);
