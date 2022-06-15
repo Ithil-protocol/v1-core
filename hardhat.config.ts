@@ -65,7 +65,7 @@ const config: HardhatUserConfig = {
       forking: {
         enabled: process.env.FORKING ? true : false,
         url: "https://eth-mainnet.alchemyapi.io/v2/" + process.env.ALCHEMY_API_KEY,
-        blockNumber: 14166636,
+        blockNumber: 14967494,
       },
     },
     goerli: getChainConfig("goerli"),
