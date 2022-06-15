@@ -43,7 +43,8 @@ interface IEulerEToken {
     /// @return eToken balance, in internal book-keeping units (18 decimals)
     function convertUnderlyingToBalance(uint256 underlyingAmount) external view returns (uint256);
 
-    /// @notice Updates interest accumulator and totalBorrows, credits reserves, re-targets interest rate, and logs asset status
+    /// @notice Updates interest accumulator and totalBorrows,
+    ///         credits reserves, re-targets interest rate, and logs asset status
     function touch() external;
 
     /// @notice Transfer underlying tokens from sender to the Euler pool, and increase account's eTokens
@@ -63,7 +64,8 @@ interface IEulerEToken {
 
     /// @notice Pay off dToken liability with eTokens ("self-repay")
     /// @param subAccountId 0 for primary, 1-255 for a sub-account
-    /// @param amount In underlying units (use max uint256 to repay the debt in full or up to the available underlying balance)
+    /// @param amount In underlying units (use max uint256 to repay
+    ///               the debt in full or up to the available underlying balance)
     function burn(uint256 subAccountId, uint256 amount) external;
 
     /// @notice Allow spender to access an amount of your eTokens in sub-account 0
