@@ -1,6 +1,6 @@
 import { expect } from "chai";
 
-import { ethers, waffle } from "hardhat";
+import { artifacts, ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 
@@ -9,6 +9,7 @@ import { getTokens, matchState, expandToNDecimals } from "../../common/utils";
 
 import type { ERC20 } from "../../../src/types/ERC20";
 import type { Vault } from "../../../src/types/Vault";
+import type { Artifact } from "hardhat/types";
 
 import { vaultFixture } from "../../common/fixtures";
 
@@ -50,6 +51,7 @@ describe("Lending integration tests", function () {
 
   describe("Base functions", function () {
     let vaultState;
+    let wrappedWETH: ERC20;
     it("Vault: whitelist WETH", async function () {
       await vault.whitelistToken(WETH.address, baseFee, fixedFee, minimumMargin, stakingCap);
       const state = await vault.vaults(WETH.address);
@@ -66,6 +68,14 @@ describe("Lending integration tests", function () {
         BigNumber.from(0),
         BigNumber.from(0),
       );
+      const tokenArtifact: Artifact = await artifacts.readArtifact("ERC20");
+      wrappedWETH = <ERC20>await ethers.getContractAt(tokenArtifact.abi, vaultState.wrappedToken);
+    });
+
+    it("Vault: edit minimum margin", async function () {
+      await vault.connect(admin).editMinimumMargin(WETH.address, minimumMargin.add(1));
+      vaultState = await vault.vaults(WETH.address);
+      expect(vaultState.minimumMargin).to.equal(minimumMargin.add(1));
     });
 
     it("Vault: whitelist already whitelisted", async function () {
@@ -76,6 +86,28 @@ describe("Lending integration tests", function () {
       const rsp = await vault.connect(investor).stake(WETH.address, stakingCap);
       expect(await vault.balance(WETH.address)).to.equal(stakingCap);
       expect(await WETH.balanceOf(investor.address)).to.equal(tokensAmount.sub(stakingCap));
+      expect(await wrappedWETH.balanceOf(investor.address)).to.equal(stakingCap);
+
+      const events = (await rsp.wait()).events;
+      const validEvents = events?.filter(
+        event => event.event === "Deposit" && event.args && event.args[0] === investor.address,
+      );
+      expect(validEvents?.length).equal(1);
+    });
+
+    it("Vault: stake more than cap", async function () {
+      await expect(vault.connect(investor).stake(WETH.address, 1)).to.be.reverted;
+    });
+
+    it("Vault: edit cap", async function () {
+      await vault.connect(admin).editCap(WETH.address, stakingCap.add(1));
+    });
+
+    it("Vault: stake again", async function () {
+      const rsp = await vault.connect(investor).stake(WETH.address, 1);
+      expect(await vault.balance(WETH.address)).to.equal(stakingCap.add(1));
+      expect(await WETH.balanceOf(investor.address)).to.equal(tokensAmount.sub(stakingCap.add(1)));
+      expect(await wrappedWETH.balanceOf(investor.address)).to.equal(stakingCap.add(1));
 
       const events = (await rsp.wait()).events;
       const validEvents = events?.filter(
@@ -86,8 +118,27 @@ describe("Lending integration tests", function () {
 
     it("Vault: unstake WETH", async function () {
       const rsp = await vault.connect(investor).unstake(WETH.address, stakingCap);
+      expect(await vault.balance(WETH.address)).to.equal(1);
+      expect(await WETH.balanceOf(investor.address)).to.equal(tokensAmount.sub(1));
+      expect(await wrappedWETH.balanceOf(investor.address)).to.equal(1);
+
+      const events = (await rsp.wait()).events;
+      const validEvents = events?.filter(
+        event => event.event === "Withdrawal" && event.args && event.args[0] === investor.address,
+      );
+      expect(validEvents?.length).equal(1);
+    });
+
+    it("Vault: decrease staking cap when tokens are still staked and try to stake", async function () {
+      await vault.connect(admin).editCap(WETH.address, stakingCap.sub(1));
+      await expect(vault.connect(investor).stake(WETH.address, stakingCap.sub(1))).to.be.reverted;
+    });
+
+    it("Vault: unstake after staking cap is decreased", async function () {
+      const rsp = await vault.connect(investor).unstake(WETH.address, 1);
       expect(await vault.balance(WETH.address)).to.equal(0);
       expect(await WETH.balanceOf(investor.address)).to.equal(tokensAmount);
+      expect(await wrappedWETH.balanceOf(investor.address)).to.equal(0);
 
       const events = (await rsp.wait()).events;
       const validEvents = events?.filter(
