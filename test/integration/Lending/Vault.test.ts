@@ -23,8 +23,8 @@ let wallet: Wallet, other: Wallet;
 
 let WETH: ERC20;
 let admin: SignerWithAddress;
-let investor: SignerWithAddress;
-let trader: SignerWithAddress;
+let investor1: SignerWithAddress;
+let investor2: SignerWithAddress;
 let createVault: ThenArg<ReturnType<typeof vaultFixture>>["createVault"];
 let loadFixture: ReturnType<typeof createFixtureLoader>;
 
@@ -38,15 +38,15 @@ describe("Lending integration tests", function () {
   });
 
   before("load fixtures", async () => {
-    ({ WETH, admin, investor, trader, createVault } = await loadFixture(vaultFixture));
+    ({ WETH, admin, investor1, investor2, createVault } = await loadFixture(vaultFixture));
     vault = await createVault();
   });
 
   before("get tokens", async () => {
     tokensAmount = await WETH.balanceOf(tokens.WETH.whale);
-    await getTokens(investor.address, WETH.address, tokens.WETH.whale, tokensAmount);
-    await WETH.connect(investor).approve(vault.address, tokensAmount);
-    expect(await WETH.balanceOf(investor.address)).to.equal(tokensAmount);
+    await getTokens(investor1.address, WETH.address, tokens.WETH.whale, tokensAmount);
+    await WETH.connect(investor1).approve(vault.address, tokensAmount);
+    expect(await WETH.balanceOf(investor1.address)).to.equal(tokensAmount);
   });
 
   describe("Base functions", function () {
@@ -83,20 +83,20 @@ describe("Lending integration tests", function () {
     });
 
     it("Vault: stake WETH", async function () {
-      const rsp = await vault.connect(investor).stake(WETH.address, stakingCap);
+      const rsp = await vault.connect(investor1).stake(WETH.address, stakingCap);
       expect(await vault.balance(WETH.address)).to.equal(stakingCap);
-      expect(await WETH.balanceOf(investor.address)).to.equal(tokensAmount.sub(stakingCap));
-      expect(await wrappedWETH.balanceOf(investor.address)).to.equal(stakingCap);
+      expect(await WETH.balanceOf(investor1.address)).to.equal(tokensAmount.sub(stakingCap));
+      expect(await wrappedWETH.balanceOf(investor1.address)).to.equal(stakingCap);
 
       const events = (await rsp.wait()).events;
       const validEvents = events?.filter(
-        event => event.event === "Deposit" && event.args && event.args[0] === investor.address,
+        event => event.event === "Deposit" && event.args && event.args[0] === investor1.address,
       );
       expect(validEvents?.length).equal(1);
     });
 
     it("Vault: stake more than cap", async function () {
-      await expect(vault.connect(investor).stake(WETH.address, 1)).to.be.reverted;
+      await expect(vault.connect(investor1).stake(WETH.address, 1)).to.be.reverted;
     });
 
     it("Vault: edit cap", async function () {
@@ -104,45 +104,45 @@ describe("Lending integration tests", function () {
     });
 
     it("Vault: stake again", async function () {
-      const rsp = await vault.connect(investor).stake(WETH.address, 1);
+      const rsp = await vault.connect(investor1).stake(WETH.address, 1);
       expect(await vault.balance(WETH.address)).to.equal(stakingCap.add(1));
-      expect(await WETH.balanceOf(investor.address)).to.equal(tokensAmount.sub(stakingCap.add(1)));
-      expect(await wrappedWETH.balanceOf(investor.address)).to.equal(stakingCap.add(1));
+      expect(await WETH.balanceOf(investor1.address)).to.equal(tokensAmount.sub(stakingCap.add(1)));
+      expect(await wrappedWETH.balanceOf(investor1.address)).to.equal(stakingCap.add(1));
 
       const events = (await rsp.wait()).events;
       const validEvents = events?.filter(
-        event => event.event === "Deposit" && event.args && event.args[0] === investor.address,
+        event => event.event === "Deposit" && event.args && event.args[0] === investor1.address,
       );
       expect(validEvents?.length).equal(1);
     });
 
     it("Vault: unstake WETH", async function () {
-      const rsp = await vault.connect(investor).unstake(WETH.address, stakingCap);
+      const rsp = await vault.connect(investor1).unstake(WETH.address, stakingCap);
       expect(await vault.balance(WETH.address)).to.equal(1);
-      expect(await WETH.balanceOf(investor.address)).to.equal(tokensAmount.sub(1));
-      expect(await wrappedWETH.balanceOf(investor.address)).to.equal(1);
+      expect(await WETH.balanceOf(investor1.address)).to.equal(tokensAmount.sub(1));
+      expect(await wrappedWETH.balanceOf(investor1.address)).to.equal(1);
 
       const events = (await rsp.wait()).events;
       const validEvents = events?.filter(
-        event => event.event === "Withdrawal" && event.args && event.args[0] === investor.address,
+        event => event.event === "Withdrawal" && event.args && event.args[0] === investor1.address,
       );
       expect(validEvents?.length).equal(1);
     });
 
     it("Vault: decrease staking cap when tokens are still staked and try to stake", async function () {
       await vault.connect(admin).editCap(WETH.address, stakingCap.sub(1));
-      await expect(vault.connect(investor).stake(WETH.address, stakingCap.sub(1))).to.be.reverted;
+      await expect(vault.connect(investor1).stake(WETH.address, stakingCap.sub(1))).to.be.reverted;
     });
 
     it("Vault: unstake after staking cap is decreased", async function () {
-      const rsp = await vault.connect(investor).unstake(WETH.address, 1);
+      const rsp = await vault.connect(investor1).unstake(WETH.address, 1);
       expect(await vault.balance(WETH.address)).to.equal(0);
-      expect(await WETH.balanceOf(investor.address)).to.equal(tokensAmount);
-      expect(await wrappedWETH.balanceOf(investor.address)).to.equal(0);
+      expect(await WETH.balanceOf(investor1.address)).to.equal(tokensAmount);
+      expect(await wrappedWETH.balanceOf(investor1.address)).to.equal(0);
 
       const events = (await rsp.wait()).events;
       const validEvents = events?.filter(
-        event => event.event === "Withdrawal" && event.args && event.args[0] === investor.address,
+        event => event.event === "Withdrawal" && event.args && event.args[0] === investor1.address,
       );
       expect(validEvents?.length).equal(1);
     });
@@ -171,4 +171,6 @@ describe("Lending integration tests", function () {
       );
     });
   });
+
+  //TODO: other tests with investor1 and investor2 interlacing
 });
