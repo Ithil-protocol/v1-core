@@ -11,8 +11,6 @@ import { Liquidator } from "../../src/types/Liquidator";
 import { MarginTradingStrategy } from "../../src/types/MarginTradingStrategy";
 import { YearnStrategy } from "../../src/types/YearnStrategy";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Sign } from "crypto";
-import { ContractTransaction } from "ethers";
 
 interface VaultFixture {
   WETH: ERC20;
@@ -95,7 +93,7 @@ export const marginTradingFixture: Fixture<MarginTradingStrategyFixture> =
       createStrategy: async () => {
         const mtsArtifact: Artifact = await artifacts.readArtifact("MarginTradingStrategy");
         const strategy = <MarginTradingStrategy>(
-          await deployContract(admin, mtsArtifact, [vault.address, liquidator.address, kyberNetwork])
+          await deployContract(admin, mtsArtifact, [vault.address, liquidatorContract.address, kyberNetwork])
         );
         await vault.addStrategy(strategy.address);
         return strategy;
@@ -133,7 +131,7 @@ export const yearnFixture: Fixture<YearnStrategyFixture> = async function (): Pr
       const strategy = <YearnStrategy>(
         await deployContract(admin, ysArtifact, [
           vault.address,
-          liquidator.address,
+          liquidatorContract.address,
           yearnRegistry,
           yearnPartnerId,
           yearnPartnerTracker,
