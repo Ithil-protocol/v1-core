@@ -2,34 +2,17 @@ import { artifacts, ethers, waffle } from "hardhat";
 import type { Artifact } from "hardhat/types";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import type { Vault } from "../../../../src/types/Vault";
-import { Signers } from "../../../types";
 import { MockKyberNetworkProxy } from "../../../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../../../src/types/MockWETH";
 import { MarginTradingStrategy } from "../../../../src/types/MarginTradingStrategy";
 import { Liquidator } from "../../../../src/types/Liquidator";
 import { MockTaxedToken } from "../../../../src/types/MockTaxedToken";
-import { Console } from "console";
 import { expandToNDecimals } from "../../../common/utils";
 import { BigNumber, Wallet } from "ethers";
-import {
-  marginTokenLiquidity,
-  marginTokenMargin,
-  leverage,
-  baseFee,
-  fixedFee,
-  minimumMargin,
-  stakingCap,
-} from "../../../common/params";
+import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
 
 import { mockMarginTradingFixture } from "../../../common/mockfixtures";
 import { fundVault, changeRate } from "../../../common/utils";
-
-import { checkRiskFactor } from "./MarginTradingStrategy.riskFactor";
-import { checkOpenPosition } from "./MarginTradingStrategy.openPosition";
-import { checkClosePosition } from "./MarginTradingStrategy.closePosition";
-import { checkEditPosition } from "./MarginTradingStrategy.editPosition";
-import { checkDeadline } from "./MarginTradingStrategy.deadline";
-import { checkLiquidate } from "./MarginTradingStrategy.liquidate";
 
 import { expect } from "chai";
 
