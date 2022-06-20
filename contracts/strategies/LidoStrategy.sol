@@ -4,7 +4,7 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IWETH } from "../interfaces/IWETH.sol";
 import { IStETH } from "../interfaces/IStETH.sol";
-import { ICurveY } from "../interfaces/ICurve.sol";
+import { ICurve } from "../interfaces/ICurve.sol";
 import { IYearnVault } from "../interfaces/IYearnVault.sol";
 import { IYearnRegistry } from "../interfaces/IYearnRegistry.sol";
 import { IYearnPartnerTracker } from "../interfaces/IYearnPartnerTracker.sol";
@@ -26,7 +26,7 @@ contract LidoStrategy is BaseStrategy {
     error LidoStrategy__Not_Enough_Liquidity();
 
     IStETH internal immutable stETH;
-    ICurveY internal immutable crvPool;
+    ICurve internal immutable crvPool;
     IERC20 internal immutable crvLP;
     IYearnVault internal immutable yvault;
     IYearnPartnerTracker internal immutable yearnPartnerTracker;
@@ -43,7 +43,7 @@ contract LidoStrategy is BaseStrategy {
         address _yearnPartnerTracker
     ) BaseStrategy(_vault, _liquidator) {
         stETH = IStETH(_stETH);
-        crvPool = ICurveY(_crvPool);
+        crvPool = ICurve(_crvPool);
         crvLP = IERC20(_crvLP);
         partnerId = _partnerId;
         yearnPartnerTracker = IYearnPartnerTracker(_yearnPartnerTracker);
@@ -93,7 +93,7 @@ contract LidoStrategy is BaseStrategy {
         // maximum loss, check is enforced in the next line
         uint256 amount = yvault.withdraw(position.allowance, address(this), 100);
 
-        amountIn = crvPool.remove_liquidity_one_coin(amount, 0, expectedIn);
+        amountIn = crvPool.remove_liquidity_one_coin(amount, int128(0), expectedIn);
 
         // Wrap ETH to WETH
         IWETH weth = IWETH(vault.weth());

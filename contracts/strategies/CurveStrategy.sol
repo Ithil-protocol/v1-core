@@ -4,10 +4,9 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IWETH } from "../interfaces/IWETH.sol";
 import { IStETH } from "../interfaces/IStETH.sol";
-import { ICurve, ICurveA, ICurveY } from "../interfaces/ICurve.sol";
-import { IYearnVault } from "../interfaces/IYearnVault.sol";
-import { IYearnRegistry } from "../interfaces/IYearnRegistry.sol";
-import { IYearnPartnerTracker } from "../interfaces/IYearnPartnerTracker.sol";
+import { ICurve } from "../interfaces/ICurve.sol";
+import { IBooster } from "../interfaces/IBooster.sol";
+import { IBaseRewardPool } from "../interfaces/IBaseRewardPool.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 import "hardhat/console.sol";
@@ -23,27 +22,31 @@ contract CurveStrategy is BaseStrategy {
 
     error CurveStrategy__Token_Not_Supported();
     error CurveStrategy__Not_Enough_Liquidity();
+    error CurveStrategy__Convex_Pool_Deactivated(uint256 pid);
 
-    struct Pool {
+    struct CurvePool {
+        uint256 pid; // Convex pool ID
         address pool;
-        bool atype;
-        uint8 n; // number of tokens
+        address lpToken;
+        uint8 coins; // number of tokens
+        uint256 tokenIndex; // Curve token index
+        address baseRewardPool; // Convex rewards pool
     }
-    mapping(address => Pool) internal pools; // token => Curve pool
-    IYearnRegistry internal immutable yRegistry;
-    IYearnPartnerTracker internal immutable yearnPartnerTracker;
-    address internal immutable partnerId;
+    mapping(address => CurvePool) internal pools; // token => Curve pool
+    IBooster internal immutable booster;
+    IERC20 internal immutable crv;
+    IERC20 internal immutable cvx;
 
     constructor(
         address _vault,
         address _liquidator,
-        address _yRegistry,
-        address _partnerId,
-        address _yearnPartnerTracker
+        address _booster,
+        address _crv,
+        address _cvx
     ) BaseStrategy(_vault, _liquidator) {
-        partnerId = _partnerId;
-        yRegistry = IYearnRegistry(_yRegistry);
-        yearnPartnerTracker = IYearnPartnerTracker(_yearnPartnerTracker);
+        booster = IBooster(_booster);
+        crv = IERC20(_crv);
+        cvx = IERC20(_cvx);
     }
 
     function name() external pure override returns (string memory) {
@@ -53,21 +56,40 @@ contract CurveStrategy is BaseStrategy {
     function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
         if (pools[order.spentToken].pool == address(0)) revert CurveStrategy__Token_Not_Supported();
 
-        ICurve pool = ICurve(pools[order.spentToken].pool);
+        CurvePool memory p = pools[order.spentToken];
+        ICurve pool = ICurve(p.pool);
 
-        address lpToken;
-        try pool.lp_token() returns (address val) {
-            lpToken = val;
-        } catch {
-            lpToken = pool.token();
+        uint256 minAmount = 0;
+        if (p.coins == 3) {
+            uint256[3] memory amounts;
+
+            if (p.tokenIndex == 0) amounts = [order.maxSpent, uint256(0), uint256(0)];
+            else if (p.tokenIndex == 1) amounts = [uint256(0), order.maxSpent, uint256(0)];
+            else amounts = [uint256(0), uint256(0), order.maxSpent];
+
+            try pool.calc_token_amount(amounts, true) returns (uint256 val) {
+                minAmount = val;
+            } catch {
+                minAmount = pool.calc_token_amount(amounts);
+            }
+
+            amountIn = pool.add_liquidity(amounts, minAmount - minAmount / 10); /// @todo check slippage
+        } else {
+            uint256[2] memory amounts;
+
+            if (p.tokenIndex == 0) amounts = [order.maxSpent, uint256(0)];
+            else amounts = [uint256(0), order.maxSpent];
+
+            try pool.calc_token_amount(amounts, true) returns (uint256 val) {
+                minAmount = val;
+            } catch {
+                minAmount = pool.calc_token_amount(amounts);
+            }
+
+            amountIn = pool.add_liquidity(amounts, minAmount - minAmount / 10); /// @todo check slippage
         }
 
-        uint256 lpTokenAmount = pools[order.spentToken].atype
-            ? _addLiquidityAdapterAPool(order.spentToken, order.maxSpent)
-            : _addLiquidityAdapterYPool(order.spentToken, order.maxSpent);
-
-        IYearnVault yvault = IYearnVault(yRegistry.latestVault(lpToken));
-        amountIn = yearnPartnerTracker.deposit(address(yvault), partnerId, lpTokenAmount);
+        booster.depositAll(p.pid, true);
     }
 
     function _closePosition(Position memory position, uint256 expectedCost)
@@ -75,14 +97,15 @@ contract CurveStrategy is BaseStrategy {
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
-        ICurve pool = ICurve(pools[position.heldToken].pool);
+        CurvePool memory p = pools[position.owedToken];
+        ICurve pool = ICurve(p.pool);
 
-        IYearnVault yvault = IYearnVault(yRegistry.latestVault(pool.lp_token()));
-        (uint256 expectedIn, ) = quote(address(yvault), position.heldToken, expectedCost);
+        _harvest(p.baseRewardPool, position.allowance);
 
-        uint256 amount = yvault.withdraw(position.allowance, address(this), 100);
+        /// @todo check slippage
+        uint256 expectedIn = pool.calc_withdraw_one_coin(position.allowance, p.tokenIndex);
 
-        amountIn = _removeLiquidityAdapter(position.heldToken, amount, expectedIn);
+        amountIn = pool.remove_liquidity_one_coin(position.allowance, p.tokenIndex, expectedIn);
 
         IERC20(position.heldToken).safeTransfer(address(vault), amountIn);
     }
@@ -92,130 +115,39 @@ contract CurveStrategy is BaseStrategy {
         address dst,
         uint256 amount
     ) public view override returns (uint256, uint256) {
-        // TBD
-    }
-
-    function _getTokenIndex(address token, ICurve pool) internal view returns (uint8 i) {
-        while (i < 3) {
-            if (pool.coins(i) == token) break;
-            ++i;
-        }
-    }
-
-    function _addLiquidityAdapterAPool(address token, uint256 amount) internal returns (uint256) {
-        uint256 lpTokenAmount = 0;
-
-        ICurveA pool = ICurveA(pools[token].pool);
-        uint8 i = _getTokenIndex(token, pool);
-        if (pools[token].n == 3) {
-            uint256[3] memory amounts;
-
-            if (i == 0) amounts = [amount, uint256(0), uint256(0)];
-            else if (i == 1) amounts = [uint256(0), amount, uint256(0)];
-            else amounts = [uint256(0), uint256(0), amount];
-
-            uint256 minAmount = 0;
-            try pool.calc_token_amount(amounts) returns (uint256 val) {
-                minAmount = val;
-            } catch {
-                minAmount = pool.calc_token_amount(amounts, true);
-            }
-
-            lpTokenAmount = pool.add_liquidity(amounts, minAmount, true);
-        } else {
-            uint256[2] memory amounts;
-
-            if (i == 0) amounts = [amount, uint256(0)];
-            else amounts = [uint256(0), amount];
-
-            uint256 minAmount = 0;
-            try pool.calc_token_amount(amounts) returns (uint256 val) {
-                minAmount = val;
-            } catch {
-                minAmount = pool.calc_token_amount(amounts, true);
-            }
-
-            lpTokenAmount = pool.add_liquidity(amounts, minAmount, true);
-        }
-
-        return lpTokenAmount;
-    }
-
-    function _addLiquidityAdapterYPool(address token, uint256 amount) internal returns (uint256) {
-        uint256 lpTokenAmount = 0;
-
-        ICurveY pool = ICurveY(pools[token].pool);
-        uint8 i = _getTokenIndex(token, pool);
-        if (pools[token].n == 3) {
-            uint256[3] memory amounts;
-
-            if (i == 0) amounts = [amount, uint256(0), uint256(0)];
-            else if (i == 1) amounts = [uint256(0), amount, uint256(0)];
-            else amounts = [uint256(0), uint256(0), amount];
-
-            uint256 minAmount = 0;
-            try pool.calc_token_amount(amounts) returns (uint256 val) {
-                minAmount = val;
-            } catch {
-                minAmount = pool.calc_token_amount(amounts, true);
-            }
-
-            lpTokenAmount = pool.add_liquidity(amounts, minAmount);
-        } else {
-            uint256[2] memory amounts;
-
-            if (i == 0) amounts = [amount, uint256(0)];
-            else amounts = [uint256(0), amount];
-
-            uint256 minAmount = 0;
-            try pool.calc_token_amount(amounts) returns (uint256 val) {
-                minAmount = val;
-            } catch {
-                minAmount = pool.calc_token_amount(amounts, true);
-            }
-
-            console.log("amounts[0]", amounts[0]);
-            console.log("amounts[0]", amounts[1]);
-            console.log("minAmount", minAmount);
-
-            lpTokenAmount = pool.add_liquidity(amounts, minAmount - minAmount / 10);
-        }
-
-        return lpTokenAmount;
-    }
-
-    function _removeLiquidityAdapter(
-        address token,
-        uint256 amount,
-        uint256 minAmount
-    ) internal returns (uint256) {
-        uint256 amountIn = 0;
-
-        if (pools[token].atype) {
-            ICurveA pool = ICurveA(pools[token].pool);
-            uint128 i = _getTokenIndex(token, pool);
-
-            amountIn = pool.remove_liquidity_one_coin(amount, int128(i), minAmount, true);
-        } else {
-            ICurveY pool = ICurveY(pools[token].pool);
-            uint128 i = _getTokenIndex(token, pool);
-
-            amountIn = pool.remove_liquidity_one_coin(amount, int128(i), minAmount);
-        }
-
-        return amountIn;
+        ICurve pool = ICurve(pools[src].pool);
+        uint256 obtained = (amount * 10**36) / pool.get_virtual_price();
+        return (obtained, obtained);
     }
 
     function addCurvePool(
         address token,
+        uint256 pid,
         address pool,
-        bool atype,
-        uint8 n
+        uint8 coins,
+        uint256 tokenIndex
     ) external onlyOwner {
-        pools[token] = Pool(pool, atype, n);
+        IBooster.PoolInfo memory poolInfo = booster.poolInfo(pid);
+        if (poolInfo.shutdown) revert CurveStrategy__Convex_Pool_Deactivated(pid);
+
+        // allow Curve pool to take tokens from the strategy
+        super._maxApprove(IERC20(token), pool);
+        // allow Convex booster to take Curve LP tokens from the strategy
+        super._maxApprove(IERC20(poolInfo.lptoken), address(booster));
+
+        pools[token] = CurvePool(pid, pool, poolInfo.lptoken, coins, tokenIndex, poolInfo.crvRewards);
     }
 
-    function removeCurvePool(address token) external onlyOwner {
-        delete pools[token];
+    function _harvest(address rewardPool, uint256 amount) internal {
+        IBaseRewardPool baseRewardPool = IBaseRewardPool(rewardPool);
+        baseRewardPool.withdrawAndUnwrap(amount, false); /// @todo may be true
+        baseRewardPool.getReward(address(this), true); /// @todo getting rewards for the whole deposit?
+
+        uint256 _crv = crv.balanceOf(address(this));
+        uint256 _cvx = cvx.balanceOf(address(this));
+        console.log("_crv", _crv);
+        console.log("_cvx", _cvx);
+
+        /// @todo swap tokens
     }
 }

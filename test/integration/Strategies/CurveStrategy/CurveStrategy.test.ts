@@ -5,15 +5,14 @@ import type { Vault } from "../../../../src/types/Vault";
 import { Signers } from "../../../types";
 import type { ERC20 } from "../../../../src/types/ERC20";
 
-import { tokens, crvUSDCDAI, yearnRegistry, yearnPartnerTracker } from "../../../common/mainnet";
+import { tokens, convexBooster, crvToken, cvxToken } from "../../../common/mainnet";
 import { getTokens } from "../../../common/utils";
 import { marginTokenLiquidityUSDC } from "../../../common/params";
 
 import { Liquidator } from "../../../../src/types/Liquidator";
 import { CurveStrategy } from "../../../../src/types/CurveStrategy";
 
-import { checkOpenPosition } from "./CurveStrategy.openPosition";
-import { checkClosePosition } from "./CurveStrategy.closePosition";
+import { checkPerformInvestment } from "./CurveStrategy.invest";
 
 describe("Strategy tests", function () {
   before(async function () {
@@ -33,9 +32,6 @@ describe("Strategy tests", function () {
       await getTokens(this.signers.investor.address, tokens.USDC.address, tokens.USDC.whale, marginTokenLiquidityUSDC);
       await getTokens(this.signers.trader.address, tokens.USDC.address, tokens.USDC.whale, marginTokenLiquidityUSDC);
 
-      this.dai = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.DAI.address);
-      await getTokens(this.signers.trader.address, tokens.DAI.address, tokens.DAI.whale, marginTokenLiquidityUSDC);
-
       const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
       this.vault = <Vault>await waffle.deployContract(this.signers.admin, vaultArtifact, [tokens.WETH.address]);
 
@@ -47,20 +43,27 @@ describe("Strategy tests", function () {
       );
 
       const strategyArtifact: Artifact = await artifacts.readArtifact("CurveStrategy");
-      this.CurveStrategy = <CurveStrategy>await waffle.deployContract(this.signers.admin, strategyArtifact, [
-        this.vault.address,
-        this.liquidator.address,
-        yearnRegistry, // Yearn Registry
-        this.vault.address, // Yearn partnerId
-        yearnPartnerTracker,
-      ]);
+      this.curveStrategy = <CurveStrategy>(
+        await waffle.deployContract(this.signers.admin, strategyArtifact, [
+          this.vault.address,
+          this.liquidator.address,
+          convexBooster,
+          crvToken,
+          cvxToken,
+        ])
+      );
 
-      await this.vault.addStrategy(this.CurveStrategy.address);
+      await this.vault.addStrategy(this.curveStrategy.address);
 
-      await this.CurveStrategy.addCurvePool(this.usdc.address, crvUSDCDAI, false, 3); // Yearn-style pool, 2 tokens
+      await this.curveStrategy.addCurvePool(
+        this.usdc.address,
+        54, // Convex pid
+        "0x98a7F18d4E56Cfe84E3D081B40001B3d5bD3eB8B", // crvEURSUSDC
+        2,
+        0, // USDC coin index 0
+      );
     });
 
-    checkOpenPosition();
-    checkClosePosition();
+    checkPerformInvestment();
   });
 });

@@ -1,36 +1,35 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { fundVault, changeRate } from "../../../common/utils";
+import { fundVault } from "../../../common/utils";
 import {
   marginTokenLiquidityUSDC,
   marginTokenMarginUSDC,
   leverage,
   baseFee,
   fixedFee,
+  minimumMargin,
   minimumMarginUSDC,
   stakingCap,
 } from "../../../common/params";
 
-export function checkOpenPosition(): void {
-  it("CurveStrategy: openPosition", async function () {
+export function checkPerformInvestment(): void {
+  it("CurveStrategy: trade", async function () {
     const { investor, trader } = this.signers;
     const marginToken = this.usdc;
-    const investmentToken = this.dai;
+    const investmentToken = this.usdc;
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
     await this.vault.whitelistToken(marginToken.address, baseFee, fixedFee, minimumMarginUSDC, stakingCap);
-    await this.vault.whitelistToken(investmentToken.address, baseFee, fixedFee, minimumMarginUSDC, stakingCap);
 
     await fundVault(investor, this.vault, marginToken, marginTokenLiquidityUSDC);
-    await marginToken.connect(trader).approve(this.CurveStrategy.address, marginTokenMarginUSDC);
+    await marginToken.connect(trader).approve(this.curveStrategy.address, marginTokenMarginUSDC);
 
     const initialState = {
       trader_margin: await marginToken.balanceOf(trader.address),
       trader_inv: await investmentToken.balanceOf(trader.address),
       vault_margin: await marginToken.balanceOf(this.vault.address),
       vault_inv: await investmentToken.balanceOf(this.vault.address),
-      strategy_bal: await investmentToken.balanceOf(this.CurveStrategy.address),
     };
 
     const order = {
@@ -43,23 +42,21 @@ export function checkOpenPosition(): void {
       deadline: deadline,
     };
 
-    const quoted = await this.CurveStrategy.connect(trader).quote(
-      marginToken.address,
-      investmentToken.address,
-      marginTokenMarginUSDC.mul(leverage + 1),
-    );
+    await this.curveStrategy.connect(trader).openPosition(order);
 
-    await this.CurveStrategy.connect(trader).openPosition(order);
+    const position = await this.curveStrategy.positions(1);
+    const maxSpent = position.allowance;
+
+    await this.curveStrategy.connect(trader).closePosition(1, maxSpent);
 
     const finalState = {
       trader_margin: await marginToken.balanceOf(trader.address),
       trader_inv: await investmentToken.balanceOf(trader.address),
       vault_margin: await marginToken.balanceOf(this.vault.address),
       vault_inv: await investmentToken.balanceOf(this.vault.address),
-      strategy_bal: await investmentToken.balanceOf(this.CurveStrategy.address),
     };
 
-    //expect(initialState.trader_margin).to.lt(finalState.trader_margin);
-    //expect(initialState.vault_margin).to.lt(finalState.vault_margin);
+    expect(initialState.trader_margin).to.gt(finalState.trader_margin);
+    expect(initialState.vault_margin).to.lt(finalState.vault_margin);
   });
 }
