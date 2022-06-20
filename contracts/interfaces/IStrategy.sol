@@ -96,6 +96,9 @@ interface IStrategy {
     /// @notice Emitted when a position is liquidated
     event PositionWasLiquidated(uint256 indexed id);
 
+    /// @notice Emitted when the strategy lock toggle is changes
+    event StrategyLockWasToggled(bool newLockStatus);
+
     error Strategy__Invalid_Position(uint256 id, address strategy);
     error Strategy__Order_Expired(uint256 timestamp, uint256 deadline);
     error Strategy__Source_Eq_Dest(address token);
@@ -108,4 +111,6 @@ interface IStrategy {
     error Strategy__Only_Liquidator(address sender, address liquidator);
     error Strategy__Margin_Below_Minimum(uint256 marginProvider, uint256 minimumMargin);
     error Strategy__Insufficient_Margin_Provided(int256 newScore);
+    error Strategy__Locked();
+    error Strategy__Only_Guardian();
 }

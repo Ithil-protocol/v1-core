@@ -4,25 +4,24 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
-import { Liquidable } from "./Liquidable.sol";
+import { LiquidableStrategy } from "./LiquidableStrategy.sol";
 import { PositionHelper } from "../libraries/PositionHelper.sol";
 
 /// @title    BaseStrategy contract
 /// @author   Ithil
 /// @notice   Base contract to inherit to keep status updates consistent
-abstract contract BaseStrategy is Liquidable {
+abstract contract BaseStrategy is LiquidableStrategy {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
     using PositionHelper for Position;
 
     uint256 public id;
+    bool public locked;
+    address public guardian;
 
-    error Obtained_Insufficient_Amount(uint256 amountIn);
-    error Loan_Not_Repaid(uint256 repaid, uint256 principal);
-    error Expired();
-
-    constructor(address _vault, address _liquidator) Liquidable(_liquidator, _vault) {
+    constructor(address _vault, address _liquidator) LiquidableStrategy(_liquidator, _vault) {
         id = 0;
+        locked = false;
     }
 
     modifier validOrder(Order memory order) {
@@ -46,8 +45,28 @@ abstract contract BaseStrategy is Liquidable {
         _;
     }
 
+    modifier unlocked() {
+        if (locked) revert Strategy__Locked();
+        _;
+    }
+
+    modifier onlyGuardian() {
+        if (msg.sender != guardian && msg.sender != owner()) revert Strategy__Only_Guardian();
+        _;
+    }
+
+    function setGuardian(address _guardian) external onlyOwner {
+        guardian = _guardian;
+    }
+
     function setRiskFactor(address token, uint256 riskFactor) external onlyOwner {
         riskFactors[token] = riskFactor;
+    }
+
+    function toggleLock(bool _locked) external onlyGuardian {
+        locked = _locked;
+
+        emit StrategyLockWasToggled(locked);
     }
 
     function getPosition(uint256 positionId) external view override returns (Position memory) {
@@ -58,7 +77,7 @@ abstract contract BaseStrategy is Liquidable {
         return address(vault);
     }
 
-    function openPosition(Order memory order) external returns (uint256) {
+    function openPosition(Order memory order) external unlocked returns (uint256) {
         (
             uint256 interestRate,
             uint256 fees,
@@ -152,7 +171,7 @@ abstract contract BaseStrategy is Liquidable {
         emit PositionWasClosed(positionId);
     }
 
-    function editPosition(uint256 positionId, uint256 newCollateral) external isPositionEditable(positionId) {
+    function editPosition(uint256 positionId, uint256 newCollateral) external unlocked isPositionEditable(positionId) {
         Position storage position = positions[positionId];
 
         position.topUpCollateral(

@@ -8,7 +8,7 @@ import type { MockTaxedToken } from "../src/types/MockTaxedToken";
 import type { MockWETH } from "../src/types/MockWETH";
 import type { MockYearnRegistry } from "../src/types/MockYearnRegistry";
 import type { MockYearnVault } from "../src/types/MockYearnVault";
-import type { Liquidable } from "../src/types/Liquidable";
+import type { LiquidableStrategy } from "../src/types/LiquidableStrategy";
 import type { TestStrategy } from "../src/types/TestStrategy";
 import type { YearnStrategy } from "../src/types/YearnStrategy";
 import type { MarginTradingStrategy } from "../src/types/MarginTradingStrategy";
@@ -23,7 +23,7 @@ declare module "mocha" {
     mockWETH: MockWETH;
     mockYearnRegistry: MockYearnRegistry;
     mockYearnVault: MockYearnVault;
-    liquidable: Liquidable;
+    liquidableStrategy: LiquidableStrategy;
     yearnStrategy: YearnStrategy;
     marginTradingStrategy: MarginTradingStrategy;
     TestStrategy: TestStrategy;
