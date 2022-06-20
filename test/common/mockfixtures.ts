@@ -9,6 +9,7 @@ import { MockYearnRegistry } from "../../src/types/MockYearnRegistry";
 import { Vault } from "../../src/types/Vault";
 import { Liquidator } from "../../src/types/Liquidator";
 import { MarginTradingStrategy } from "../../src/types/MarginTradingStrategy";
+import { TestStrategy } from "../../src/types/TestStrategy";
 import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
 import { YearnStrategy } from "../../src/types/YearnStrategy";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -32,6 +33,17 @@ interface MockMarginTradingStrategyFixture {
   mockKyberNetworkProxy: MockKyberNetworkProxy;
   liquidatorContract: Liquidator;
   createStrategy(): Promise<MarginTradingStrategy>;
+}
+
+interface MockTestStrategyFixture {
+  mockWETH: MockWETH;
+  admin: SignerWithAddress;
+  trader1: SignerWithAddress;
+  trader2: SignerWithAddress;
+  liquidator: SignerWithAddress;
+  vault: Vault;
+  liquidatorContract: Liquidator;
+  createStrategy(): Promise<TestStrategy>;
 }
 
 interface MockYearnStrategyFixture {
@@ -163,3 +175,40 @@ export const mockYearnFixture: Fixture<MockYearnStrategyFixture> =
       },
     };
   };
+
+export const mockTestFixture: Fixture<MockTestStrategyFixture> = async function (): Promise<MockTestStrategyFixture> {
+  const signers: SignerWithAddress[] = await ethers.getSigners();
+  const admin = signers[0];
+  const trader1 = signers[3];
+  const trader2 = signers[4];
+  const liquidator = signers[5];
+
+  const wethArtifact: Artifact = await artifacts.readArtifact("MockWETH");
+  const mockWETH = <MockWETH>await deployContract(admin, wethArtifact, []);
+
+  const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
+  const vault = <Vault>await deployContract(admin, vaultArtifact, [mockWETH.address]);
+
+  const liquidatorArtifact: Artifact = await artifacts.readArtifact("Liquidator");
+  const liquidatorContract = <Liquidator>(
+    await deployContract(admin, liquidatorArtifact, ["0x0000000000000000000000000000000000000000"])
+  );
+
+  return {
+    mockWETH,
+    admin,
+    trader1,
+    trader2,
+    liquidator,
+    vault,
+    liquidatorContract,
+    createStrategy: async () => {
+      const mtsArtifact: Artifact = await artifacts.readArtifact("TestStrategy");
+      const strategy = <TestStrategy>(
+        await deployContract(admin, mtsArtifact, [vault.address, liquidatorContract.address])
+      );
+      await vault.addStrategy(strategy.address);
+      return strategy;
+    },
+  };
+};
