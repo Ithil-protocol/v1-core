@@ -2,28 +2,16 @@ import { artifacts, ethers, waffle } from "hardhat";
 import { Wallet, BigNumber } from "ethers";
 import { Artifact } from "hardhat/types";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { Signers } from "../../types";
-import { Liquidator } from "../../../src/types/Liquidator";
-import { checkLiquidateSingle } from "./Liquidator.liquidateSingle";
-import { checkMarginCall } from "./Liquidator.marginCall";
-import { checkPurchaseAssets } from "./Liquidator.purchaseAssets";
-import { Vault } from "../../../src/types/Vault";
-import { MockWETH } from "../../../src/types/MockWETH";
-import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
-import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
-import { MarginTradingStrategy } from "../../../src/types/MarginTradingStrategy";
+import { Liquidator } from "../../src/types/Liquidator";
+import { Vault } from "../../src/types/Vault";
+import { MockWETH } from "../../src/types/MockWETH";
+import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
+import { MockTaxedToken } from "../../src/types/MockTaxedToken";
+import { MarginTradingStrategy } from "../../src/types/MarginTradingStrategy";
 
-import { mockMarginTradingFixture } from "../../common/mockfixtures";
-import { expandToNDecimals, fundVault, changeRate } from "../../common/utils";
-import {
-  marginTokenLiquidity,
-  marginTokenMargin,
-  leverage,
-  baseFee,
-  fixedFee,
-  stakingCap,
-  minimumMargin,
-} from "../../common/params";
+import { mockMarginTradingFixture } from "../common/mockfixtures";
+import { expandToNDecimals, fundVault, changeRate } from "../common/utils";
+import { marginTokenLiquidity, marginTokenMargin, leverage } from "../common/params";
 
 import { expect } from "chai";
 

@@ -3,7 +3,6 @@ import type { Artifact } from "hardhat/types";
 import { BigNumber, Wallet } from "ethers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import type { Vault } from "../../../../src/types/Vault";
-import { Signers } from "../../../types";
 import type { ERC20 } from "../../../../src/types/ERC20";
 
 import { tokens, yearnRegistry, yearnPartnerTracker, yearnPartnerId } from "../../../common/mainnet";

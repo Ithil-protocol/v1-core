@@ -1,24 +1,18 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import type { Artifact } from "hardhat/types";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import type { Vault } from "../../../../src/types/Vault";
-import { Signers } from "../../../types";
-import { MockKyberNetworkProxy } from "../../../../src/types/MockKyberNetworkProxy";
-import { MockWETH } from "../../../../src/types/MockWETH";
-import { MockTaxedToken } from "../../../../src/types/MockTaxedToken";
-import { YearnStrategy } from "../../../../src/types/YearnStrategy";
-import { MockYearnRegistry } from "../../../../src/types/MockYearnRegistry";
-import { Liquidator } from "../../../../src/types/Liquidator";
+import type { Vault } from "../../../src/types/Vault";
+import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
+import { MockWETH } from "../../../src/types/MockWETH";
+import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
+import { YearnStrategy } from "../../../src/types/YearnStrategy";
+import { Liquidator } from "../../../src/types/Liquidator";
 
-import { expandToNDecimals, fundVault } from "../../../common/utils";
-import { marginTokenMargin, marginTokenLiquidity, leverage } from "../../../common/params";
+import { expandToNDecimals, fundVault } from "../../common/utils";
+import { marginTokenMargin, marginTokenLiquidity, leverage } from "../../common/params";
 
-import { mockYearnFixture } from "../../../common/mockfixtures";
+import { mockYearnFixture } from "../../common/mockfixtures";
 import { BigNumber, Wallet } from "ethers";
-
-import { checkClosePosition } from "./YearnStrategy.closePosition";
-import { checkEditPosition } from "./YearnStrategy.editPosition";
-import { checkOpenPosition } from "./YearnStrategy.openPosition";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -101,9 +95,5 @@ describe("Strategy tests", function () {
       await marginToken.mintTo(mockKyberNetworkProxy.address, ethers.constants.MaxInt256);
       await investmentToken.mintTo(mockKyberNetworkProxy.address, ethers.constants.MaxInt256);
     });
-
-    checkOpenPosition();
-    checkClosePosition();
-    // checkEditPosition(); TODO:
   });
 });
