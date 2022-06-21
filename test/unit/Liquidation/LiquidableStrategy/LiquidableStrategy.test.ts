@@ -2,16 +2,16 @@ import { artifacts, ethers, waffle } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { Signers } from "../../../types";
 
-import { checkRiskFactors } from "./Liquidable.riskFactors";
-import { checkComputePairRiskFactor } from "./Liquidable.computePairRiskFactor";
-import { checkComputeLiquidationScore } from "./Liquidable.computeLiquidationScore";
-import { checkForcefullyClose } from "./Liquidable.forcefullyClose";
-import { checkForcefullyDelete } from "./Liquidable.forcefullyDelete";
-import { checkModifyCollateralAndOwner } from "./Liquidable.modifyCollateralAndOwner";
+import { checkRiskFactors } from "./LiquidableStrategy.riskFactors";
+import { checkComputePairRiskFactor } from "./LiquidableStrategy.computePairRiskFactor";
+import { checkComputeLiquidationScore } from "./LiquidableStrategy.computeLiquidationScore";
+import { checkForcefullyClose } from "./LiquidableStrategy.forcefullyClose";
+import { checkForcefullyDelete } from "./LiquidableStrategy.forcefullyDelete";
+import { checkModifyCollateralAndOwner } from "./LiquidableStrategy.modifyCollateralAndOwner";
 import { Artifact } from "hardhat/types";
 import { Vault } from "../../../../src/types/Vault";
 import { Liquidator } from "../../../../src/types/Liquidator";
-import { Liquidable } from "../../../../src/types/Liquidable";
+import { LiquidableStrategy } from "../../../../src/types/LiquidableStrategy";
 import { MockKyberNetworkProxy } from "../../../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../../../src/types/MockWETH";
 
@@ -26,7 +26,7 @@ describe("Strategy tests", function () {
     this.signers.liquidator = signers[3];
   });
 
-  describe("Liquidable", function () {
+  describe("LiquidableStrategy", function () {
     beforeEach(async function () {
       // const kyberArtifact: Artifact = await artifacts.readArtifact("MockKyberNetworkProxy");
       // this.mockKyberNetworkProxy = <MockKyberNetworkProxy>(
@@ -42,15 +42,15 @@ describe("Strategy tests", function () {
       // const liquidatorArtifact: Artifact = await artifacts.readArtifact("Liquidator");
       // this.liquidator = <Liquidator>await waffle.deployContract(this.signers.admin, liquidatorArtifact);
       // console.log("2", this.liquidator.address);
-      // const liquidableArtifact: Artifact = await artifacts.readArtifact("Liquidable");
-      // this.liquidable = <Liquidable>(
+      // const liquidableArtifact: Artifact = await artifacts.readArtifact("LiquidableStrategy");
+      // this.liquidableStrategy = <LiquidableStrategy>(
       //   await waffle.deployContract(this.signers.admin, liquidableArtifact, [
       //     this.liquidator.address,
       //     this.vault.address
       //   ])
       // );
-      // console.log("3", this.liquidable.address);
-      // this.vault.addStrategy(this.liquidable.address);
+      // console.log("3", this.liquidableStrategy.address);
+      // this.vault.addStrategy(this.liquidableStrategy.address);
     });
 
     checkRiskFactors();

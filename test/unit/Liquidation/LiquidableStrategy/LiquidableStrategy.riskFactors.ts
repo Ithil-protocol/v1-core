@@ -3,5 +3,5 @@ import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
 export function checkRiskFactors(): void {
-  it("Liquidable: riskFactors", async function () {});
+  it("LiquidableStrategy: riskFactors", async function () {});
 }

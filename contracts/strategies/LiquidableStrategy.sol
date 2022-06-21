@@ -9,10 +9,10 @@ import { VaultMath } from "../libraries/VaultMath.sol";
 import { VaultState } from "../libraries/VaultState.sol";
 import "hardhat/console.sol";
 
-/// @title    Liquidable contract
+/// @title    LiquidableStrategy contract
 /// @author   Ithil
 /// @notice   Liquidable contract to collect liquidator data and functions
-abstract contract Liquidable is AbstractStrategy {
+abstract contract LiquidableStrategy is AbstractStrategy {
     using TransferHelper for IERC20;
     using PositionHelper for Position;
     using SafeERC20 for IERC20;

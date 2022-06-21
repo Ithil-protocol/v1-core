@@ -168,4 +168,5 @@ interface IVault {
     error Vault__Insufficient_TOL(uint256 tol);
     error Vault__Insurance_Below_OR(uint256 insuranceReserve, uint256 optimalRatio);
     error Vault__Staking_Cap_Exceeded(address token, uint256 totalWealth, uint256 stakingCap);
+    error Vault__Only_Guardian();
 }

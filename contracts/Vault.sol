@@ -27,6 +27,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
     address public immutable override weth;
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address public guardian;
 
     mapping(address => VaultState.VaultData) public vaults;
     mapping(address => bool) public strategies;
@@ -50,9 +51,18 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         _;
     }
 
+    modifier onlyGuardian() {
+        if (msg.sender != guardian && msg.sender != owner()) revert Vault__Only_Guardian();
+        _;
+    }
+
     // only accept ETH from the WETH contract
     receive() external payable {
         if (msg.sender != weth) revert Vault__ETH_Transfer_Failed(msg.sender, weth);
+    }
+
+    function setGuardian(address _guardian) external onlyOwner {
+        guardian = _guardian;
     }
 
     function checkWhitelisted(address token) public view override {
@@ -74,7 +84,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         return VaultMath.maximumWithdrawal(wToken.balanceOf(msg.sender), wToken.totalSupply(), balance(token));
     }
 
-    function toggleLock(bool locked, address token) external override onlyOwner {
+    function toggleLock(bool locked, address token) external override onlyGuardian {
         vaults[token].locked = locked;
 
         emit VaultLockWasToggled(locked, token);
