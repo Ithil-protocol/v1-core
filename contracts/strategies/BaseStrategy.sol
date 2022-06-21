@@ -77,7 +77,7 @@ abstract contract BaseStrategy is LiquidableStrategy {
         return address(vault);
     }
 
-    function openPosition(Order memory order) external unlocked returns (uint256) {
+    function openPosition(Order memory order) external validOrder(order) unlocked returns (uint256) {
         (
             uint256 interestRate,
             uint256 fees,

@@ -7,6 +7,7 @@ import { TransferHelper } from "../libraries/TransferHelper.sol";
 import { PositionHelper } from "../libraries/PositionHelper.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { VaultState } from "../libraries/VaultState.sol";
+import "hardhat/console.sol";
 
 /// @title    LiquidableStrategy contract
 /// @author   Ithil
@@ -109,11 +110,14 @@ abstract contract LiquidableStrategy is AbstractStrategy {
     ) external override onlyLiquidator {
         Position storage position = positions[_id];
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
+        console.log("[Liquidable]\\modifyCollateralAndOwner: score", uint256(score));
+        console.log("[Liquidable]\\modifyCollateralAndOwner: dueFees", dueFees);
         if (score > 0) {
             positions[_id].owner = newOwner;
             position.principal *= (2 * VaultMath.RESOLUTION - reward) / VaultMath.RESOLUTION;
             position.fees += dueFees;
             position.createdAt = block.timestamp;
+            console.log("[Liquidable]\\modifyCollateralAndOwner: topping up with newCollateral", newCollateral);
             position.topUpCollateral(newOwner, address(this), newCollateral);
             (int256 newScore, ) = computeLiquidationScore(position);
             if (newScore > 0) revert Strategy__Insufficient_Margin_Provided(newScore);

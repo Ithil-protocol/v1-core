@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import ERC20 from "@openzeppelin/contracts/build/contracts/ERC20.json";
-import { expandTo18Decimals } from "../../common/utils";
+import { expandToNDecimals } from "../../common/utils";
 
 export function checkRebalanceInsurance(): void {
   it("Vault: rebalance insurance", async function () {

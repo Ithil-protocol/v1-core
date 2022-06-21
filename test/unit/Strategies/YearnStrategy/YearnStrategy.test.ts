@@ -10,67 +10,96 @@ import { YearnStrategy } from "../../../../src/types/YearnStrategy";
 import { MockYearnRegistry } from "../../../../src/types/MockYearnRegistry";
 import { Liquidator } from "../../../../src/types/Liquidator";
 
+import { expandToNDecimals, fundVault } from "../../../common/utils";
+import { marginTokenMargin, marginTokenLiquidity, leverage } from "../../../common/params";
+
+import { mockYearnFixture } from "../../../common/mockfixtures";
+import { BigNumber, Wallet } from "ethers";
+
 import { checkClosePosition } from "./YearnStrategy.closePosition";
 import { checkEditPosition } from "./YearnStrategy.editPosition";
 import { checkOpenPosition } from "./YearnStrategy.openPosition";
 
+const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
+
+const createFixtureLoader = waffle.createFixtureLoader;
+
+type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
+
+let wallet: Wallet, other: Wallet;
+
+let mockWETH: MockWETH;
+let admin: SignerWithAddress;
+let trader1: SignerWithAddress;
+let trader2: SignerWithAddress;
+let liquidator: SignerWithAddress;
+let createStrategy: ThenArg<ReturnType<typeof mockYearnFixture>>["createStrategy"];
+let loadFixture: ReturnType<typeof createFixtureLoader>;
+
+let vault: Vault;
+let liquidatorContract: Liquidator;
+let strategy: YearnStrategy;
+let tokensAmount: BigNumber;
+let mockKyberNetworkProxy: MockKyberNetworkProxy;
+
+let marginToken: MockTaxedToken;
+let investmentToken: MockTaxedToken;
+
+let order: {
+  spentToken: string;
+  obtainedToken: string;
+  collateral: BigNumber;
+  collateralIsSpentToken: boolean;
+  minObtained: BigNumber;
+  maxSpent: BigNumber;
+  deadline: number;
+};
+
 describe("Strategy tests", function () {
-  before(async function () {
-    this.signers = {} as Signers;
+  before("create fixture loader", async () => {
+    before("create fixture loader", async () => {
+      [wallet, other] = await (ethers as any).getSigners();
+      loadFixture = createFixtureLoader([wallet, other]);
+    });
 
-    const signers: SignerWithAddress[] = await ethers.getSigners();
-    this.signers.admin = signers[0];
-    this.signers.investor = signers[1];
-    this.signers.trader = signers[2];
-    this.signers.liquidator = signers[3];
-  });
+    before("load fixtures", async () => {
+      ({ mockWETH, admin, trader1, trader2, liquidator, vault, liquidatorContract, createStrategy } = await loadFixture(
+        mockYearnFixture,
+      ));
+      strategy = await createStrategy();
+    });
 
-  describe("YearnStrategy", function () {
-    beforeEach(async function () {
-      const kyberArtifact: Artifact = await artifacts.readArtifact("MockKyberNetworkProxy");
-      this.mockKyberNetworkProxy = <MockKyberNetworkProxy>(
-        await waffle.deployContract(this.signers.admin, kyberArtifact, [])
+    before("prepare vault with default parameters", async () => {
+      const signers: SignerWithAddress[] = await ethers.getSigners();
+      const staker = signers[1];
+
+      const tokenArtifact: Artifact = await artifacts.readArtifact("MockTaxedToken");
+      marginToken = <MockTaxedToken>await waffle.deployContract(admin, tokenArtifact, ["Margin mock token", "MGN", 18]);
+      investmentToken = <MockTaxedToken>(
+        await waffle.deployContract(admin, tokenArtifact, ["Investment mock token", "INV", 18])
       );
 
-      const wethArtifact: Artifact = await artifacts.readArtifact("MockWETH");
-      this.mockWETH = <MockWETH>await waffle.deployContract(this.signers.admin, wethArtifact, []);
+      await vault.whitelistToken(marginToken.address, 10, 10, 1000, expandToNDecimals(1000000, 18));
+      await vault.whitelistToken(investmentToken.address, 10, 10, 1, expandToNDecimals(1000, 18));
 
-      const tknArtifact: Artifact = await artifacts.readArtifact("MockTaxedToken");
-      this.mockTaxedToken = <MockTaxedToken>(
-        await waffle.deployContract(this.signers.admin, tknArtifact, ["Dai Stablecoin", "DAI", 18])
-      );
+      await fundVault(staker, vault, marginToken, marginTokenLiquidity);
+      await marginToken.connect(trader1).approve(strategy.address, marginTokenMargin);
 
-      const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
-      this.vault = <Vault>await waffle.deployContract(this.signers.admin, vaultArtifact, [
-        this.mockWETH.address,
-        // this.signers.admin.address,
-      ]);
+      order = {
+        spentToken: marginToken.address,
+        obtainedToken: investmentToken.address,
+        collateral: marginTokenMargin,
+        collateralIsSpentToken: true,
+        minObtained: BigNumber.from(2).pow(255), // this order is invalid unless we reduce this parameter
+        maxSpent: marginTokenMargin.mul(leverage),
+        deadline: deadline,
+      };
+      await strategy.setRiskFactor(marginToken.address, 3000);
+      await strategy.setRiskFactor(investmentToken.address, 4000);
 
-      const liquidatorArtifact: Artifact = await artifacts.readArtifact("Liquidator");
-      this.liquidator = <Liquidator>(
-        await waffle.deployContract(this.signers.admin, liquidatorArtifact, [
-          "0x0000000000000000000000000000000000000000",
-        ])
-      );
-
-      const yearnArtifact: Artifact = await artifacts.readArtifact("MockYearnRegistry");
-      this.mockYearnRegistry = <MockYearnRegistry>await waffle.deployContract(this.signers.admin, yearnArtifact, []);
-      await this.mockYearnRegistry.newVault(this.mockWETH.address);
-      await this.mockYearnRegistry.newVault(this.mockTaxedToken.address);
-
-      const ysArtifact: Artifact = await artifacts.readArtifact("YearnStrategy");
-      this.yearnStrategy = <YearnStrategy>await waffle.deployContract(this.signers.admin, ysArtifact, [
-        this.vault.address, // vault
-        this.liquidator.address, // liquidator
-        this.mockYearnRegistry.address, // registry
-        "0x0000000000000000000000000000000000000000", // partnerId
-        this.mockYearnRegistry.address, // yearnPartnerTracker
-      ]);
-
-      const yvault = await this.mockYearnRegistry.latestVault(this.mockTaxedToken.address);
-      await this.mockTaxedToken.mintTo(yvault, ethers.constants.MaxInt256);
-
-      await this.vault.addStrategy(this.yearnStrategy.address);
+      // mint tokens
+      await marginToken.mintTo(mockKyberNetworkProxy.address, ethers.constants.MaxInt256);
+      await investmentToken.mintTo(mockKyberNetworkProxy.address, ethers.constants.MaxInt256);
     });
 
     checkOpenPosition();

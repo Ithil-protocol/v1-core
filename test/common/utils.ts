@@ -66,6 +66,33 @@ export const compareVaultStates = (state1: any, state2: any) => {
   expect(state1.optimalRatio).to.equal(state2.optimalRatio);
 };
 
+export const matchState = (
+  state1: any,
+  supported: boolean,
+  locked: boolean,
+  baseFee: BigNumber,
+  fixedFee: BigNumber,
+  netLoans: BigNumber,
+  minimumMargin: BigNumber,
+  stakingCap: BigNumber,
+  insuranceReserveBalance: BigNumber,
+  optimalRatio: BigNumber,
+) => {
+  expect(state1.supported).to.equal(supported);
+  expect(state1.locked).to.equal(locked);
+  expect(state1.baseFee).to.equal(baseFee);
+  expect(state1.fixedFee).to.equal(fixedFee);
+  expect(state1.netLoans).to.equal(netLoans);
+  expect(state1.minimumMargin).to.equal(minimumMargin);
+  expect(state1.stakingCap).to.equal(stakingCap);
+  expect(state1.insuranceReserveBalance).to.equal(insuranceReserveBalance);
+  expect(state1.optimalRatio).to.equal(optimalRatio);
+};
+
 export function expandTo18Decimals(n: number): BigNumber {
   return BigNumber.from(n).mul(BigNumber.from(10).pow(18));
+}
+
+export function expandToNDecimals(n: number, decimals: number): BigNumber {
+  return BigNumber.from(n).mul(BigNumber.from(10).pow(decimals));
 }
