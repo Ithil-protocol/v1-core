@@ -25,7 +25,12 @@ abstract contract LiquidableStrategy is AbstractStrategy {
     error Insufficient_Margin_Call(uint256 received);
     error Insufficient_Price(uint256 price);
 
-    constructor(address _liquidator, address _vault) AbstractStrategy(_vault) {
+    constructor(
+        address _liquidator,
+        address _vault,
+        string memory _name,
+        string memory _symbol
+    ) AbstractStrategy(_vault, _name, _symbol) {
         liquidator = _liquidator;
     }
 

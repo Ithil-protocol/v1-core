@@ -28,13 +28,9 @@ contract EulerStrategy is BaseStrategy {
         address _liquidator,
         address _markets,
         address _euler
-    ) BaseStrategy(_vault, _liquidator) {
+    ) BaseStrategy(_vault, _liquidator, "EulerStrategy", "ITHIL-ES-POS") {
         markets = IEulerMarkets(_markets);
         euler = _euler;
-    }
-
-    function name() external pure override returns (string memory) {
-        return "EulerStrategy";
     }
 
     function _openPosition(Order memory order) internal override returns (uint256 amountIn) {

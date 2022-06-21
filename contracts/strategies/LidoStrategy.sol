@@ -41,7 +41,7 @@ contract LidoStrategy is BaseStrategy {
         address _registry,
         address _partnerId,
         address _yearnPartnerTracker
-    ) BaseStrategy(_vault, _liquidator) {
+    ) BaseStrategy(_vault, _liquidator, "LidoStrategy", "ITHIL-LS-POS") {
         stETH = IStETH(_stETH);
         crvPool = ICurve(_crvPool);
         crvLP = IERC20(_crvLP);
@@ -51,10 +51,6 @@ contract LidoStrategy is BaseStrategy {
         yvault = IYearnVault(IYearnRegistry(_registry).latestVault(_crvLP));
         stETH.safeApprove(_crvPool, type(uint256).max);
         crvLP.safeApprove(_yearnPartnerTracker, type(uint256).max);
-    }
-
-    function name() external pure override returns (string memory) {
-        return "LidoStrategy";
     }
 
     receive() external payable {

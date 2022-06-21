@@ -19,7 +19,12 @@ abstract contract BaseStrategy is LiquidableStrategy {
     bool public locked;
     address public guardian;
 
-    constructor(address _vault, address _liquidator) LiquidableStrategy(_liquidator, _vault) {
+    constructor(
+        address _vault,
+        address _liquidator,
+        string memory _name,
+        string memory _symbol
+    ) LiquidableStrategy(_liquidator, _vault, _name, _symbol) {
         id = 0;
         locked = false;
     }
@@ -130,6 +135,8 @@ abstract contract BaseStrategy is LiquidableStrategy {
             block.timestamp
         );
 
+        _safeMint(msg.sender, id);
+
         return id;
     }
 
@@ -167,6 +174,8 @@ abstract contract BaseStrategy is LiquidableStrategy {
 
         /// The following check is important to prevent users from triggering bad liquidations
         if (vaultRepaid < position.principal) revert Strategy__Loan_Not_Repaid(vaultRepaid, position.principal);
+
+        _burn(positionId);
 
         emit PositionWasClosed(positionId);
     }

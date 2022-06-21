@@ -20,12 +20,8 @@ contract MarginTradingStrategy is BaseStrategy {
         address _vault,
         address _liquidator,
         address _kyber
-    ) BaseStrategy(_vault, _liquidator) {
+    ) BaseStrategy(_vault, _liquidator, "MarginTradingStrategy", "ITHIL-MS-POS") {
         kyberProxy = IKyberNetworkProxy(_kyber);
-    }
-
-    function name() external pure override returns (string memory) {
-        return "MarginTradingStrategy";
     }
 
     function _openPosition(Order memory order) internal override returns (uint256 amountIn) {

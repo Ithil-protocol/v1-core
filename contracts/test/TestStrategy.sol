@@ -12,11 +12,9 @@ contract TestStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
     using TransferHelper for IERC20;
 
-    constructor(address _vault, address _liquidator) BaseStrategy(_vault, _liquidator) {}
-
-    function name() external pure override returns (string memory) {
-        return "TestStrategy";
-    }
+    constructor(address _vault, address _liquidator)
+        BaseStrategy(_vault, _liquidator, "TestStrategy", "ITHIL-TS-POS")
+    {}
 
     function _openPosition(Order memory order) internal override returns (uint256 amountIn) {}
 
