@@ -22,6 +22,8 @@ const createFixtureLoader = waffle.createFixtureLoader;
 
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
 
+const initialTraderBalance = expandToNDecimals(1000000, 18);
+
 let wallet: Wallet, other: Wallet;
 
 let mockWETH: MockWETH;
@@ -40,6 +42,8 @@ let mockKyberNetworkProxy: MockKyberNetworkProxy;
 
 let marginToken: MockTaxedToken;
 let investmentToken: MockTaxedToken;
+let traderBalance: BigNumber;
+let vaultBalance: BigNumber;
 
 let order: {
   spentToken: string;
@@ -85,13 +89,15 @@ describe("Strategy tests", function () {
     await vault.whitelistToken(marginToken.address, 10, 10, 1000, expandToNDecimals(1000000, 18));
     await vault.whitelistToken(investmentToken.address, 10, 10, 1, expandToNDecimals(1000, 18));
 
-    // mint tokens to staker
+    // mint tokens to staker and fund vault
     await marginToken.mintTo(staker.address, expandToNDecimals(100000, 18));
     await fundVault(staker, vault, marginToken, marginTokenLiquidity);
-    await marginToken.connect(trader1).approve(strategy.address, ethers.constants.MaxUint256);
 
-    // mint tokens to trader
-    await marginToken.mintTo(trader1.address, expandToNDecimals(10000, 18));
+    vaultBalance = await marginToken.balanceOf(vault.address);
+
+    // Trader starts with initialTraderBalance tokens
+    await marginToken.mintTo(trader1.address, initialTraderBalance);
+    await marginToken.connect(trader1).approve(strategy.address, initialTraderBalance);
 
     order = {
       spentToken: marginToken.address,
@@ -110,31 +116,28 @@ describe("Strategy tests", function () {
     await investmentToken.mintTo(mockKyberNetworkProxy.address, ethers.constants.MaxInt256);
   });
 
-  it("MarginTradingStrategy: setRiskFactor", async function () {
+  it("Set risk factor", async function () {
     const riskFactor = 200;
-    const token = "0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86";
 
-    await strategy.setRiskFactor(token, riskFactor);
+    await strategy.setRiskFactor(marginToken.address, riskFactor);
 
     const finalState = {
-      riskFactor: await strategy.riskFactors(token),
+      riskFactor: await strategy.riskFactors(marginToken.address),
     };
 
     expect(finalState.riskFactor).to.equal(BigNumber.from(riskFactor));
   });
 
-  it("MarginTradingStrategy: computePairRiskFactor", async function () {
-    const riskFactor0 = 200;
-    const riskFactor1 = 300;
-    const token0 = "0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86";
-    const token1 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-
-    await strategy.setRiskFactor(token0, riskFactor0);
-    await strategy.setRiskFactor(token1, riskFactor1);
-
-    // expect(finalState.pairRiskFactor).to.equal(BigNumber.from(riskFactor0).add(BigNumber.from(riskFactor1)).div(2));
+  it("Set rate and quote", async function () {
+    await mockKyberNetworkProxy.setRate(marginToken.address, BigNumber.from(5000));
+    await mockKyberNetworkProxy.setRate(investmentToken.address, BigNumber.from(15000));
+    let [quoted] = await strategy.quote(marginToken.address, investmentToken.address, 9); // 5000 * 9 / 15000 = 3
+    expect(quoted).to.equal(3);
+    [quoted] = await strategy.quote(investmentToken.address, marginToken.address, 7); // 15000 * 7 / 5000 = 21
+    expect(quoted).to.equal(21);
   });
-  it("MarginTradingStrategy: openPosition", async function () {
+
+  it("Open position with a price ratio of 1:10", async function () {
     await changeRate(mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
     await changeRate(mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
 
@@ -146,18 +149,42 @@ describe("Strategy tests", function () {
 
     order.minObtained = minObtained;
 
+    traderBalance = await marginToken.balanceOf(trader1.address);
+    expect(traderBalance).to.equal(initialTraderBalance);
+
     await strategy.connect(trader1).openPosition(order);
+    expect(await marginToken.balanceOf(trader1.address)).to.equal(initialTraderBalance.sub(marginTokenMargin));
+    const position = await strategy.positions(1);
+    expect(position.allowance).to.equal(minObtained);
+    expect(position.principal).to.equal(marginTokenMargin.mul(leverage - 1));
+    expect(position.interestRate).to.equal(0);
   });
 
-  it("MarginTradingStrategy: closePosition", async function () {
+  it("Check optimal ratio increased", async function () {
+    const vaultState = await vault.vaults(marginToken.address);
+    expect(vaultState.optimalRatio).to.be.above(0);
+  });
+
+  it("Raise rate and close position", async function () {
     await changeRate(mockKyberNetworkProxy, investmentToken, 11 * 10 ** 10);
 
     const position = await strategy.positions(1);
     const maxSpent = position.allowance;
 
     await strategy.connect(trader1).closePosition(1, maxSpent);
+    expect(await marginToken.balanceOf(trader1.address)).to.be.above(initialTraderBalance);
   });
-  // checkEditPosition(); // TODO: not completed
+
+  it("Check vault balance", async function () {
+    expect(await marginToken.balanceOf(vault.address)).to.be.above(vaultBalance);
+  });
+
+  // Both insurance reserve and optimal ratio should be zero now: all the loans have been repaid
+  it("Check optimal ratio and insurance reserve", async function () {
+    const vaultState = await vault.vaults(marginToken.address);
+    expect(vaultState.optimalRatio).to.equal(0);
+    expect(vaultState.insuranceReserveBalance).to.equal(0);
+  });
 
   it("MarginTradingStrategy: check deadline", async function () {
     order.deadline = 0;
@@ -188,7 +215,7 @@ describe("Strategy tests", function () {
     expect(position1.principal).to.equal(position0.principal);
 
     // step 3. liquidate
-    await changeRate(mockKyberNetworkProxy, investmentToken, 93 * 10 ** 9);
+    await changeRate(mockKyberNetworkProxy, investmentToken, 92 * 10 ** 9);
     await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 2);
 
     let position2 = await strategy.positions(2);
