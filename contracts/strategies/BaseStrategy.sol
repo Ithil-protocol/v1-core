@@ -40,8 +40,7 @@ abstract contract BaseStrategy is LiquidableStrategy {
     }
 
     modifier isPositionEditable(uint256 positionId) {
-        if (positions[positionId].owner != msg.sender)
-            revert Strategy__Restricted_Access(positions[positionId].owner, msg.sender);
+        if (ownerOf(positionId) != msg.sender) revert Strategy__Restricted_Access(ownerOf(positionId), msg.sender);
 
         // flashloan protection
         if (positions[positionId].createdAt >= block.timestamp)
@@ -110,7 +109,6 @@ abstract contract BaseStrategy is LiquidableStrategy {
         if (amountIn < order.minObtained) revert Strategy__Insufficient_Amount_Out(amountIn, order.minObtained);
 
         positions[++id] = Position({
-            owner: msg.sender,
             owedToken: order.spentToken,
             heldToken: order.obtainedToken,
             collateralToken: collateralToken,
@@ -145,15 +143,11 @@ abstract contract BaseStrategy is LiquidableStrategy {
 
         delete positions[positionId];
 
-        uint256 timeFees = VaultMath.computeTimeFees(
+        position.fees += VaultMath.computeTimeFees(
             position.principal,
             position.interestRate,
             block.timestamp - position.createdAt
         );
-
-        position.fees += timeFees;
-
-        bool collateralInHeldTokens = position.collateralToken != position.owedToken;
 
         IERC20 owedToken = IERC20(position.owedToken);
         uint256 vaultRepaid = owedToken.balanceOf(address(vault));
@@ -164,11 +158,11 @@ abstract contract BaseStrategy is LiquidableStrategy {
             position.principal,
             position.fees,
             riskFactors[position.heldToken],
-            position.owner
+            ownerOf(positionId)
         );
 
-        if (collateralInHeldTokens && amountOut <= position.allowance)
-            IERC20(position.heldToken).safeTransfer(position.owner, position.allowance - amountOut);
+        if (position.collateralToken != position.owedToken && amountOut <= position.allowance)
+            IERC20(position.heldToken).safeTransfer(ownerOf(positionId), position.allowance - amountOut);
 
         vaultRepaid = owedToken.balanceOf(address(vault)) - vaultRepaid;
 

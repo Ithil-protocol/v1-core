@@ -75,7 +75,7 @@ abstract contract LiquidableStrategy is AbstractStrategy {
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
             delete positions[_id];
-            position.owner = _liquidator;
+            _transfer(ownerOf(_id), _liquidator, _id);
             uint256 expectedCost = 0;
             bool collateralInHeldTokens = position.collateralToken != position.owedToken;
             if (collateralInHeldTokens)
@@ -83,6 +83,9 @@ abstract contract LiquidableStrategy is AbstractStrategy {
             else expectedCost = position.allowance;
             position.principal *= (2 * VaultMath.RESOLUTION - reward) / VaultMath.RESOLUTION;
             _closePosition(position, expectedCost);
+
+            _burn(_id);
+
             emit PositionWasLiquidated(_id);
         }
     }
@@ -103,6 +106,8 @@ abstract contract LiquidableStrategy is AbstractStrategy {
                 revert Strategy__Insufficient_Amount_Out(received, position.principal + dueFees);
             else IERC20(position.heldToken).safeTransfer(purchaser, position.allowance);
 
+            _burn(positionId);
+
             emit PositionWasLiquidated(positionId);
         }
     }
@@ -118,7 +123,7 @@ abstract contract LiquidableStrategy is AbstractStrategy {
         console.log("[Liquidable]\\modifyCollateralAndOwner: score", uint256(score));
         console.log("[Liquidable]\\modifyCollateralAndOwner: dueFees", dueFees);
         if (score > 0) {
-            positions[_id].owner = newOwner;
+            _transfer(ownerOf(_id), newOwner, _id);
             position.principal *= (2 * VaultMath.RESOLUTION - reward) / VaultMath.RESOLUTION;
             position.fees += dueFees;
             position.createdAt = block.timestamp;
