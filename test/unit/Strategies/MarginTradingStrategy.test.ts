@@ -9,7 +9,7 @@ import { Liquidator } from "../../../src/types/Liquidator";
 import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
 import { expandToNDecimals } from "../../common/utils";
 import { BigNumber, Wallet } from "ethers";
-import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../common/params";
+import { marginTokenLiquidity, investmentTokenLiquidity, marginTokenMargin, leverage } from "../../common/params";
 
 import { mockMarginTradingFixture } from "../../common/mockfixtures";
 import { fundVault, changeRate } from "../../common/utils";
@@ -89,9 +89,13 @@ describe("Strategy tests", function () {
     await vault.whitelistToken(marginToken.address, 10, 10, 1000, expandToNDecimals(1000000, 18));
     await vault.whitelistToken(investmentToken.address, 10, 10, 1, expandToNDecimals(1000, 18));
 
-    // mint tokens to staker and fund vault
+    // mint margin tokens to staker and fund vault
     await marginToken.mintTo(staker.address, expandToNDecimals(100000, 18));
     await fundVault(staker, vault, marginToken, marginTokenLiquidity);
+
+    // mint investment tokens to staker and fund vault
+    await investmentToken.mintTo(staker.address, expandToNDecimals(100000, 18));
+    await fundVault(staker, vault, investmentToken, investmentTokenLiquidity);
 
     vaultBalance = await marginToken.balanceOf(vault.address);
 
@@ -186,39 +190,71 @@ describe("Strategy tests", function () {
     expect(vaultState.insuranceReserveBalance).to.equal(0);
   });
 
-  it("MarginTradingStrategy: check deadline", async function () {
+  it("Revert if deadline is expired", async function () {
     order.deadline = 0;
     await expect(strategy.connect(trader1).openPosition(order)).to.be.reverted;
   });
 
-  it("MarginTradingStrategy: check liquidate", async function () {
+  it("Open the position in the opposite side", async function () {
     order.deadline = deadline;
-    // step 1. open position
-    await changeRate(mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
-    await changeRate(mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
+    order.spentToken = investmentToken.address;
+    order.obtainedToken = marginToken.address;
+    order.collateralIsSpentToken = false;
 
-    const [minObtained] = await strategy.quote(
+    // check how many investments token margin * leverage margin tokens are worth
+    const [toBorrow] = await strategy.quote(
       marginToken.address,
       investmentToken.address,
       marginTokenMargin.mul(leverage),
     );
 
-    order.minObtained = minObtained;
+    order.maxSpent = toBorrow;
 
     await strategy.connect(trader1).openPosition(order);
-
-    let position0 = await strategy.positions(2);
-    // step 2. try to liquidate
-    await changeRate(mockKyberNetworkProxy, investmentToken, 98 * 10 ** 9);
-    await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 2);
-    let position1 = await strategy.positions(2);
-    expect(position1.principal).to.equal(position0.principal);
-
-    // step 3. liquidate
-    await changeRate(mockKyberNetworkProxy, investmentToken, 92 * 10 ** 9);
-    await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 2);
-
-    let position2 = await strategy.positions(2);
-    expect(position2.principal).to.equal(0);
   });
+
+  it("Lower the rate and close position", async function () {
+    await changeRate(mockKyberNetworkProxy, investmentToken, 9 * 10 ** 10);
+
+    const position = await strategy.positions(2);
+
+    // check how many margin tokens to sell in order to repay the vault
+    const [maxSpent] = await strategy.quote(investmentToken.address, marginToken.address, position.principal);
+    await strategy.connect(trader1).closePosition(2, maxSpent);
+
+    // trader should have gained
+    expect(await marginToken.balanceOf(trader1.address)).to.be.above(initialTraderBalance);
+  });
+
+  // TODO: liquidation to be tested further
+
+  // it("Check liquidate", async function () {
+  //   // step 1. open position
+  //   await changeRate(mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
+  //   await changeRate(mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
+
+  //   const [minObtained] = await strategy.quote(
+  //     marginToken.address,
+  //     investmentToken.address,
+  //     marginTokenMargin.mul(leverage),
+  //   );
+
+  //   order.minObtained = minObtained;
+
+  //   await strategy.connect(trader1).openPosition(order);
+
+  //   let position0 = await strategy.positions(3);
+  //   // step 2. try to liquidate
+  //   await changeRate(mockKyberNetworkProxy, investmentToken, 98 * 10 ** 9);
+  //   await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 3);
+  //   let position1 = await strategy.positions(3);
+  //   expect(position1.principal).to.equal(position0.principal);
+
+  //   // step 3. liquidate
+  //   await changeRate(mockKyberNetworkProxy, investmentToken, 85 * 10 ** 9);
+  //   await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 3);
+
+  //   let position2 = await strategy.positions(3);
+  //   expect(position2.principal).to.equal(0);
+  // });
 });
