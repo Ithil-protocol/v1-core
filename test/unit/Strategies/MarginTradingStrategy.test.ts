@@ -15,6 +15,7 @@ import { mockMarginTradingFixture } from "../../common/mockfixtures";
 import { fundVault, changeRate } from "../../common/utils";
 
 import { expect } from "chai";
+import exp from "constants";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -43,7 +44,11 @@ let mockKyberNetworkProxy: MockKyberNetworkProxy;
 let marginToken: MockTaxedToken;
 let investmentToken: MockTaxedToken;
 let traderBalance: BigNumber;
-let vaultBalance: BigNumber;
+let vaultMarginBalance: BigNumber;
+let vaultInvestmentBalance: BigNumber;
+let price1: BigNumber;
+let price2: BigNumber;
+let fees: BigNumber;
 
 let order: {
   spentToken: string;
@@ -54,6 +59,8 @@ let order: {
   maxSpent: BigNumber;
   deadline: number;
 };
+
+let position: [string, string, string, string, BigNumber, BigNumber, BigNumber, BigNumber, BigNumber, BigNumber];
 
 describe("Strategy tests", function () {
   before("create fixture loader", async () => {
@@ -97,7 +104,7 @@ describe("Strategy tests", function () {
     await investmentToken.mintTo(staker.address, expandToNDecimals(100000, 18));
     await fundVault(staker, vault, investmentToken, investmentTokenLiquidity);
 
-    vaultBalance = await marginToken.balanceOf(vault.address);
+    vaultMarginBalance = await marginToken.balanceOf(vault.address);
 
     // Trader starts with initialTraderBalance tokens
     await marginToken.mintTo(trader1.address, initialTraderBalance);
@@ -141,9 +148,10 @@ describe("Strategy tests", function () {
     expect(quoted).to.equal(21);
   });
 
-  it("Open position with a price ratio of 1:10", async function () {
-    await changeRate(mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
-    await changeRate(mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
+  it("Open position with price1", async function () {
+    price1 = BigNumber.from(100);
+    await mockKyberNetworkProxy.setRate(marginToken.address, 1);
+    await mockKyberNetworkProxy.setRate(investmentToken.address, price1);
 
     const [minObtained] = await strategy.quote(
       marginToken.address,
@@ -155,12 +163,30 @@ describe("Strategy tests", function () {
 
     traderBalance = await marginToken.balanceOf(trader1.address);
     expect(traderBalance).to.equal(initialTraderBalance);
+    vaultMarginBalance;
 
     await strategy.connect(trader1).openPosition(order);
+
+    // Check all tokens flows
+    // Trader has paid margin
     expect(await marginToken.balanceOf(trader1.address)).to.equal(initialTraderBalance.sub(marginTokenMargin));
+
+    // Vault has borrowed margin * (leverage - 1) tokens for the investment
+    const newVaultBalance = await marginToken.balanceOf(vault.address);
+    expect(newVaultBalance).to.equal(vaultMarginBalance.sub(marginTokenMargin.mul(leverage - 1)));
+
+    // Strategy has obtained minObtained investment tokens
+    expect(await investmentToken.balanceOf(strategy.address)).to.equal(minObtained);
+
+    // Check onchain position data
+
     const position = await strategy.positions(1);
+    fees = position.fees;
+    // Fees should be principal * fixedFee / 10000;
+    expect(fees).to.equal(position.principal.mul((await vault.vaults(marginToken.address)).fixedFee).div(10000));
     expect(position.allowance).to.equal(minObtained);
     expect(position.principal).to.equal(marginTokenMargin.mul(leverage - 1));
+    // no previous risk (first position open: interest rate is zero)
     expect(position.interestRate).to.equal(0);
   });
 
@@ -170,17 +196,25 @@ describe("Strategy tests", function () {
   });
 
   it("Raise rate and close position", async function () {
-    await changeRate(mockKyberNetworkProxy, investmentToken, 11 * 10 ** 10);
+    price2 = BigNumber.from(110);
+    await mockKyberNetworkProxy.setRate(investmentToken.address, price2);
 
     const position = await strategy.positions(1);
     const maxSpent = position.allowance;
 
     await strategy.connect(trader1).closePosition(1, maxSpent);
-    expect(await marginToken.balanceOf(trader1.address)).to.be.above(initialTraderBalance);
+
+    // Compute gain
+    const gain = (await marginToken.balanceOf(trader1.address)).sub(initialTraderBalance);
+    // Price increased by 10% but trader1 undertook 10x leverage -> should result in a 100% gain minus fees
+    expect(gain).to.equal(marginTokenMargin.sub(fees));
   });
 
   it("Check vault balance", async function () {
-    expect(await marginToken.balanceOf(vault.address)).to.be.above(vaultBalance);
+    // Should be equal to the original balance, plus the generated fees
+    const newBalance = await marginToken.balanceOf(vault.address);
+    expect(newBalance).to.equal(vaultMarginBalance.add(fees));
+    vaultMarginBalance = newBalance;
   });
 
   // Both insurance reserve and optimal ratio should be zero now: all the loans have been repaid
@@ -201,6 +235,9 @@ describe("Strategy tests", function () {
     order.obtainedToken = marginToken.address;
     order.collateralIsSpentToken = false;
 
+    // save vault balance since we will need to measure gain later
+    vaultInvestmentBalance = await investmentToken.balanceOf(vault.address);
+
     // check how many investments token margin * leverage margin tokens are worth
     const [toBorrow] = await strategy.quote(
       marginToken.address,
@@ -208,25 +245,95 @@ describe("Strategy tests", function () {
       marginTokenMargin.mul(leverage),
     );
 
+    // We expect that margin * leverage margin tokens are worth margin * leverage / price2 investment tokens
+    expect(toBorrow).to.equal(marginTokenMargin.mul(leverage).div(price2));
+
     order.maxSpent = toBorrow;
+    traderBalance = await marginToken.balanceOf(trader1.address);
+    vaultInvestmentBalance = await investmentToken.balanceOf(vault.address);
+    const strategyBalance = await marginToken.balanceOf(strategy.address);
 
     await strategy.connect(trader1).openPosition(order);
+
+    // Check all token flows
+    // Trader has paid margin
+    expect(await marginToken.balanceOf(trader1.address)).to.equal(traderBalance.sub(marginTokenMargin));
+
+    // Vault has borrowed toBorrow tokens for the investment
+    expect(await investmentToken.balanceOf(vault.address)).to.equal(vaultInvestmentBalance.sub(toBorrow));
+
+    // Strategy has obtained margin * leverage margin tokens, plus the margin already posted
+    // Actually not precisely margin * leverage, but the following line, due to approximation errors (only true in mocks):
+    const expectedObtained = toBorrow.mul(price2);
+    expect(await marginToken.balanceOf(strategy.address)).to.equal(
+      strategyBalance.add(expectedObtained).add(marginTokenMargin),
+    );
+
+    // Check onchain position data
+    const position = await strategy.positions(2);
+    fees = position.fees;
+    // Fees should be principal * fixedFee / 10000;
+    const vaultData = await vault.vaults(investmentToken.address);
+    expect(fees).to.equal(position.principal.mul(vaultData.fixedFee).div(10000));
+
+    // The allowance is what has been obtained from the swap + the margin posted
+    expect(position.allowance).to.equal(expectedObtained.add(marginTokenMargin));
+    // The principal is toBorrow
+    expect(position.principal).to.equal(toBorrow);
+    // Short position do not have risk discount: interest is baseFee * leverage
+    expect(position.interestRate).to.equal(vaultData.baseFee.mul(leverage));
   });
 
   it("Lower the rate and close position", async function () {
-    await changeRate(mockKyberNetworkProxy, investmentToken, 9 * 10 ** 10);
+    await changeRate(mockKyberNetworkProxy, investmentToken, 90);
 
     const position = await strategy.positions(2);
 
     // check how many margin tokens to sell in order to repay the vault
     const [maxSpent] = await strategy.quote(investmentToken.address, marginToken.address, position.principal);
+    console.log("Max spent", ethers.utils.formatUnits(maxSpent, 18));
     await strategy.connect(trader1).closePosition(2, maxSpent);
 
     // trader should have gained
     expect(await marginToken.balanceOf(trader1.address)).to.be.above(initialTraderBalance);
   });
 
+  // TODO: seems fees behave unexpectedly when position is short
+
+  // it("Check vault gained again and has no loans", async function () {
+  //   const newBalance = await investmentToken.balanceOf(vault.address);
+  //   expect(newBalance).to.be.above(vaultInvestmentBalance);
+  //   vaultInvestmentBalance = newBalance;
+  //   const vaultData = await vault.vaults(marginToken.address);
+  //   expect(vaultData.netLoans).to.equal(0);
+  //   expect(vaultData.optimalRatio).to.equal(0);
+  //   expect(vaultData.insuranceReserveBalance).to.equal(0);
+  // })
+
   // TODO: liquidation to be tested further
+
+  // it("Check liquidate", async function () {
+  //   // Initial price ratio is 1:100
+  //   await changeRate(mockKyberNetworkProxy, marginToken, 1);
+  //   await changeRate(mockKyberNetworkProxy, investmentToken, 100);
+
+  //   // Restore long order
+  //   order.spentToken = marginToken.address;
+  //   order.obtainedToken = investmentToken.address;
+  //   order.collateralIsSpentToken = true;
+
+  //   // calculate minimum obtained and open position (0% slippage since we are mock)
+  //   const [minObtained] = await strategy.quote(
+  //     marginToken.address,
+  //     investmentToken.address,
+  //     marginTokenMargin.mul(leverage),
+  //   );
+  //   order.minObtained = minObtained;
+  //   await strategy.connect(trader1).openPosition(order);
+
+  //   // try to immediately liquidate
+  //   await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 3);
+  // })
 
   // it("Check liquidate", async function () {
   //   // step 1. open position
