@@ -13,5 +13,10 @@ export function checkStatus(): void {
     expect(await this.TestStrategy.name()).to.equal("TestStrategy");
     expect(await this.TestStrategy.symbol()).to.equal("ITHIL-TS-POS");
     expect(this.TestStrategy.balanceOf(this.signers.admin.address)).to.equal(0);
+
+    await this.TestStrategy.transferFrom(this.signers.admin.address, this.signers.investor.address, 0);
+
+    expect(this.TestStrategy.balanceOf(this.signers.admin.address)).to.equal(0);
+    expect(this.TestStrategy.balanceOf(this.signers.investor.address)).to.equal(1);
   });
 }
