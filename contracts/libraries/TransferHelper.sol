@@ -4,12 +4,14 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { VaultState } from "./VaultState.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
+import { GeneralMath } from "./GeneralMath.sol";
 
 /// @title    TransferHelper library
 /// @author   Ithil
 /// @notice   A library to simplify handling taxed, rebasing and reflecting tokens
 library TransferHelper {
     using SafeERC20 for IERC20;
+    using GeneralMath for uint256;
 
     error TransferHelper__Insufficient_Token_Balance(address from, address token);
     error TransferHelper__Insufficient_Token_Allowance(address owner, address spender, address token);
@@ -57,6 +59,6 @@ library TransferHelper {
         )
     {
         (originalCollBal, collateralReceived) = transferTokens(token, msg.sender, address(this), order.collateral);
-        toBorrow = order.collateralIsSpentToken ? order.maxSpent - collateralReceived : order.maxSpent;
+        toBorrow = order.collateralIsSpentToken ? order.maxSpent.positiveSub(collateralReceived) : order.maxSpent;
     }
 }

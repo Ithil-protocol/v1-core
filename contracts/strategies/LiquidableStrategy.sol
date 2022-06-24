@@ -85,10 +85,10 @@ abstract contract LiquidableStrategy is AbstractStrategy {
             _closePosition(position, expectedCost);
 
             emit PositionWasLiquidated(_id);
-        }
+        } else revert Strategy__Nonpositive_Score(score);
     }
 
-    function forcefullyDelete(
+    function transferAllowance(
         uint256 positionId,
         uint256 price,
         address purchaser,

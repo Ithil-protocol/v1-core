@@ -70,7 +70,7 @@ contract Liquidator is Ownable {
         uint256 price
     ) external {
         uint256 reward = rewardPercentage();
-        strategy.forcefullyDelete(positionId, price, msg.sender, reward);
+        strategy.transferAllowance(positionId, price, msg.sender, reward);
     }
 
     function rewardPercentage() public view returns (uint256) {

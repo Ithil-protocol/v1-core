@@ -302,8 +302,6 @@ describe("Strategy tests", function () {
     expect(await marginToken.balanceOf(trader1.address)).to.be.above(initialTraderBalance);
   });
 
-  // TODO: seems fees behave unexpectedly when position is short
-
   it("Check vault gained again and has no loans", async function () {
     const newBalance = await investmentToken.balanceOf(vault.address);
     expect(newBalance).to.be.above(vaultInvestmentBalance);
@@ -314,58 +312,63 @@ describe("Strategy tests", function () {
     expect(vaultData.insuranceReserveBalance).to.equal(0);
   });
 
-  // TODO: liquidation to be tested further
+  it("Check liquidate on a long position", async function () {
+    // Initial price ratio is 1:100
+    await changeRate(mockKyberNetworkProxy, marginToken, 1);
+    await changeRate(mockKyberNetworkProxy, investmentToken, 100);
 
-  // it("Check liquidate", async function () {
-  //   // Initial price ratio is 1:100
-  //   await changeRate(mockKyberNetworkProxy, marginToken, 1);
-  //   await changeRate(mockKyberNetworkProxy, investmentToken, 100);
+    // Restore long order
+    order.spentToken = marginToken.address;
+    order.obtainedToken = investmentToken.address;
+    order.collateralIsSpentToken = true;
+    order.maxSpent = marginTokenMargin.mul(leverage);
 
-  //   // Restore long order
-  //   order.spentToken = marginToken.address;
-  //   order.obtainedToken = investmentToken.address;
-  //   order.collateralIsSpentToken = true;
+    // check vault balance to calculate whether it gained
+    vaultMarginBalance = await marginToken.balanceOf(vault.address);
 
-  //   // calculate minimum obtained and open position (0% slippage since we are mock)
-  //   const [minObtained] = await strategy.quote(
-  //     marginToken.address,
-  //     investmentToken.address,
-  //     marginTokenMargin.mul(leverage),
-  //   );
-  //   order.minObtained = minObtained;
-  //   await strategy.connect(trader1).openPosition(order);
+    // calculate minimum obtained and open position (0% slippage since we are mock)
+    const [minObtained] = await strategy.quote(
+      marginToken.address,
+      investmentToken.address,
+      marginTokenMargin.mul(leverage),
+    );
+    order.minObtained = minObtained;
 
-  //   // try to immediately liquidate
-  //   await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 3);
-  // })
+    // open position
+    await strategy.connect(trader1).openPosition(order);
 
-  // it("Check liquidate", async function () {
-  //   // step 1. open position
-  //   await changeRate(mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
-  //   await changeRate(mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
+    // check liquidation score math
+    let position = await strategy.positions(3);
+    let [liquidationScore, dueFees] = await strategy.computeLiquidationScore(position);
+    const pairRiskFactor = await strategy.computePairRiskFactor(investmentToken.address, marginToken.address);
+    const profitAndLoss = (await strategy.quote(investmentToken.address, marginToken.address, position.allowance))[0]
+      .sub(position.principal)
+      .sub(dueFees);
 
-  //   const [minObtained] = await strategy.quote(
-  //     marginToken.address,
-  //     investmentToken.address,
-  //     marginTokenMargin.mul(leverage),
-  //   );
+    // liquidation score = collateral * risk factor - P&L * 10000
+    const liquidationScoreComputed = position.collateral.mul(pairRiskFactor).sub(profitAndLoss.mul(10000));
+    expect(liquidationScore).to.equal(liquidationScoreComputed);
 
-  //   order.minObtained = minObtained;
+    // immediate liquidation should fail
+    await expect(liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 3)).to.be.reverted;
 
-  //   await strategy.connect(trader1).openPosition(order);
+    // liquidation should happen at P&L = collateral * riskFactor / 10000
+    // thus the price must drop by (10000 - riskFactor)/leverage
+    const priceDrop = BigNumber.from(10000).sub(BigNumber.from(10000).sub(pairRiskFactor).div(leverage));
+    const newPrice = BigNumber.from(100).mul(priceDrop).div(10000);
 
-  //   let position0 = await strategy.positions(3);
-  //   // step 2. try to liquidate
-  //   await changeRate(mockKyberNetworkProxy, investmentToken, 98 * 10 ** 9);
-  //   await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 3);
-  //   let position1 = await strategy.positions(3);
-  //   expect(position1.principal).to.equal(position0.principal);
+    // Liquidation should fail again for higher price
+    await mockKyberNetworkProxy.setRate(investmentToken.address, newPrice.add(1));
+    await expect(liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 3)).to.be.reverted;
 
-  //   // step 3. liquidate
-  //   await changeRate(mockKyberNetworkProxy, investmentToken, 85 * 10 ** 9);
-  //   await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 3);
+    // But it should occur for newPrice
+    await mockKyberNetworkProxy.setRate(investmentToken.address, newPrice);
+    let [, newDueFees] = await strategy.computeLiquidationScore(position);
+    await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 3);
+    position = await strategy.positions(3);
+    expect(position.principal).to.equal(0);
 
-  //   let position2 = await strategy.positions(3);
-  //   expect(position2.principal).to.equal(0);
-  // });
+    // Vault should gain the due fees + missed liquidator reward (precise calculations in another test)
+    expect(await marginToken.balanceOf(vault.address)).to.be.above(vaultMarginBalance.add(newDueFees));
+  });
 });
