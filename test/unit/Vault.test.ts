@@ -1,12 +1,9 @@
-import { artifacts, ethers, waffle } from "hardhat";
+import { ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
-import { addresses } from "../../../deployments/addresses.json";
-import type { Artifact } from "hardhat/types";
+import { addresses } from "../../deployments/addresses.json";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import type { Vault } from "../../../src/types/Vault";
-import { Signers } from "../../types";
-import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
-import type { MockWETH } from "../../../src/types/MockWETH";
+import type { Vault } from "../../src/types/Vault";
+import type { MockWETH } from "../../src/types/MockWETH";
 
 import ERC20 from "@openzeppelin/contracts/build/contracts/ERC20.json";
 import {
@@ -15,19 +12,10 @@ import {
   expandTo18Decimals,
   expandToNDecimals,
   mintAndStake,
-} from "../../common/utils";
-import { baseFee, fixedFee, minimumMargin, stakingCap } from "../../common/params";
+} from "../common/utils";
+import { baseFee, fixedFee, minimumMargin, stakingCap } from "../common/params";
 
-import { mockVaultFixture } from "../../common/mockfixtures";
-import { checkWhiteList } from "./Vault.whiteList";
-import { checkTreasuryStaking } from "./Vault.treasuryStake";
-import { checkRebalanceInsurance } from "./Vault.insuranceRebalance";
-import { checkClaimable } from "./Vault.claimable";
-import { checkStaking } from "./Vault.stake";
-import { checkLock } from "./Vault.lock";
-import { checkBorrow } from "./Vault.borrow";
-import { checkAddStrategy } from "./Vault.addStrategy";
-
+import { mockVaultFixture } from "../common/mockfixtures";
 import { expect } from "chai";
 
 describe("Lending unit tests", function () {

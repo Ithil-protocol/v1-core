@@ -108,6 +108,7 @@ interface IStrategy {
     error Strategy__Insufficient_Amount_Out(uint256 amountIn, uint256 minAmountOut);
     error Strategy__Loan_Not_Repaid(uint256 repaid, uint256 debt);
     error Strategy__Only_Liquidator(address sender, address liquidator);
+    error Strategy__Nonpositive_Score(int256 score);
     error Strategy__Margin_Below_Minimum(uint256 marginProvider, uint256 minimumMargin);
     error Strategy__Insufficient_Margin_Provided(int256 newScore);
     error Strategy__Locked();

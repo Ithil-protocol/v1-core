@@ -1,29 +1,18 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { Signers } from "../../../types";
 import { Artifact } from "hardhat/types";
-import { Liquidator } from "../../../../src/types/Liquidator";
-import { MockKyberNetworkProxy } from "../../../../src/types/MockKyberNetworkProxy";
-import { MockWETH } from "../../../../src/types/MockWETH";
-import { Vault } from "../../../../src/types/Vault";
-import { TestStrategy } from "../../../../src/types/TestStrategy";
+import { Liquidator } from "../../../src/types/Liquidator";
+import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
+import { MockWETH } from "../../../src/types/MockWETH";
+import { Vault } from "../../../src/types/Vault";
+import { TestStrategy } from "../../../src/types/TestStrategy";
 import { Wallet, BigNumber } from "ethers";
 
-import { mockTestFixture } from "../../../common/mockfixtures";
-import { MockTaxedToken } from "../../../../src/types/MockTaxedToken";
+import { mockTestFixture } from "../../common/mockfixtures";
+import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
 
-import { expandToNDecimals, fundVault } from "../../../common/utils";
-import { checkSetRiskFactor } from "./TestStrategy.setRiskFactor";
-import { checkGetPosition } from "./TestStrategy.getPosition";
-import { checkTotalAllowance } from "./TestStrategy.totalAllowance";
-import { checkVaultAddress } from "./TestStrategy.vaultAddress";
-import { checkOpenPosition } from "./TestStrategy.openPosition";
-import { checkClosePosition } from "./TestStrategy.closePosition";
-import { checkEditPosition } from "./TestStrategy.editPosition";
-import { checkStatus } from "./TestStrategy.status";
-import { checkArbitraryBorrow } from "./TestStrategy.arbitraryBorrow";
-import { checkArbitraryRepay } from "./TestStrategy.arbitraryRepay";
-import { marginTokenMargin, marginTokenLiquidity, leverage } from "../../../common/params";
+import { expandToNDecimals, fundVault } from "../../common/utils";
+import { marginTokenMargin, marginTokenLiquidity, leverage } from "../../common/params";
 
 import { expect } from "chai";
 

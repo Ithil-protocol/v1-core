@@ -1,18 +1,17 @@
 import { artifacts, ethers, waffle } from "hardhat";
-import type { Artifact } from "hardhat/types";
+import { Wallet, BigNumber } from "ethers";
+import { Artifact } from "hardhat/types";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import type { Vault } from "../../../../src/types/Vault";
-import { MockKyberNetworkProxy } from "../../../../src/types/MockKyberNetworkProxy";
-import { MockWETH } from "../../../../src/types/MockWETH";
-import { MarginTradingStrategy } from "../../../../src/types/MarginTradingStrategy";
-import { Liquidator } from "../../../../src/types/Liquidator";
-import { MockTaxedToken } from "../../../../src/types/MockTaxedToken";
-import { expandToNDecimals } from "../../../common/utils";
-import { BigNumber, Wallet } from "ethers";
-import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
+import { Liquidator } from "../../src/types/Liquidator";
+import { Vault } from "../../src/types/Vault";
+import { MockWETH } from "../../src/types/MockWETH";
+import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
+import { MockTaxedToken } from "../../src/types/MockTaxedToken";
+import { MarginTradingStrategy } from "../../src/types/MarginTradingStrategy";
 
-import { mockMarginTradingFixture } from "../../../common/mockfixtures";
-import { fundVault, changeRate } from "../../../common/utils";
+import { mockMarginTradingFixture } from "../common/mockfixtures";
+import { expandToNDecimals, fundVault, changeRate } from "../common/utils";
+import { marginTokenLiquidity, marginTokenMargin, leverage } from "../common/params";
 
 import { expect } from "chai";
 
@@ -91,7 +90,11 @@ describe("Strategy tests", function () {
     await marginToken.connect(trader1).approve(strategy.address, ethers.constants.MaxUint256);
 
     // mint tokens to trader
-    await marginToken.mintTo(trader1.address, expandToNDecimals(10000, 18));
+    await marginToken.mintTo(trader1.address, expandToNDecimals(100000, 18));
+
+    // mint tokens to liquidator and approve strategy contract (for margin call and purchase assets)
+    await marginToken.mintTo(liquidator.address, expandToNDecimals(100000, 18));
+    await marginToken.connect(liquidator).approve(strategy.address, ethers.constants.MaxUint256);
 
     order = {
       spentToken: marginToken.address,
@@ -110,34 +113,7 @@ describe("Strategy tests", function () {
     await investmentToken.mintTo(mockKyberNetworkProxy.address, ethers.constants.MaxInt256);
   });
 
-  it("MarginTradingStrategy: setRiskFactor", async function () {
-    const riskFactor = 200;
-    const token = "0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86";
-
-    await strategy.setRiskFactor(token, riskFactor);
-
-    const finalState = {
-      riskFactor: await strategy.riskFactors(token),
-    };
-
-    expect(finalState.riskFactor).to.equal(BigNumber.from(riskFactor));
-  });
-
-  it("MarginTradingStrategy: computePairRiskFactor", async function () {
-    const riskFactor0 = 200;
-    const riskFactor1 = 300;
-    const token0 = "0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86";
-    const token1 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-
-    await strategy.setRiskFactor(token0, riskFactor0);
-    await strategy.setRiskFactor(token1, riskFactor1);
-
-    // expect(finalState.pairRiskFactor).to.equal(BigNumber.from(riskFactor0).add(BigNumber.from(riskFactor1)).div(2));
-  });
-  it("MarginTradingStrategy: openPosition", async function () {
-    await changeRate(mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
-    await changeRate(mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
-
+  it("Liquidator: liquidateSingle", async function () {
     const [minObtained] = await strategy.quote(
       marginToken.address,
       investmentToken.address,
@@ -146,52 +122,31 @@ describe("Strategy tests", function () {
 
     order.minObtained = minObtained;
 
+    await changeRate(mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
+    await changeRate(mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
     await strategy.connect(trader1).openPosition(order);
-  });
 
-  it("MarginTradingStrategy: closePosition", async function () {
-    await changeRate(mockKyberNetworkProxy, investmentToken, 11 * 10 ** 10);
+    await changeRate(mockKyberNetworkProxy, investmentToken, 93 * 10 ** 9);
+
+    await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 1);
 
     const position = await strategy.positions(1);
-    const maxSpent = position.allowance;
-
-    await strategy.connect(trader1).closePosition(1, maxSpent);
-  });
-  // checkEditPosition(); // TODO: not completed
-
-  it("MarginTradingStrategy: check deadline", async function () {
-    order.deadline = 0;
-    await expect(strategy.connect(trader1).openPosition(order)).to.be.reverted;
+    expect(position.principal).to.equal(0);
   });
 
-  it("MarginTradingStrategy: check liquidate", async function () {
-    order.deadline = deadline;
-    // step 1. open position
-    await changeRate(mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
-    await changeRate(mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
+  it("Liquidator: marginCall", async function () {
+    // await changeRate(mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
+    // await changeRate(mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
+    // await strategy.connect(trader1).openPosition(order);
+    // await changeRate(mockKyberNetworkProxy, investmentToken, 93 * 10 ** 9);
+    // await liquidatorContract.connect(liquidator).marginCall(strategy.address, 2, expandToNDecimals(10000,18));
+  });
 
-    const [minObtained] = await strategy.quote(
-      marginToken.address,
-      investmentToken.address,
-      marginTokenMargin.mul(leverage),
-    );
-
-    order.minObtained = minObtained;
-
-    await strategy.connect(trader1).openPosition(order);
-
-    let position0 = await strategy.positions(2);
-    // step 2. try to liquidate
-    await changeRate(mockKyberNetworkProxy, investmentToken, 98 * 10 ** 9);
-    await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 2);
-    let position1 = await strategy.positions(2);
-    expect(position1.principal).to.equal(position0.principal);
-
-    // step 3. liquidate
-    await changeRate(mockKyberNetworkProxy, investmentToken, 93 * 10 ** 9);
-    await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 2);
-
-    let position2 = await strategy.positions(2);
-    expect(position2.principal).to.equal(0);
+  it("Liquidator: purchaseAssets", async function () {
+    // await changeRate(mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
+    // await changeRate(mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
+    // await strategy.connect(trader1).openPosition(order);
+    // await changeRate(mockKyberNetworkProxy, investmentToken, 93 * 10 ** 9);
+    // await liquidatorContract.connect(liquidator).purchaseAssets(strategy.address, 3, expandToNDecimals(10,18));
   });
 });

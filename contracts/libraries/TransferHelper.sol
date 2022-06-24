@@ -57,6 +57,6 @@ library TransferHelper {
         )
     {
         (originalCollBal, collateralReceived) = transferTokens(token, msg.sender, address(this), order.collateral);
-        toBorrow = order.collateralIsSpentToken ? order.maxSpent : order.maxSpent - collateralReceived;
+        toBorrow = order.collateralIsSpentToken ? order.maxSpent - collateralReceived : order.maxSpent;
     }
 }
