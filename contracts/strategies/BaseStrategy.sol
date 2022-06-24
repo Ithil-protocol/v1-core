@@ -19,7 +19,12 @@ abstract contract BaseStrategy is LiquidableStrategy {
     bool public locked;
     address public guardian;
 
-    constructor(address _vault, address _liquidator) LiquidableStrategy(_liquidator, _vault) {
+    constructor(
+        address _vault,
+        address _liquidator,
+        string memory _name,
+        string memory _symbol
+    ) LiquidableStrategy(_liquidator, _vault, _name, _symbol) {
         id = 0;
         locked = false;
     }
@@ -35,8 +40,7 @@ abstract contract BaseStrategy is LiquidableStrategy {
     }
 
     modifier isPositionEditable(uint256 positionId) {
-        if (positions[positionId].owner != msg.sender)
-            revert Strategy__Restricted_Access(positions[positionId].owner, msg.sender);
+        if (ownerOf(positionId) != msg.sender) revert Strategy__Restricted_Access(ownerOf(positionId), msg.sender);
 
         // flashloan protection
         if (positions[positionId].createdAt >= block.timestamp)
@@ -105,7 +109,6 @@ abstract contract BaseStrategy is LiquidableStrategy {
         if (amountIn < order.minObtained) revert Strategy__Insufficient_Amount_Out(amountIn, order.minObtained);
 
         positions[++id] = Position({
-            owner: msg.sender,
             owedToken: order.spentToken,
             heldToken: order.obtainedToken,
             collateralToken: collateralToken,
@@ -130,23 +133,22 @@ abstract contract BaseStrategy is LiquidableStrategy {
             block.timestamp
         );
 
+        _safeMint(msg.sender, id);
+
         return id;
     }
 
     function closePosition(uint256 positionId, uint256 maxOrMin) external isPositionEditable(positionId) {
         Position memory position = positions[positionId];
-
+        address owner = ownerOf(positionId);
         delete positions[positionId];
+        _burn(positionId);
 
-        uint256 timeFees = VaultMath.computeTimeFees(
+        position.fees += VaultMath.computeTimeFees(
             position.principal,
             position.interestRate,
             block.timestamp - position.createdAt
         );
-
-        position.fees += timeFees;
-
-        bool collateralInHeldTokens = position.collateralToken != position.owedToken;
 
         IERC20 owedToken = IERC20(position.owedToken);
         uint256 vaultRepaid = owedToken.balanceOf(address(vault));
@@ -157,11 +159,11 @@ abstract contract BaseStrategy is LiquidableStrategy {
             position.principal,
             position.fees,
             riskFactors[position.heldToken],
-            position.owner
+            owner
         );
 
-        if (collateralInHeldTokens && amountOut <= position.allowance)
-            IERC20(position.heldToken).safeTransfer(position.owner, position.allowance - amountOut);
+        if (position.collateralToken != position.owedToken && amountOut <= position.allowance)
+            IERC20(position.heldToken).safeTransfer(owner, position.allowance - amountOut);
 
         vaultRepaid = owedToken.balanceOf(address(vault)) - vaultRepaid;
 

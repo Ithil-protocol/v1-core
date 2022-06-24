@@ -25,7 +25,12 @@ abstract contract LiquidableStrategy is AbstractStrategy {
     error Insufficient_Margin_Call(uint256 received);
     error Insufficient_Price(uint256 price);
 
-    constructor(address _liquidator, address _vault) AbstractStrategy(_vault) {
+    constructor(
+        address _liquidator,
+        address _vault,
+        string memory _name,
+        string memory _symbol
+    ) AbstractStrategy(_vault, _name, _symbol) {
         liquidator = _liquidator;
     }
 
@@ -70,7 +75,7 @@ abstract contract LiquidableStrategy is AbstractStrategy {
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
             delete positions[_id];
-            position.owner = _liquidator;
+            _burn(_id);
             uint256 expectedCost = 0;
             bool collateralInHeldTokens = position.collateralToken != position.owedToken;
             if (collateralInHeldTokens)
@@ -78,6 +83,7 @@ abstract contract LiquidableStrategy is AbstractStrategy {
             else expectedCost = position.allowance;
             position.principal *= (2 * VaultMath.RESOLUTION - reward) / VaultMath.RESOLUTION;
             _closePosition(position, expectedCost);
+
             emit PositionWasLiquidated(_id);
         }
     }
@@ -98,6 +104,8 @@ abstract contract LiquidableStrategy is AbstractStrategy {
                 revert Strategy__Insufficient_Amount_Out(received, position.principal + dueFees);
             else IERC20(position.heldToken).safeTransfer(purchaser, position.allowance);
 
+            _burn(positionId);
+
             emit PositionWasLiquidated(positionId);
         }
     }
@@ -111,7 +119,7 @@ abstract contract LiquidableStrategy is AbstractStrategy {
         Position storage position = positions[_id];
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
-            positions[_id].owner = newOwner;
+            _transfer(ownerOf(_id), newOwner, _id);
             position.principal *= (2 * VaultMath.RESOLUTION - reward) / VaultMath.RESOLUTION;
             position.fees += dueFees;
             position.createdAt = block.timestamp;

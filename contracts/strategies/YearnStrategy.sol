@@ -30,14 +30,10 @@ contract YearnStrategy is BaseStrategy {
         address _registry,
         address _partnerId,
         address _yearnPartnerTracker
-    ) BaseStrategy(_vault, _liquidator) {
+    ) BaseStrategy(_vault, _liquidator, "YearnStrategy", "ITHIL-YS-POS") {
         registry = IYearnRegistry(_registry);
         partnerId = _partnerId;
         yearnPartnerTracker = _yearnPartnerTracker;
-    }
-
-    function name() external pure override returns (string memory) {
-        return "YearnStrategy";
     }
 
     function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
