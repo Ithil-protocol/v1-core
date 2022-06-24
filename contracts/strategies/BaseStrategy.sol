@@ -161,14 +161,13 @@ abstract contract BaseStrategy is LiquidableStrategy {
             riskFactors[position.heldToken],
             owner
         );
-
         if (position.collateralToken != position.owedToken && amountOut <= position.allowance)
             IERC20(position.heldToken).safeTransfer(owner, position.allowance - amountOut);
-
         vaultRepaid = owedToken.balanceOf(address(vault)) - vaultRepaid;
 
         /// The following check is important to prevent users from triggering bad liquidations
-        if (vaultRepaid < position.principal) revert Strategy__Loan_Not_Repaid(vaultRepaid, position.principal);
+        if (vaultRepaid < position.principal + position.fees)
+            revert Strategy__Loan_Not_Repaid(vaultRepaid, position.principal + position.fees);
 
         emit PositionWasClosed(positionId);
     }

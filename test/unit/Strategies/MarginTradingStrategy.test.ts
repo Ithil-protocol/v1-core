@@ -290,8 +290,12 @@ describe("Strategy tests", function () {
     const position = await strategy.positions(2);
 
     // check how many margin tokens to sell in order to repay the vault
-    const [maxSpent] = await strategy.quote(investmentToken.address, marginToken.address, position.principal);
-    console.log("Max spent", ethers.utils.formatUnits(maxSpent, 18));
+    // principal + fees is not enough due to the time fees: we repay 1% more
+    const [maxSpent] = await strategy.quote(
+      investmentToken.address,
+      marginToken.address,
+      position.principal.add(position.fees).mul(101).div(100),
+    );
     await strategy.connect(trader1).closePosition(2, maxSpent);
 
     // trader should have gained
@@ -300,15 +304,15 @@ describe("Strategy tests", function () {
 
   // TODO: seems fees behave unexpectedly when position is short
 
-  // it("Check vault gained again and has no loans", async function () {
-  //   const newBalance = await investmentToken.balanceOf(vault.address);
-  //   expect(newBalance).to.be.above(vaultInvestmentBalance);
-  //   vaultInvestmentBalance = newBalance;
-  //   const vaultData = await vault.vaults(marginToken.address);
-  //   expect(vaultData.netLoans).to.equal(0);
-  //   expect(vaultData.optimalRatio).to.equal(0);
-  //   expect(vaultData.insuranceReserveBalance).to.equal(0);
-  // })
+  it("Check vault gained again and has no loans", async function () {
+    const newBalance = await investmentToken.balanceOf(vault.address);
+    expect(newBalance).to.be.above(vaultInvestmentBalance);
+    vaultInvestmentBalance = newBalance;
+    const vaultData = await vault.vaults(marginToken.address);
+    expect(vaultData.netLoans).to.equal(0);
+    expect(vaultData.optimalRatio).to.equal(0);
+    expect(vaultData.insuranceReserveBalance).to.equal(0);
+  });
 
   // TODO: liquidation to be tested further
 
