@@ -12,9 +12,10 @@ import { mockTestFixture } from "../../common/mockfixtures";
 import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
 
 import { expandToNDecimals, fundVault } from "../../common/utils";
-import { marginTokenMargin, marginTokenLiquidity, leverage } from "../../common/params";
+import { marginTokenMargin, marginTokenLiquidity, leverage, investmentTokenLiquidity } from "../../common/params";
 
 import { expect } from "chai";
+import { IStrategy } from "../../../src/types/MarginTradingStrategy";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -41,15 +42,7 @@ let mockKyberNetworkProxy: MockKyberNetworkProxy;
 let marginToken: MockTaxedToken;
 let investmentToken: MockTaxedToken;
 
-let order: {
-  spentToken: string;
-  obtainedToken: string;
-  collateral: BigNumber;
-  collateralIsSpentToken: boolean;
-  minObtained: BigNumber;
-  maxSpent: BigNumber;
-  deadline: number;
-};
+let order: IStrategy.OrderStruct;
 
 let riskFactor = BigNumber.from(100);
 let fixedFee = BigNumber.from(10);
@@ -86,14 +79,14 @@ describe("Strategy tests", function () {
     await marginToken.connect(trader1).approve(strategy.address, ethers.constants.MaxUint256);
 
     // mint tokens to trader
-    await marginToken.mintTo(trader1.address, expandToNDecimals(10000, 18));
+    await marginToken.mintTo(trader1.address, marginTokenMargin.mul(leverage));
 
     order = {
       spentToken: marginToken.address,
       obtainedToken: investmentToken.address,
       collateral: marginTokenMargin,
       collateralIsSpentToken: true,
-      minObtained: BigNumber.from(2).pow(255), // this order is invalid unless we reduce this parameter
+      minObtained: investmentTokenLiquidity,
       maxSpent: marginTokenMargin.mul(leverage),
       deadline: deadline,
     };
@@ -112,12 +105,15 @@ describe("Strategy tests", function () {
     expect(quote[0]).to.equal(marginTokenMargin);
     expect(quote[1]).to.equal(marginTokenMargin);
 
+    expect(await strategy.balanceOf(admin.address)).to.equal(0);
     expect(await strategy.name()).to.equal("TestStrategy");
+    expect(await strategy.symbol()).to.equal("ITHIL-TS-POS");
   });
 
   it("Arbitrary borrow", async function () {
     await strategy.arbitraryBorrow(marginToken.address, marginTokenMargin, riskFactor, trader1.address);
   });
+
   it("Arbitrary repay", async function () {
     await strategy.arbitraryBorrow(marginToken.address, marginTokenMargin, riskFactor, trader1.address);
     await strategy.arbitraryRepay(
@@ -129,4 +125,59 @@ describe("Strategy tests", function () {
       trader1.address,
     );
   });
+
+  it("Deadline error", async function () {
+    const order: IStrategy.OrderStruct = {
+      spentToken: marginToken.address,
+      obtainedToken: investmentToken.address,
+      collateral: marginTokenMargin,
+      minObtained: 1,
+      maxSpent: 1,
+      deadline: 1,
+      collateralIsSpentToken: true,
+    };
+    await expect(strategy.openPosition(order)).to.be.reverted;
+  });
+
+  it("Equal tokens error", async function () {
+    const order: IStrategy.OrderStruct = {
+      spentToken: marginToken.address,
+      obtainedToken: marginToken.address,
+      collateral: marginTokenMargin,
+      minObtained: 1,
+      maxSpent: 1,
+      deadline: 1700000000,
+      collateralIsSpentToken: true,
+    };
+    await expect(strategy.openPosition(order)).to.be.reverted;
+  });
+
+  it("Null collateral error", async function () {
+    const order: IStrategy.OrderStruct = {
+      spentToken: marginToken.address,
+      obtainedToken: investmentToken.address,
+      collateral: 0,
+      minObtained: 1,
+      maxSpent: 1,
+      deadline: 1700000000,
+      collateralIsSpentToken: true,
+    };
+    await expect(strategy.openPosition(order)).to.be.reverted;
+  });
+
+  it("Insufficient balance error", async function () {
+    await expect(strategy.connect(admin).openPosition(order)).to.be.reverted;
+  });
+
+  /*
+  it("Transfer nft check", async function () {
+    await strategy.connect(trader1).openPosition(order);
+    await expect(strategy.connect(admin).transferFrom(admin.address, trader1.address, 0)).to.be.reverted;
+
+    expect(await strategy.balanceOf(trader1.address)).to.be.equal(1);
+    await strategy.connect(trader1).transferFrom(trader1.address, admin.address, 0);
+    expect(await strategy.balanceOf(trader1.address)).to.be.equal(0);
+    expect(await strategy.balanceOf(admin.address)).to.be.equal(1);
+  });
+  */
 });
