@@ -75,7 +75,7 @@ abstract contract LiquidableStrategy is AbstractStrategy {
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
             delete positions[_id];
-            _transfer(ownerOf(_id), _liquidator, _id);
+            _burn(_id);
             uint256 expectedCost = 0;
             bool collateralInHeldTokens = position.collateralToken != position.owedToken;
             if (collateralInHeldTokens)
@@ -83,8 +83,6 @@ abstract contract LiquidableStrategy is AbstractStrategy {
             else expectedCost = position.allowance;
             position.principal *= (2 * VaultMath.RESOLUTION - reward) / VaultMath.RESOLUTION;
             _closePosition(position, expectedCost);
-
-            _burn(_id);
 
             emit PositionWasLiquidated(_id);
         }

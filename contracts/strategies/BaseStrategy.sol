@@ -140,8 +140,9 @@ abstract contract BaseStrategy is LiquidableStrategy {
 
     function closePosition(uint256 positionId, uint256 maxOrMin) external isPositionEditable(positionId) {
         Position memory position = positions[positionId];
-
+        address owner = ownerOf(positionId);
         delete positions[positionId];
+        _burn(positionId);
 
         position.fees += VaultMath.computeTimeFees(
             position.principal,
@@ -158,18 +159,16 @@ abstract contract BaseStrategy is LiquidableStrategy {
             position.principal,
             position.fees,
             riskFactors[position.heldToken],
-            ownerOf(positionId)
+            owner
         );
 
         if (position.collateralToken != position.owedToken && amountOut <= position.allowance)
-            IERC20(position.heldToken).safeTransfer(ownerOf(positionId), position.allowance - amountOut);
+            IERC20(position.heldToken).safeTransfer(owner, position.allowance - amountOut);
 
         vaultRepaid = owedToken.balanceOf(address(vault)) - vaultRepaid;
 
         /// The following check is important to prevent users from triggering bad liquidations
         if (vaultRepaid < position.principal) revert Strategy__Loan_Not_Repaid(vaultRepaid, position.principal);
-
-        _burn(positionId);
 
         emit PositionWasClosed(positionId);
     }
