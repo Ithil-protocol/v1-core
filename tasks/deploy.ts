@@ -94,7 +94,6 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
     vault.address, // vault
     liquidator.address, // liquidator
     yearn.address, // registry
-    vault.address, // partnerId
     yearn.address, // yearnPartnerTracker
   );
   await ys.deployed();
@@ -109,7 +108,6 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
     vault.address, // vault
     liquidator.address, // liquidator
     yearn.address, // registry
-    vault.address, // partnerId
     yearn.address, // yearnPartnerTracker
   );
   await ls.deployed();

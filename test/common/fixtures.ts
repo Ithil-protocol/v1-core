@@ -1,7 +1,7 @@
 import { artifacts, ethers } from "hardhat";
 import { Fixture, deployContract } from "ethereum-waffle";
 
-import { tokens, yearnRegistry, yearnPartnerTracker, yearnPartnerId } from "./mainnet";
+import { tokens, yearnRegistry, yearnPartnerTracker } from "./mainnet";
 import type { Artifact } from "hardhat/types";
 import type { ERC20 } from "../../src/types/ERC20";
 
@@ -133,7 +133,6 @@ export const yearnFixture: Fixture<YearnStrategyFixture> = async function (): Pr
           vault.address,
           liquidatorContract.address,
           yearnRegistry,
-          yearnPartnerId,
           yearnPartnerTracker,
         ])
       );

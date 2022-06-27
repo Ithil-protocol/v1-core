@@ -22,17 +22,15 @@ contract YearnStrategy is BaseStrategy {
 
     IYearnRegistry internal immutable registry;
     address internal immutable yearnPartnerTracker;
-    address internal immutable partnerId;
+    address internal partnerId;
 
     constructor(
         address _vault,
         address _liquidator,
         address _registry,
-        address _partnerId,
         address _yearnPartnerTracker
     ) BaseStrategy(_vault, _liquidator, "YearnStrategy", "ITHIL-YS-POS") {
         registry = IYearnRegistry(_registry);
-        partnerId = _partnerId;
         yearnPartnerTracker = _yearnPartnerTracker;
     }
 
@@ -79,5 +77,9 @@ contract YearnStrategy is BaseStrategy {
         uint256 obtained = yvault.pricePerShare();
         obtained *= amount;
         return (obtained, obtained);
+    }
+
+    function setPartnerId(address _partnerId) external onlyOwner {
+        partnerId = _partnerId;
     }
 }

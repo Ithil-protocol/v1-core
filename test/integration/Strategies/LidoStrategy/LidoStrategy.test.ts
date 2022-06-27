@@ -50,7 +50,6 @@ describe("Strategy tests", function () {
     //     stETHcrvPool, // stETH-ETH Curve pool
     //     crvLPtoken, // Curve LP token
     //     yearnRegistry, // Yearn Registry
-    //     this.vault.address, // Yearn partnerId
     //     yearnPartnerTracker,
     //   ]);
     //   await this.vault.addStrategy(this.LidoStrategy.address);
