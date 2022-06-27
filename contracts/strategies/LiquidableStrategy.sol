@@ -58,7 +58,7 @@ abstract contract LiquidableStrategy is AbstractStrategy {
             (expectedTokens, ) = quote(position.heldToken, position.owedToken, position.allowance);
             profitAndLoss = int256(expectedTokens) - int256(position.principal + dueFees);
         } else {
-            (expectedTokens, ) = quote(position.heldToken, position.owedToken, position.principal + dueFees);
+            (expectedTokens, ) = quote(position.owedToken, position.heldToken, position.principal + dueFees);
             profitAndLoss = int256(position.allowance) - int256(expectedTokens);
         }
 
