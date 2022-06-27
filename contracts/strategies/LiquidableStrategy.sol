@@ -7,7 +7,6 @@ import { TransferHelper } from "../libraries/TransferHelper.sol";
 import { PositionHelper } from "../libraries/PositionHelper.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { VaultState } from "../libraries/VaultState.sol";
-import "hardhat/console.sol";
 
 /// @title    LiquidableStrategy contract
 /// @author   Ithil
@@ -81,8 +80,15 @@ abstract contract LiquidableStrategy is AbstractStrategy {
             if (collateralInHeldTokens)
                 (expectedCost, ) = quote(position.owedToken, position.heldToken, position.principal + dueFees);
             else expectedCost = position.allowance;
-            position.principal *= (2 * VaultMath.RESOLUTION - reward) / VaultMath.RESOLUTION;
-            _closePosition(position, expectedCost);
+            (uint256 amountIn, ) = _closePosition(position, expectedCost);
+            vault.repay(
+                position.owedToken,
+                amountIn,
+                position.principal,
+                dueFees,
+                riskFactors[position.heldToken],
+                _liquidator
+            );
 
             emit PositionWasLiquidated(_id);
         } else revert Strategy__Nonpositive_Score(score);
@@ -107,7 +113,7 @@ abstract contract LiquidableStrategy is AbstractStrategy {
             _burn(positionId);
 
             emit PositionWasLiquidated(positionId);
-        }
+        } else revert Strategy__Nonpositive_Score(score);
     }
 
     function modifyCollateralAndOwner(
@@ -120,12 +126,16 @@ abstract contract LiquidableStrategy is AbstractStrategy {
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
             _transfer(ownerOf(_id), newOwner, _id);
-            position.principal *= (2 * VaultMath.RESOLUTION - reward) / VaultMath.RESOLUTION;
             position.fees += dueFees;
             position.createdAt = block.timestamp;
-            position.topUpCollateral(newOwner, address(this), newCollateral);
+            position.topUpCollateral(
+                newOwner,
+                position.collateralToken != position.heldToken ? address(vault) : address(this),
+                newCollateral,
+                position.collateralToken != position.heldToken
+            );
             (int256 newScore, ) = computeLiquidationScore(position);
             if (newScore > 0) revert Strategy__Insufficient_Margin_Provided(newScore);
-        }
+        } else revert Strategy__Nonpositive_Score(score);
     }
 }

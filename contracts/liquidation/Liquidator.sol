@@ -9,8 +9,6 @@ import { VaultMath } from "../libraries/VaultMath.sol";
 import { GeneralMath } from "../libraries/GeneralMath.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
 
-import "hardhat/console.sol";
-
 /// @title    Liquidator contract
 /// @author   Ithil
 /// @notice   Base liquidation contract, can forcefully close base strategy's positions
@@ -60,7 +58,6 @@ contract Liquidator is Ownable {
         uint256 extraMargin
     ) external {
         uint256 reward = rewardPercentage();
-        console.log("[Liq]\\marginCall: reward", reward);
         strategy.modifyCollateralAndOwner(positionId, extraMargin, msg.sender, reward);
     }
 

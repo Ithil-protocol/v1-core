@@ -172,13 +172,14 @@ abstract contract BaseStrategy is LiquidableStrategy {
         emit PositionWasClosed(positionId);
     }
 
-    function editPosition(uint256 positionId, uint256 newCollateral) external unlocked isPositionEditable(positionId) {
+    function editPosition(uint256 positionId, uint256 topUp) external unlocked isPositionEditable(positionId) {
         Position storage position = positions[positionId];
 
         position.topUpCollateral(
             msg.sender,
             position.collateralToken == position.owedToken ? address(vault) : address(this),
-            newCollateral
+            topUp,
+            position.collateralToken == position.owedToken
         );
     }
 
