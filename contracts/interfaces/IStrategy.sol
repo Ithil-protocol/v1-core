@@ -71,7 +71,7 @@ interface IStrategy {
         uint256 penalty
     ) external;
 
-    function forcefullyDelete(
+    function transferAllowance(
         uint256 positionId,
         uint256 price,
         address purchaser,

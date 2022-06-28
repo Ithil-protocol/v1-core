@@ -17,11 +17,10 @@ library PositionHelper {
         IStrategy.Position storage self,
         address from,
         address to,
-        uint256 amount
+        uint256 amount,
+        bool collateralIsOwedToken
     ) internal returns (uint256 originalBalance, uint256 received) {
-        console.log("[PH]\\topUpCollateral: amount", amount);
         (originalBalance, received) = IERC20(self.collateralToken).transferTokens(from, to, amount);
-        console.log("[PH]\\topUpCollateral: received", received);
-        self.collateral += received;
+        collateralIsOwedToken ? self.principal -= received : self.allowance += received;
     }
 }

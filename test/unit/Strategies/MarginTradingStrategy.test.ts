@@ -302,8 +302,6 @@ describe("Strategy tests", function () {
     expect(await marginToken.balanceOf(trader1.address)).to.be.above(initialTraderBalance);
   });
 
-  // TODO: seems fees behave unexpectedly when position is short
-
   it("Check vault gained again and has no loans", async function () {
     const newBalance = await investmentToken.balanceOf(vault.address);
     expect(newBalance).to.be.above(vaultInvestmentBalance);
@@ -313,59 +311,4 @@ describe("Strategy tests", function () {
     expect(vaultData.optimalRatio).to.equal(0);
     expect(vaultData.insuranceReserveBalance).to.equal(0);
   });
-
-  // TODO: liquidation to be tested further
-
-  // it("Check liquidate", async function () {
-  //   // Initial price ratio is 1:100
-  //   await changeRate(mockKyberNetworkProxy, marginToken, 1);
-  //   await changeRate(mockKyberNetworkProxy, investmentToken, 100);
-
-  //   // Restore long order
-  //   order.spentToken = marginToken.address;
-  //   order.obtainedToken = investmentToken.address;
-  //   order.collateralIsSpentToken = true;
-
-  //   // calculate minimum obtained and open position (0% slippage since we are mock)
-  //   const [minObtained] = await strategy.quote(
-  //     marginToken.address,
-  //     investmentToken.address,
-  //     marginTokenMargin.mul(leverage),
-  //   );
-  //   order.minObtained = minObtained;
-  //   await strategy.connect(trader1).openPosition(order);
-
-  //   // try to immediately liquidate
-  //   await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 3);
-  // })
-
-  // it("Check liquidate", async function () {
-  //   // step 1. open position
-  //   await changeRate(mockKyberNetworkProxy, marginToken, 1 * 10 ** 10);
-  //   await changeRate(mockKyberNetworkProxy, investmentToken, 10 * 10 ** 10);
-
-  //   const [minObtained] = await strategy.quote(
-  //     marginToken.address,
-  //     investmentToken.address,
-  //     marginTokenMargin.mul(leverage),
-  //   );
-
-  //   order.minObtained = minObtained;
-
-  //   await strategy.connect(trader1).openPosition(order);
-
-  //   let position0 = await strategy.positions(3);
-  //   // step 2. try to liquidate
-  //   await changeRate(mockKyberNetworkProxy, investmentToken, 98 * 10 ** 9);
-  //   await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 3);
-  //   let position1 = await strategy.positions(3);
-  //   expect(position1.principal).to.equal(position0.principal);
-
-  //   // step 3. liquidate
-  //   await changeRate(mockKyberNetworkProxy, investmentToken, 85 * 10 ** 9);
-  //   await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 3);
-
-  //   let position2 = await strategy.positions(3);
-  //   expect(position2.principal).to.equal(0);
-  // });
 });
