@@ -1,7 +1,7 @@
 import { artifacts, ethers } from "hardhat";
 import { Fixture, deployContract } from "ethereum-waffle";
 
-import { tokens, yearnRegistry, yearnPartnerTracker } from "./mainnet";
+import { tokens, yearnRegistry } from "./mainnet";
 import type { Artifact } from "hardhat/types";
 import type { ERC20 } from "../../src/types/ERC20";
 
@@ -129,12 +129,7 @@ export const yearnFixture: Fixture<YearnStrategyFixture> = async function (): Pr
     createStrategy: async () => {
       const ysArtifact: Artifact = await artifacts.readArtifact("YearnStrategy");
       const strategy = <YearnStrategy>(
-        await deployContract(admin, ysArtifact, [
-          vault.address,
-          liquidatorContract.address,
-          yearnRegistry,
-          yearnPartnerTracker,
-        ])
+        await deployContract(admin, ysArtifact, [vault.address, liquidatorContract.address, yearnRegistry])
       );
       await vault.addStrategy(strategy.address);
       return strategy;

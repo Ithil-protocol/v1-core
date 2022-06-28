@@ -5,7 +5,7 @@ import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signe
 import type { Vault } from "../../../../src/types/Vault";
 import type { ERC20 } from "../../../../src/types/ERC20";
 
-import { tokens, yearnRegistry, yearnPartnerTracker } from "../../../common/mainnet";
+import { tokens, yearnRegistry } from "../../../common/mainnet";
 import { getTokens, expandToNDecimals, fundVault } from "../../../common/utils";
 import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
 import { yearnFixture } from "../../../common/fixtures";

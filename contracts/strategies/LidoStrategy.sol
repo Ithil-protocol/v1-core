@@ -7,7 +7,6 @@ import { IStETH } from "../interfaces/IStETH.sol";
 import { ICurve } from "../interfaces/ICurve.sol";
 import { IYearnVault } from "../interfaces/IYearnVault.sol";
 import { IYearnRegistry } from "../interfaces/IYearnRegistry.sol";
-import { IYearnPartnerTracker } from "../interfaces/IYearnPartnerTracker.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 
@@ -29,8 +28,6 @@ contract LidoStrategy is BaseStrategy {
     ICurve internal immutable crvPool;
     IERC20 internal immutable crvLP;
     IYearnVault internal immutable yvault;
-    IYearnPartnerTracker internal immutable yearnPartnerTracker;
-    address internal immutable partnerId;
 
     constructor(
         address _vault,
@@ -38,19 +35,15 @@ contract LidoStrategy is BaseStrategy {
         address _stETH,
         address _crvPool,
         address _crvLP,
-        address _registry,
-        address _partnerId,
-        address _yearnPartnerTracker
+        address _registry
     ) BaseStrategy(_vault, _liquidator, "LidoStrategy", "ITHIL-LS-POS") {
         stETH = IStETH(_stETH);
         crvPool = ICurve(_crvPool);
         crvLP = IERC20(_crvLP);
-        partnerId = _partnerId;
-        yearnPartnerTracker = IYearnPartnerTracker(_yearnPartnerTracker);
 
         yvault = IYearnVault(IYearnRegistry(_registry).latestVault(_crvLP));
         stETH.safeApprove(_crvPool, type(uint256).max);
-        crvLP.safeApprove(_yearnPartnerTracker, type(uint256).max);
+        crvLP.safeApprove(address(yvault), type(uint256).max);
     }
 
     receive() external payable {
@@ -75,7 +68,7 @@ contract LidoStrategy is BaseStrategy {
         uint256 lpTokens = crvPool.add_liquidity([uint256(0), stETH.getPooledEthByShares(shares)], order.deadline);
 
         // Stake crvstETH on Yearn using the Convex autocompounding stratey
-        amountIn = yearnPartnerTracker.deposit(address(yvault), partnerId, lpTokens);
+        amountIn = yvault.deposit(lpTokens, address(this));
     }
 
     function _closePosition(Position memory position, uint256 expectedCost)

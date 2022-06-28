@@ -3,7 +3,6 @@ pragma solidity >=0.8.12;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IYearnRegistry } from "../interfaces/IYearnRegistry.sol";
-import { IYearnPartnerTracker } from "../interfaces/IYearnPartnerTracker.sol";
 import { IYearnVault } from "../interfaces/IYearnVault.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
@@ -21,17 +20,13 @@ contract YearnStrategy is BaseStrategy {
     error YearnStrategy__Not_Enough_Liquidity(uint256 balance, uint256 spent);
 
     IYearnRegistry internal immutable registry;
-    address internal immutable yearnPartnerTracker;
-    address internal partnerId;
 
     constructor(
         address _vault,
         address _liquidator,
-        address _registry,
-        address _yearnPartnerTracker
+        address _registry
     ) BaseStrategy(_vault, _liquidator, "YearnStrategy", "ITHIL-YS-POS") {
         registry = IYearnRegistry(_registry);
-        yearnPartnerTracker = _yearnPartnerTracker;
     }
 
     function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
@@ -39,10 +34,10 @@ contract YearnStrategy is BaseStrategy {
         uint256 balance = tkn.balanceOf(address(this));
         if (balance < order.maxSpent) revert YearnStrategy__Not_Enough_Liquidity(balance, order.maxSpent);
 
-        address vaultAddress = registry.latestVault(order.spentToken);
-        super._maxApprove(tkn, yearnPartnerTracker);
+        address yvault = registry.latestVault(order.spentToken);
+        super._maxApprove(tkn, yvault);
 
-        amountIn = IYearnPartnerTracker(yearnPartnerTracker).deposit(vaultAddress, partnerId, order.maxSpent);
+        amountIn = IYearnVault(yvault).deposit(order.maxSpent, address(this));
     }
 
     function _closePosition(Position memory position, uint256 expectedCost)
@@ -77,9 +72,5 @@ contract YearnStrategy is BaseStrategy {
         uint256 obtained = yvault.pricePerShare();
         obtained *= amount;
         return (obtained, obtained);
-    }
-
-    function setPartnerId(address _partnerId) external onlyOwner {
-        partnerId = _partnerId;
     }
 }
