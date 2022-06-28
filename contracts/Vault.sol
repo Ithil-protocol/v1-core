@@ -31,6 +31,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
     mapping(address => VaultState.VaultData) public vaults;
     mapping(address => bool) public strategies;
+    mapping(address => mapping(address => uint256)) public boosters;
 
     constructor(address _weth) {
         weth = _weth;
@@ -74,7 +75,11 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     }
 
     function balance(address token) public view override returns (uint256) {
-        return IERC20(token).balanceOf(address(this)) + vaults[token].netLoans - vaults[token].insuranceReserveBalance;
+        return
+            IERC20(token).balanceOf(address(this)) +
+            vaults[token].netLoans -
+            vaults[token].insuranceReserveBalance -
+            vaults[token].boostedAmount;
     }
 
     function claimable(address token) external view override returns (uint256) {
@@ -165,6 +170,28 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 toMint = wToken.mintWrapped(amount, msg.sender, totalWealth);
 
         emit Deposit(msg.sender, token, amount, toMint);
+    }
+
+    function boost(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
+        checkWhitelisted(token);
+        uint256 totalWealth = balance(token);
+        vaults[token].boostedAmount += amount;
+        boosters[msg.sender][token] += amount;
+
+        uint256 stakingCap = vaults[token].stakingCap;
+        if (totalWealth + amount > stakingCap) revert Vault__Staking_Cap_Exceeded(token, totalWealth, stakingCap);
+
+        (, amount) = IERC20(token).transferTokens(msg.sender, address(this), amount);
+
+        emit Boosted(msg.sender, token, amount);
+    }
+
+    function unboost(address token, uint256 amount) external override isValidAmount(amount) {
+        // todo: do we want to make an explicit revert if msg.sender does not have enough boosts?
+        vaults[token].boostedAmount -= amount;
+        boosters[msg.sender][token] -= amount;
+        IERC20(token).sendTokens(msg.sender, amount);
+        emit Unboosted(msg.sender, token, amount);
     }
 
     function stakeETH(uint256 amount) external payable override unlocked(weth) isValidAmount(amount) {

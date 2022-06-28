@@ -13,7 +13,8 @@ import type { Artifact } from "hardhat/types";
 
 import { vaultFixture } from "../../common/fixtures";
 
-import { baseFee, fixedFee, minimumMargin, stakingCap } from "../../common/params";
+import { amount, baseFee, fixedFee, minimumMargin, stakingCap } from "../../common/params";
+import { WritableStream } from "stream/web";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -145,6 +146,36 @@ describe("Lending integration tests", function () {
         event => event.event === "Withdrawal" && event.args && event.args[0] === investor1.address,
       );
       expect(validEvents?.length).equal(1);
+    });
+
+    it("Vault: boost liquidity", async function () {
+      // Now investor1 is the whale: give a bunch of tokens to investor2
+      tokensAmount = await WETH.balanceOf(investor1.address);
+      await WETH.connect(investor1).transfer(investor2.address, tokensAmount.div(2));
+      await WETH.connect(investor2).approve(vault.address, tokensAmount.div(2));
+
+      const amountToBoost = BigNumber.from(10);
+      // boost 10 tokens
+      await vault.connect(investor2).boost(WETH.address, amountToBoost);
+      expect(await WETH.balanceOf(investor2.address)).to.equal(tokensAmount.div(2).sub(amountToBoost));
+      expect((await vault.vaults(WETH.address)).boostedAmount).to.equal(amountToBoost);
+      expect(await vault.boosters(investor2.address, WETH.address)).to.equal(amountToBoost);
+    });
+
+    it("Vault: stake after boosting", async function () {
+      const amountToStake = BigNumber.from(10);
+      const rsp = await vault.connect(investor1).stake(WETH.address, amountToStake);
+      // investor1 cannot unstake more even if there is the boost in place
+      await expect(vault.connect(investor1).unstake(WETH.address, amountToStake.add(1))).to.be.reverted;
+    });
+
+    it("Vault: remove boosting amount", async function () {
+      const investor2Balance = await WETH.balanceOf(investor2.address);
+      const boosted = await vault.boosters(investor2.address, WETH.address);
+      await vault.connect(investor2).unboost(WETH.address, boosted);
+      expect(await WETH.balanceOf(investor2.address)).to.equal(investor2Balance.add(boosted));
+      expect((await vault.vaults(WETH.address)).boostedAmount).to.equal(0);
+      expect(await vault.boosters(investor2.address, WETH.address)).to.equal(0);
     });
 
     it("Vault: whitelist OUSD", async function () {
