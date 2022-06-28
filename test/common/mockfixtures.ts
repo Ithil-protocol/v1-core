@@ -160,13 +160,12 @@ export const mockYearnFixture: Fixture<MockYearnStrategyFixture> =
       vault,
       liquidatorContract,
       createStrategy: async () => {
-        const mtsArtifact: Artifact = await artifacts.readArtifact("MarginTradingStrategy");
+        const mtsArtifact: Artifact = await artifacts.readArtifact("YearnStrategy");
         const strategy = <YearnStrategy>(
           await deployContract(admin, mtsArtifact, [
             vault.address,
             liquidatorContract.address,
             mockYearnRegistry.address,
-            "0x0000000000000000000000000000000000000000",
             mockYearnRegistry.address,
           ])
         );

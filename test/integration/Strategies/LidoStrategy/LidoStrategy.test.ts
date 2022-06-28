@@ -5,7 +5,7 @@ import type { Vault } from "../../../../src/types/Vault";
 import { Signers } from "../../../types";
 import type { ERC20 } from "../../../../src/types/ERC20";
 
-import { tokens, stETH, stETHcrvPool, crvLPtoken, yearnRegistry, yearnPartnerTracker } from "../../../common/mainnet";
+import { tokens, stETH, stETHcrvPool, crvLPtoken, yearnRegistry } from "../../../common/mainnet";
 import { getTokens } from "../../../common/utils";
 import { marginTokenLiquidity } from "../../../common/params";
 
@@ -49,9 +49,7 @@ describe("Strategy tests", function () {
     //     stETH,
     //     stETHcrvPool, // stETH-ETH Curve pool
     //     crvLPtoken, // Curve LP token
-    //     yearnRegistry, // Yearn Registry
-    //     this.vault.address, // Yearn partnerId
-    //     yearnPartnerTracker,
+    //     yearnRegistry // Yearn Registry
     //   ]);
     //   await this.vault.addStrategy(this.LidoStrategy.address);
     // });

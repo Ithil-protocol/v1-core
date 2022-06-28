@@ -94,8 +94,6 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
     vault.address, // vault
     liquidator.address, // liquidator
     yearn.address, // registry
-    vault.address, // partnerId
-    yearn.address, // yearnPartnerTracker
   );
   await ys.deployed();
   console.log("YearnStrategy deployed to address: ", ys.address);
@@ -108,9 +106,7 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   const ls: LidoStrategy = <LidoStrategy>await lsFactory.deploy(
     vault.address, // vault
     liquidator.address, // liquidator
-    yearn.address, // registry
-    vault.address, // partnerId
-    yearn.address, // yearnPartnerTracker
+    yearn.address // registry
   );
   await ls.deployed();
   console.log("LidoStrategy deployed to address: ", ys.address);
