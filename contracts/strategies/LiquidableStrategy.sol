@@ -105,8 +105,7 @@ abstract contract LiquidableStrategy is AbstractStrategy {
         if (score > 0) {
             delete positions[positionId];
             (, uint256 received) = IERC20(position.owedToken).transferTokens(purchaser, address(vault), price);
-            position.principal *= (2 * VaultMath.RESOLUTION - reward) / VaultMath.RESOLUTION;
-            if (received < position.principal + position.fees)
+            if (received < position.principal + dueFees)
                 revert Strategy__Insufficient_Amount_Out(received, position.principal + dueFees);
             else IERC20(position.heldToken).safeTransfer(purchaser, position.allowance);
 

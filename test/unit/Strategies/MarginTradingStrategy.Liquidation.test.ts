@@ -60,8 +60,6 @@ let order: {
   deadline: number;
 };
 
-let position: [string, string, string, string, BigNumber, BigNumber, BigNumber, BigNumber, BigNumber, BigNumber];
-
 describe("Strategy tests", function () {
   before("create fixture loader", async () => {
     [wallet, other] = await (ethers as any).getSigners();
@@ -131,7 +129,7 @@ describe("Strategy tests", function () {
     await investmentToken.mintTo(mockKyberNetworkProxy.address, ethers.constants.MaxInt256);
   });
 
-  it("Check forcefullyClose on a long position", async function () {
+  it("Check forced closure on a long position", async function () {
     // Initial price ratio is 1:100
     await mockKyberNetworkProxy.setRate(marginToken.address, price1);
     await mockKyberNetworkProxy.setRate(investmentToken.address, price2);
@@ -184,7 +182,7 @@ describe("Strategy tests", function () {
     expect(await marginToken.balanceOf(vault.address)).to.equal(vaultMarginBalance.add(newDueFees));
   });
 
-  it("Check forcefullyClose on a short position", async function () {
+  it("Check forced closure on a short position", async function () {
     // Reset rates: 1:100
     await mockKyberNetworkProxy.setRate(investmentToken.address, price2);
 
@@ -196,7 +194,6 @@ describe("Strategy tests", function () {
     // save vault balance since we will need to measure gain later
     vaultInvestmentBalance = await investmentToken.balanceOf(vault.address);
 
-    console.log("Vault investment balance", ethers.utils.formatUnits(vaultInvestmentBalance, 0));
     // check how many investments token margin * leverage margin tokens are worth
     const [toBorrow] = await strategy.quote(
       marginToken.address,
@@ -325,10 +322,8 @@ describe("Strategy tests", function () {
     traderBalance = await marginToken.balanceOf(trader1.address);
     vaultInvestmentBalance = await investmentToken.balanceOf(vault.address);
 
-    console.log("Opening");
     await strategy.connect(trader1).openPosition(order);
 
-    console.log("Opened");
     // check liquidation score math
     let position = await strategy.positions(4);
     const pairRiskFactor = await strategy.computePairRiskFactor(investmentToken.address, marginToken.address);
@@ -360,5 +355,64 @@ describe("Strategy tests", function () {
     // The position is not closed, but it changed ownership
     await expect(strategy.connect(trader1).closePosition(4, maxSpent)).to.be.reverted;
     await strategy.connect(liquidator).closePosition(4, maxSpent);
+  });
+
+  it("Check purchase assets on a long position", async function () {
+    // Initial price ratio is 1:100
+    await mockKyberNetworkProxy.setRate(marginToken.address, price1);
+    await mockKyberNetworkProxy.setRate(investmentToken.address, price2);
+
+    // reset long order
+    order.deadline = deadline;
+    order.spentToken = marginToken.address;
+    order.obtainedToken = investmentToken.address;
+    order.maxSpent = marginTokenMargin.mul(leverage);
+    order.collateralIsSpentToken = true;
+
+    // calculate minimum obtained and open position (0% slippage since we are mock)
+    const [minObtained] = await strategy.quote(
+      marginToken.address,
+      investmentToken.address,
+      marginTokenMargin.mul(leverage),
+    );
+    order.minObtained = minObtained;
+
+    let vaultMarginBalance = await marginToken.balanceOf(vault.address);
+    let traderBalance = await marginToken.balanceOf(trader1.address);
+    let liquidatorBalance = await investmentToken.balanceOf(liquidator.address);
+    // open position
+    await strategy.connect(trader1).openPosition(order);
+    let position = await strategy.positions(5);
+    const initialAllowance = position.allowance;
+    let [liquidationScore, dueFees] = await strategy.computeLiquidationScore(position);
+    const pairRiskFactor = await strategy.computePairRiskFactor(investmentToken.address, marginToken.address);
+    const price = position.principal.add(dueFees);
+
+    // immediate liquidation should fail
+    await expect(liquidatorContract.connect(liquidator).purchaseAssets(strategy.address, 5, price)).to.be.reverted;
+
+    // liquidation should happen at P&L = collateral * riskFactor / 10000
+    // thus the price must drop by (10000 - riskFactor)/leverage
+    const priceDrop = BigNumber.from(10000).sub(pairRiskFactor).div(leverage);
+    const newPrice = BigNumber.from(100).mul(BigNumber.from(10000).sub(priceDrop)).div(10000);
+
+    // Liquidation should fail again for higher price
+    await mockKyberNetworkProxy.setRate(investmentToken.address, newPrice.add(1));
+    await expect(liquidatorContract.connect(liquidator).purchaseAssets(strategy.address, 5, price)).to.be.reverted;
+
+    // But it should occur for newPrice
+    await mockKyberNetworkProxy.setRate(investmentToken.address, newPrice);
+    let [, newDueFees] = await strategy.computeLiquidationScore(position);
+    const newPriceToPurchase = position.principal.add(newDueFees);
+    await liquidatorContract.connect(liquidator).purchaseAssets(strategy.address, 5, newPriceToPurchase);
+    position = await strategy.positions(5);
+    expect(position.principal).to.equal(0);
+
+    // The vault gained
+    expect(await marginToken.balanceOf(vault.address)).to.equal(vaultMarginBalance.add(newDueFees));
+    // The trader lost
+    expect(await marginToken.balanceOf(trader1.address)).to.equal(traderBalance.sub(marginTokenMargin));
+    // The liquidator got the position's allowance
+    expect(await investmentToken.balanceOf(liquidator.address)).to.equal(liquidatorBalance.add(initialAllowance));
   });
 });
