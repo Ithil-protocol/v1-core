@@ -108,7 +108,14 @@ abstract contract LiquidableStrategy is AbstractStrategy {
             if (received < position.principal + dueFees)
                 revert Strategy__Insufficient_Amount_Out(received, position.principal + dueFees);
             else IERC20(position.heldToken).safeTransfer(purchaser, position.allowance);
-
+            vault.repay(
+                position.owedToken,
+                received,
+                position.principal,
+                dueFees,
+                riskFactors[position.heldToken],
+                purchaser
+            );
             _burn(positionId);
 
             emit PositionWasLiquidated(positionId);

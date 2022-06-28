@@ -108,9 +108,11 @@ describe("Strategy tests", function () {
     await marginToken.mintTo(trader1.address, initialTraderBalance);
     await marginToken.connect(trader1).approve(strategy.address, initialTraderBalance);
 
-    // Mint tokens to the liquidator so that it can make margin calls
+    // Mint tokens to the liquidator so that it can make margin calls and purchase assets
     await marginToken.mintTo(liquidator.address, initialTraderBalance);
     await marginToken.connect(liquidator).approve(strategy.address, initialTraderBalance);
+    await investmentToken.mintTo(liquidator.address, initialTraderBalance);
+    await investmentToken.connect(liquidator).approve(strategy.address, initialTraderBalance);
 
     order = {
       spentToken: marginToken.address,
@@ -414,5 +416,69 @@ describe("Strategy tests", function () {
     expect(await marginToken.balanceOf(trader1.address)).to.equal(traderBalance.sub(marginTokenMargin));
     // The liquidator got the position's allowance
     expect(await investmentToken.balanceOf(liquidator.address)).to.equal(liquidatorBalance.add(initialAllowance));
+  });
+
+  it("Check purchase assets on a short position", async function () {
+    // Reset rates: 1:100
+    await mockKyberNetworkProxy.setRate(investmentToken.address, price2);
+
+    order.deadline = deadline;
+    order.spentToken = investmentToken.address;
+    order.obtainedToken = marginToken.address;
+    order.collateralIsSpentToken = false;
+
+    // save vault balance since we will need to measure gain later
+    vaultInvestmentBalance = await investmentToken.balanceOf(vault.address);
+
+    // check how many investments token margin * leverage margin tokens are worth
+    const [toBorrow] = await strategy.quote(
+      marginToken.address,
+      investmentToken.address,
+      marginTokenMargin.mul(leverage),
+    );
+
+    order.minObtained = marginTokenMargin.mul(leverage);
+    order.maxSpent = toBorrow;
+    traderBalance = await marginToken.balanceOf(trader1.address);
+    vaultInvestmentBalance = await investmentToken.balanceOf(vault.address);
+    let liquidatorBalance = await marginToken.balanceOf(liquidator.address);
+
+    await strategy.connect(trader1).openPosition(order);
+
+    // check liquidation score math
+    let position = await strategy.positions(6);
+    const initialAllowance = position.allowance;
+    let [liquidationScore, dueFees] = await strategy.computeLiquidationScore(position);
+    const pairRiskFactor = await strategy.computePairRiskFactor(investmentToken.address, marginToken.address);
+    const priceToPurchase = position.principal.add(dueFees);
+
+    // immediate liquidation should fail
+    await expect(liquidatorContract.connect(liquidator).purchaseAssets(strategy.address, 6, priceToPurchase)).to.be
+      .reverted;
+
+    // liquidation should happen at P&L = collateral * riskFactor / 10000
+    // thus the price must raise by (10000 - riskFactor)/leverage
+    const priceRaise = BigNumber.from(10000).sub(pairRiskFactor).div(leverage);
+    const newPrice = BigNumber.from(100).mul(BigNumber.from(10000).add(priceRaise)).div(10000);
+
+    // Liquidation should fail again for lower price
+    await mockKyberNetworkProxy.setRate(investmentToken.address, newPrice.sub(1));
+    await expect(liquidatorContract.connect(liquidator).purchaseAssets(strategy.address, 6, priceToPurchase)).to.be
+      .reverted;
+
+    // But it should occur for newPrice + 1 (modulo approximation errors)
+    await mockKyberNetworkProxy.setRate(investmentToken.address, newPrice.add(1));
+    let [, newDueFees] = await strategy.computeLiquidationScore(position);
+
+    // precise time fees are difficult to predict: we allow for 0.1% slippage to be sure to repay the vault and not make the call be reverted
+    const newPriceToPurchase = position.principal.add(newDueFees).mul(1001).div(1000);
+    await liquidatorContract.connect(liquidator).purchaseAssets(strategy.address, 6, newPriceToPurchase);
+
+    // The vault gained
+    expect(await investmentToken.balanceOf(vault.address)).to.be.above(vaultInvestmentBalance.add(newDueFees));
+    // The trader lost
+    expect(await marginToken.balanceOf(trader1.address)).to.equal(traderBalance.sub(marginTokenMargin));
+    // The liquidator got the position's allowance
+    expect(await marginToken.balanceOf(liquidator.address)).to.equal(liquidatorBalance.add(initialAllowance));
   });
 });
