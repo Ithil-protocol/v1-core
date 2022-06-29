@@ -178,6 +178,7 @@ interface IVault {
     error Vault__Insufficient_Funds_Available(address token, uint256 amount, uint256 freeLiquidity);
     error Vault__Locked(address token);
     error Vault__Max_Withdrawal(address user, address token, uint256 amount, uint256 maxWithdrawal);
+    error Vault__Insufficient_Boost(address token, uint256 boost);
     error Vault__Null_Amount();
     error Vault__Insufficient_ETH(uint256 value, uint256 amount);
     error Vault__ETH_Unstake_Failed(bytes data);

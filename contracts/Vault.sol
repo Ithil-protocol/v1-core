@@ -187,7 +187,8 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     }
 
     function unboost(address token, uint256 amount) external override isValidAmount(amount) {
-        // todo: do we want to make an explicit revert if msg.sender does not have enough boosts?
+        uint256 boosted = boosters[msg.sender][token];
+        if (boosted < amount) revert Vault__Insufficient_Boost(token, boosted);
         vaults[token].boostedAmount -= amount;
         boosters[msg.sender][token] -= amount;
         IERC20(token).sendTokens(msg.sender, amount);
@@ -215,7 +216,12 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         checkWhitelisted(token);
 
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
-
+        uint256 maxWithdrawal = VaultMath.maximumWithdrawal(
+            wToken.balanceOf(msg.sender),
+            wToken.totalSupply(),
+            balance(token)
+        );
+        if (maxWithdrawal < amount) revert Vault__Max_Withdrawal(msg.sender, token, amount, maxWithdrawal);
         uint256 toBurn = wToken.burnWrapped(amount, balance(token), msg.sender);
 
         IERC20(token).sendTokens(msg.sender, amount);
