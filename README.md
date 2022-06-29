@@ -75,6 +75,7 @@ yarn coverage
 
 ## Security
 
+Audit reports are available in the _audits_ folder.
 If you find bugs, please follow the instructions on the SECURITY.md file. We have a bug bounty program that covers the main source files.
 
 ## Documentation
