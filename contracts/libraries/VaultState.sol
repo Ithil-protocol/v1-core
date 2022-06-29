@@ -16,8 +16,7 @@ library VaultState {
     error Vault__Insufficient_Funds_Available(address token, uint256 requested);
     error Vault__Repay_Failed();
 
-    uint256 constant LOCKED_PROFIT_DEGRADATION = 1;
-    uint256 constant DEGRADATION_COEFFICIENT = 1;
+    uint256 internal constant DEGRADATION_COEFFICIENT = 21600; // six hours
 
     /// @notice store data about whitelisted tokens
     /// @param supported Easily check if a token is supported or not (null VaultData struct)
@@ -45,19 +44,19 @@ library VaultState {
         uint256 insuranceReserveBalance;
         uint256 optimalRatio;
         uint256 latestRepay;
-        uint256 profits;
+        uint256 currentProfits;
     }
 
     function addInsuranceReserve(
         VaultState.VaultData storage self,
         uint256 totalBalance,
         uint256 fees
-    ) internal {
+    ) internal returns (uint256 insurancePortion) {
         uint256 availableInsuranceBalance = self.insuranceReserveBalance.positiveSub(self.netLoans);
-
-        self.insuranceReserveBalance +=
+        insurancePortion =
             (fees * self.optimalRatio * (totalBalance - availableInsuranceBalance)) /
             (totalBalance * VaultMath.RESOLUTION);
+        self.insuranceReserveBalance += insurancePortion;
     }
 
     function takeLoan(
@@ -99,22 +98,17 @@ library VaultState {
         uint256 totalRisk = self.optimalRatio * self.netLoans;
         subtractLoan(self, debt);
         self.optimalRatio = self.netLoans != 0 ? totalRisk.positiveSub(riskFactor * debt) / self.netLoans : 0;
-
         if (amount >= debt + fees) {
-            addInsuranceReserve(self, token.balanceOf(address(this)), fees);
+            uint256 insurancePortion = addInsuranceReserve(self, token.balanceOf(address(this)), fees);
+            self.currentProfits = calculateLockedProfit(self) + fees - insurancePortion;
+            self.latestRepay = block.timestamp;
 
             if (!token.transfer(borrower, amount - debt - fees)) revert Vault__Repay_Failed();
         } else if (amount < debt) subtractInsuranceReserve(self, debt - amount);
-
-        self.profits += fees;
-        self.latestRepay = block.timestamp;
     }
 
-    function calculateLockedProfit(uint256 lastReport, uint256 profits) internal view returns (uint256) {
-        uint256 lockedFundsRatio = (block.timestamp - lastReport) * LOCKED_PROFIT_DEGRADATION;
-
-        if (lockedFundsRatio < DEGRADATION_COEFFICIENT)
-            return profits - ((lockedFundsRatio * profits) / DEGRADATION_COEFFICIENT);
-        else return 0;
+    function calculateLockedProfit(VaultState.VaultData memory self) internal view returns (uint256) {
+        uint256 profits = self.currentProfits;
+        return profits.positiveSub(((block.timestamp - self.latestRepay) * profits) / DEGRADATION_COEFFICIENT);
     }
 }

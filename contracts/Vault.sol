@@ -75,11 +75,13 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     }
 
     function balance(address token) public view override returns (uint256) {
+        VaultState.VaultData memory vaultState = vaults[token];
         return
             IERC20(token).balanceOf(address(this)) +
-            vaults[token].netLoans -
-            vaults[token].insuranceReserveBalance -
-            vaults[token].boostedAmount;
+            vaultState.netLoans -
+            vaultState.insuranceReserveBalance -
+            vaultState.boostedAmount -
+            VaultState.calculateLockedProfit(vaultState);
     }
 
     function claimable(address token) external view override returns (uint256) {
