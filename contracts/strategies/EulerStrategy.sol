@@ -7,7 +7,6 @@ import { IEulerEToken } from "../interfaces/IEulerEToken.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 import { TransferHelper } from "../libraries/TransferHelper.sol";
-import "hardhat/console.sol";
 
 /// @title    EulerStrategy contract
 /// @author   Ithil
