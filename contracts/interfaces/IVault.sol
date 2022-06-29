@@ -32,10 +32,20 @@ interface IVault {
     /// @param amount the amount of tokens to be deposited
     function stakeETH(uint256 amount) external payable;
 
+    /// @notice provides liquidity renouncing to the APY, thus effectively boosting the vault
+    /// @param token the token to be boosted
+    /// @param amount the amount provided
+    function boost(address token, uint256 amount) external;
+
     /// @notice Remove tokens from the vault, and updates internal status to register updated claiming powers
     /// @param token the token to deposit
     /// @param amount the amount of tokens to be withdrawn
     function unstake(address token, uint256 amount) external;
+
+    /// @notice Remove tokens from the vault as boosted amounts
+    /// @param token the token to remove
+    /// @param amount the amount of tokens to be withdrawn
+    function unboost(address token, uint256 amount) external;
 
     /// @notice Remove WETH from the vault, unwraps them and updates internal status to register updated claiming powers
     /// @param amount the amount of tokens to be withdrawn
@@ -132,8 +142,14 @@ interface IVault {
     /// @notice Emitted when a deposit has been performed
     event Deposit(address indexed user, address indexed token, uint256 amount, uint256 minted);
 
+    /// @notice Emitted when a boost has been performed
+    event Boosted(address indexed user, address indexed token, uint256 amount);
+
     /// @notice Emitted when a withdrawal has been performed
     event Withdrawal(address indexed user, address indexed token, uint256 amount, uint256 burned);
+
+    /// @notice Emitted when a withdrawal has been performed
+    event Unboosted(address indexed user, address indexed token, uint256 amount);
 
     /// @notice Emitted when the vault has been locked or unlocked
     event VaultLockWasToggled(bool status, address indexed token);

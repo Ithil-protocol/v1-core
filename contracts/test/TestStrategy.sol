@@ -16,13 +16,19 @@ contract TestStrategy is BaseStrategy {
         BaseStrategy(_vault, _liquidator, "TestStrategy", "ITHIL-TS-POS")
     {}
 
-    function _openPosition(Order memory order) internal override returns (uint256 amountIn) {}
+    function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
+        return order.maxSpent;
+    }
 
     function _closePosition(Position memory position, uint256 expectedCost)
         internal
         override
         returns (uint256 amountIn, uint256 amountOut)
-    {}
+    {
+        IERC20(position.owedToken).safeTransfer(address(vault), position.allowance);
+
+        return (position.allowance, position.allowance);
+    }
 
     function quote(
         address src,

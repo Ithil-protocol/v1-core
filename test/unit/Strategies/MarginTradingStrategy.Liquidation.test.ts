@@ -295,6 +295,8 @@ describe("Strategy tests", function () {
     let position = await strategy.positions(3);
     const maxSpent = position.allowance;
 
+    expect(await strategy.ownerOf(3)).to.be.equal(liquidator.address);
+
     // The position is not closed, but it changed ownership
     await expect(strategy.connect(trader1).closePosition(3, maxSpent)).to.be.reverted;
     await strategy.connect(liquidator).closePosition(3, maxSpent);

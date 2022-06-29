@@ -40,6 +40,7 @@ library VaultState {
         uint256 fixedFee;
         uint256 minimumMargin;
         uint256 stakingCap;
+        uint256 boostedAmount;
         uint256 netLoans;
         uint256 insuranceReserveBalance;
         uint256 optimalRatio;
