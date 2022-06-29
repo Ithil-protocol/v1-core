@@ -188,7 +188,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
     function unboost(address token, uint256 amount) external override isValidAmount(amount) {
         uint256 boosted = boosters[msg.sender][token];
-        if (boosted < amount) revert Vault__Insufficient_Boost(token, boosted);
+        if (boosted < amount) revert Vault__Insufficient_Funds_Available(token, amount, boosted);
         vaults[token].boostedAmount -= amount;
         boosters[msg.sender][token] -= amount;
         IERC20(token).sendTokens(msg.sender, amount);
