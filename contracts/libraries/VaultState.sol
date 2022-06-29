@@ -16,6 +16,9 @@ library VaultState {
     error Vault__Insufficient_Funds_Available(address token, uint256 requested);
     error Vault__Repay_Failed();
 
+    uint256 constant LOCKED_PROFIT_DEGRADATION = 1;
+    uint256 constant DEGRADATION_COEFFICIENT = 1;
+
     /// @notice store data about whitelisted tokens
     /// @param supported Easily check if a token is supported or not (null VaultData struct)
     /// @param locked Whether the token is locked - can only be withdrawn
@@ -40,6 +43,8 @@ library VaultState {
         uint256 netLoans;
         uint256 insuranceReserveBalance;
         uint256 optimalRatio;
+        uint256 latestRepay;
+        uint256 profits;
     }
 
     function addInsuranceReserve(
@@ -99,5 +104,16 @@ library VaultState {
 
             if (!token.transfer(borrower, amount - debt - fees)) revert Vault__Repay_Failed();
         } else if (amount < debt) subtractInsuranceReserve(self, debt - amount);
+
+        self.profits += fees;
+        self.latestRepay = block.timestamp;
+    }
+
+    function calculateLockedProfit(uint256 lastReport, uint256 profits) internal view returns (uint256) {
+        uint256 lockedFundsRatio = (block.timestamp - lastReport) * LOCKED_PROFIT_DEGRADATION;
+
+        if (lockedFundsRatio < DEGRADATION_COEFFICIENT)
+            return profits - ((lockedFundsRatio * profits) / DEGRADATION_COEFFICIENT);
+        else return 0;
     }
 }
