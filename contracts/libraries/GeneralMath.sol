@@ -5,7 +5,7 @@ import { VaultState } from "./VaultState.sol";
 
 /// @title    GeneralMath library
 /// @author   Ithil
-/// @notice   A library to perform the most common operations
+/// @notice   A library to perform the most common math operations
 library GeneralMath {
     function positiveSub(uint256 a, uint256 b) internal pure returns (uint256 c) {
         if (a > b) c = a - b;

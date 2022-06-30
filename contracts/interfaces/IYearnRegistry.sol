@@ -2,7 +2,6 @@
 pragma solidity >=0.8.12;
 
 /// @title    Interface of the Yearn Registry contract
-/// @author   Yearn finance
 interface IYearnRegistry {
     /**
      * @notice Get the address of the latest deployed yvault for a specific token

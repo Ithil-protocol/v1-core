@@ -4,7 +4,6 @@ pragma solidity >=0.8.12;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title    Interface of the Yearn Vault contract
-/// @author   Yearn finance
 interface IYearnVault is IERC20 {
     function deposit(uint256 amount, address recipient) external returns (uint256);
 

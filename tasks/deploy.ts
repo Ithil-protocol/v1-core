@@ -16,9 +16,6 @@ import { MarginTradingStrategy__factory } from "../src/types/factories/MarginTra
 import { YearnStrategy } from "../src/types/YearnStrategy";
 import { YearnStrategy__factory } from "../src/types/factories/YearnStrategy__factory";
 
-import { LidoStrategy } from "../src/types/LidoStrategy";
-import { LidoStrategy__factory } from "../src/types/factories/LidoStrategy__factory";
-
 import { MockKyberNetworkProxy } from "../src/types/MockKyberNetworkProxy";
 import { MockKyberNetworkProxy__factory } from "../src/types/factories/MockKyberNetworkProxy__factory";
 
@@ -97,20 +94,6 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   );
   await ys.deployed();
   console.log("YearnStrategy deployed to address: ", ys.address);
-
-  // LidoStrategy
-  /*
-  const lsFactory: LidoStrategy__factory = <LidoStrategy__factory>(
-    await hre.ethers.getContractFactory("LidoStrategy")
-  );
-  const ls: LidoStrategy = <LidoStrategy>await lsFactory.deploy(
-    vault.address, // vault
-    liquidator.address, // liquidator
-    yearn.address // registry
-  );
-  await ls.deployed();
-  console.log("LidoStrategy deployed to address: ", ys.address);
-  */
 
   // write addresses to a file
   const addressesFile = {
