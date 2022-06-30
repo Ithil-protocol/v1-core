@@ -32,3 +32,6 @@ src/types/*
 # factories
 !src/types/factories
 src/types/factories/*
+
+# manticore
+mcore_*
