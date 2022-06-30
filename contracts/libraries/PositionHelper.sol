@@ -5,8 +5,6 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"
 import { IStrategy } from "../interfaces/IStrategy.sol";
 import { TransferHelper } from "./TransferHelper.sol";
 
-import "hardhat/console.sol";
-
 /// @title    PositionHelper library
 /// @author   Ithil
 /// @notice   A library to increase the collateral on existing positions

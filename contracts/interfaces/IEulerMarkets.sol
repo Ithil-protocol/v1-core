@@ -2,7 +2,6 @@
 pragma solidity >=0.8.12;
 
 /// @title    Interface of EulerMarkets contract
-/// @notice Activating and querying markets, and maintaining entered markets lists
 interface IEulerMarkets {
     /// @notice Given an underlying, lookup the associated EToken
     /// @param underlying Token address

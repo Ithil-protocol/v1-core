@@ -2,9 +2,9 @@
 pragma solidity >=0.8.12;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { IVault } from "../interfaces/IVault.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
-import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 /// @title    AbstractStrategy contract
 /// @author   Ithil
