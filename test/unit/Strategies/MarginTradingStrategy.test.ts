@@ -31,6 +31,7 @@ let mockWETH: MockWETH;
 let admin: SignerWithAddress;
 let trader1: SignerWithAddress;
 let trader2: SignerWithAddress;
+let investor1: SignerWithAddress;
 let liquidator: SignerWithAddress;
 let createStrategy: ThenArg<ReturnType<typeof mockMarginTradingFixture>>["createStrategy"];
 let loadFixture: ReturnType<typeof createFixtureLoader>;
@@ -85,7 +86,7 @@ describe("Strategy tests", function () {
 
   before("prepare vault with default parameters", async () => {
     const signers: SignerWithAddress[] = await ethers.getSigners();
-    const staker = signers[1];
+    investor1 = signers[1];
 
     const tokenArtifact: Artifact = await artifacts.readArtifact("MockTaxedToken");
     marginToken = <MockTaxedToken>await waffle.deployContract(admin, tokenArtifact, ["Margin mock token", "MGN", 18]);
@@ -97,12 +98,12 @@ describe("Strategy tests", function () {
     await vault.whitelistToken(investmentToken.address, 10, 10, 1, expandToNDecimals(1000, 18));
 
     // mint margin tokens to staker and fund vault
-    await marginToken.mintTo(staker.address, expandToNDecimals(100000, 18));
-    await fundVault(staker, vault, marginToken, marginTokenLiquidity);
+    await marginToken.mintTo(investor1.address, expandToNDecimals(100000, 18));
+    await fundVault(investor1, vault, marginToken, marginTokenLiquidity);
 
     // mint investment tokens to staker and fund vault
-    await investmentToken.mintTo(staker.address, expandToNDecimals(100000, 18));
-    await fundVault(staker, vault, investmentToken, investmentTokenLiquidity);
+    await investmentToken.mintTo(investor1.address, expandToNDecimals(100000, 18));
+    await fundVault(investor1, vault, investmentToken, investmentTokenLiquidity);
 
     vaultMarginBalance = await marginToken.balanceOf(vault.address);
 
@@ -310,5 +311,27 @@ describe("Strategy tests", function () {
     expect(vaultData.netLoans).to.equal(0);
     expect(vaultData.optimalRatio).to.equal(0);
     expect(vaultData.insuranceReserveBalance).to.equal(0);
+  });
+
+  it("Check staker can unstake the unlocked amount", async function () {
+    const initialInvestorBalance = await marginToken.balanceOf(investor1.address);
+    const vaultData = await vault.vaults(marginToken.address);
+    const currentProfits = vaultData.currentProfits;
+    const blockNumBefore = await ethers.provider.getBlockNumber();
+    const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+    const timestampBefore = blockBefore.timestamp;
+    // staker cannot unstake everything now
+    await expect(vault.connect(investor1).unstake(marginToken.address, marginTokenLiquidity.add(currentProfits))).to.be
+      .reverted;
+    // but he can stake just a little bit (TODO: precise unlocked amount)
+    await vault.connect(investor1).unstake(marginToken.address, marginTokenLiquidity.add(currentProfits.div(21600)));
+    // Six hours pass
+    await ethers.provider.send("evm_mine", [timestampBefore + 21600]);
+    // now staker can unstake everything missing
+    await vault.connect(investor1).unstake(marginToken.address, currentProfits.sub(currentProfits.div(21600)));
+    // check investor balance
+    expect(await marginToken.balanceOf(investor1.address)).to.equal(
+      initialInvestorBalance.add(marginTokenLiquidity).add(currentProfits),
+    );
   });
 });
