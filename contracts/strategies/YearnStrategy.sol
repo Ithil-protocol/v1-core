@@ -16,7 +16,6 @@ contract YearnStrategy is BaseStrategy {
     using TransferHelper for IERC20;
 
     error YearnStrategy__Restricted_Access(address owner, address sender);
-    error YearnStrategy__Inexistent_Pool(address nativeToken);
     error YearnStrategy__Not_Enough_Liquidity(uint256 balance, uint256 spent);
 
     IYearnRegistry internal immutable registry;
@@ -60,13 +59,7 @@ contract YearnStrategy is BaseStrategy {
         address dst,
         uint256 amount
     ) public view override returns (uint256, uint256) {
-        (bool success, bytes memory return_data) = address(registry).staticcall(
-            abi.encodePacked(registry.latestVault.selector, abi.encode(src))
-        );
-
-        if (!success) revert YearnStrategy__Inexistent_Pool(src);
-
-        address vaultAddress = abi.decode(return_data, (address));
+        address vaultAddress = registry.latestVault(src);
         IYearnVault yvault = IYearnVault(vaultAddress);
 
         uint256 obtained = yvault.pricePerShare();
