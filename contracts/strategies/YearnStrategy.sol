@@ -17,8 +17,10 @@ contract YearnStrategy is BaseStrategy {
 
     error YearnStrategy__Restricted_Access(address owner, address sender);
     error YearnStrategy__Not_Enough_Liquidity(uint256 balance, uint256 spent);
+    error YearnStrategy__Unsupported_Vault(address token);
 
     IYearnRegistry internal immutable registry;
+    mapping(address => address) public yvaults;
 
     constructor(
         address _vault,
@@ -33,10 +35,9 @@ contract YearnStrategy is BaseStrategy {
         uint256 balance = tkn.balanceOf(address(this));
         if (balance < order.maxSpent) revert YearnStrategy__Not_Enough_Liquidity(balance, order.maxSpent);
 
-        address yvault = registry.latestVault(order.spentToken);
-        super._maxApprove(tkn, yvault);
+        if (yvaults[order.spentToken] == address(0)) revert YearnStrategy__Unsupported_Vault(order.spentToken);
 
-        amountIn = IYearnVault(yvault).deposit(order.maxSpent, address(this));
+        amountIn = IYearnVault(yvaults[order.spentToken]).deposit(order.maxSpent, address(this));
     }
 
     function _closePosition(Position memory position, uint256 expectedCost)
@@ -65,5 +66,19 @@ contract YearnStrategy is BaseStrategy {
         uint256 obtained = yvault.pricePerShare();
         obtained *= amount;
         return (obtained, obtained);
+    }
+
+    // @todo emit events?
+    function addYVault(address token) external onlyOwner {
+        address yvault = registry.latestVault(token);
+        yvaults[token] = yvault;
+
+        super._maxApprove(IERC20(token), yvault);
+    }
+
+    function removeYVault(address token) external onlyOwner {
+        delete yvaults[token];
+
+        //super._maxApprove(IERC20(token), yvault); // @todo remove approval
     }
 }

@@ -77,6 +77,8 @@ describe("Yearn Strategy", function () {
     await getTokens(trader1.address, marginToken.address, tokens.DAI.whale, marginTokenLiquidity);
     await fundVault(signers[1], vault, marginToken, marginTokenLiquidity);
 
+    await strategy.addYVault(marginToken.address);
+
     await marginToken.connect(trader1).approve(strategy.address, marginTokenMargin);
 
     order = {

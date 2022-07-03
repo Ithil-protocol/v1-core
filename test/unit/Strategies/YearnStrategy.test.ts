@@ -75,8 +75,10 @@ describe("Strategy tests", function () {
 
       await vault.whitelistToken(marginToken.address, 10, 10, 1000, expandToNDecimals(1000000, 18));
       await vault.whitelistToken(investmentToken.address, 10, 10, 1, expandToNDecimals(1000, 18));
-
       await fundVault(staker, vault, marginToken, marginTokenLiquidity);
+
+      await strategy.addYVault(marginToken.address);
+
       await marginToken.connect(trader1).approve(strategy.address, marginTokenMargin);
 
       order = {
