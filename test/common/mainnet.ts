@@ -14,14 +14,50 @@ export const tokens = {
   USDC: {
     symbol: "USDC",
     address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-    decimals: 18,
+    decimals: 6,
     whale: "0x7abE0cE388281d2aCF297Cb089caef3819b13448",
+  },
+  USDT: {
+    symbol: "USDT",
+    address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    decimals: 6,
+    whale: "0xeC30d02f10353f8EFC9601371f56e808751f396F",
+  },
+  FRAX: {
+    symbol: "FRAX",
+    address: "0x853d955aCEf822Db058eb8505911ED77F175b99e",
+    decimals: 18,
+    whale: "0x183D0dC5867c01bFB1dbBc41d6a9d3dE6e044626",
+  },
+  AGEUR: {
+    symbol: "AGEUR",
+    address: "0x1a7e4e63778B4f12a199C062f3eFdD288afCBce8",
+    decimals: 18,
+    whale: "0xB0b0F6F13A5158eB67724282F586a552E75b5728",
+  },
+  EURS: {
+    symbol: "EURS",
+    address: "0xdB25f211AB05b1c97D595516F45794528a807ad8",
+    decimals: 2,
+    whale: "0x9362D27fD1827232754eeD59158264BA8a780CBF",
+  },
+  EURT: {
+    symbol: "EURT",
+    address: "0xC581b735A1688071A1746c968e0798D642EDE491",
+    decimals: 6,
+    whale: "0x19dA5b64A5Ca2B7Ad9C7C75343C39F3AC7a48e1C",
   },
   WETH: {
     symbol: "WETH",
     address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     decimals: 18,
     whale: "0x6555e1CC97d3cbA6eAddebBCD7Ca51d75771e0B8",
+  },
+  WBTC: {
+    symbol: "WBTC",
+    address: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+    decimals: 8,
+    whale: "0xf584F8728B874a6a5c7A8d4d387C9aae9172D621",
   },
   SHIBA: {
     symbol: "SHIBA",
@@ -35,13 +71,22 @@ export const tokens = {
     decimals: 18,
     whale: "0xF977814e90dA44bFA03b6295A0616a897441aceC",
   },
+  OUSD: {
+    symbol: "OUSD",
+    address: "0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86",
+    decimals: 18,
+    whale: "0xc055De577ce2039E6D35621E3a885df9Bb304AB9",
+  },
+  TRICRV: {
+    symbol: "3Crv",
+    address: "0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490",
+    decimals: 18,
+    whale: "0xdD050C0950Cb996230519f928680ea3D7537eCA7",
+  },
+  OHM: {
+    symbol: "OHM",
+    address: "0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5",
+    decimals: 9,
+    whale: "0x9Cf59Ecde926cc1B5FF1Cb9b247E0FEC627091b1",
+  },
 };
-
-export const kyberNetwork = "0x818E6FECD516Ecc3849DAf6845e3EC868087B755";
-export const yearnRegistry = "0x50c1a2eA0a861A967D9d0FFE2AE4012c2E053804";
-export const stETH = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84";
-export const stETHcrvPool = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022";
-export const ycrvETHPool = "0xdCD90C7f6324cfa40d7169ef80b12031770B4325";
-export const crvLPtoken = "0x06325440d014e39736583c165c2963ba99faf14e";
-export const euler = "0x27182842E098f60e3D576794A5bFFb0777E025d3";
-export const eulerMarkets = "0x3520d5a913427E6F0D6A83E07ccD4A4da316e4d3";

@@ -5,7 +5,8 @@ import type { Vault } from "../../../../src/types/Vault";
 import { Signers } from "../../../types";
 import type { ERC20 } from "../../../../src/types/ERC20";
 
-import { tokens, euler, eulerMarkets } from "../../../common/mainnet";
+import { tokens } from "../../../common/mainnet";
+import { euler, eulerMarkets } from "./constants";
 import { getTokens } from "../../../common/utils";
 import { marginTokenLiquidity } from "../../../common/params";
 

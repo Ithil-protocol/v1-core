@@ -6,7 +6,7 @@ import { BigNumber, Wallet } from "ethers";
 import { tokens } from "../../../common/mainnet";
 import { getTokens, expandToNDecimals, fundVault } from "../../../common/utils";
 import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
-import { marginTradingFixture } from "../../../common/fixtures";
+import { marginTradingFixture } from "./fixture";
 
 import type { ERC20 } from "../../../../src/types/ERC20";
 import type { Vault } from "../../../../src/types/Vault";
