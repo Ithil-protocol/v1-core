@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IVault } from "./interfaces/IVault.sol";
@@ -18,7 +18,7 @@ import { TransferHelper } from "./libraries/TransferHelper.sol";
 /// @author   Ithil
 /// @notice   Stores staked funds, issues loans and handles repayments to strategies
 contract Vault is IVault, ReentrancyGuard, Ownable {
-    using TransferHelper for IERC20;
+    using SafeERC20 for IERC20;
     using WrappedTokenHelper for IWrappedToken;
     using VaultMath for uint256;
     using GeneralMath for uint256;
@@ -167,7 +167,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         if (totalWealth + amount > stakingCap) revert Vault__Staking_Cap_Exceeded(token, totalWealth, stakingCap);
 
-        (, amount) = IERC20(token).transferTokens(msg.sender, address(this), amount);
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
         uint256 toMint = wToken.mintWrapped(amount, msg.sender, totalWealth);
 
@@ -183,7 +183,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 stakingCap = vaults[token].stakingCap;
         if (totalWealth + amount > stakingCap) revert Vault__Staking_Cap_Exceeded(token, totalWealth, stakingCap);
 
-        (, amount) = IERC20(token).transferTokens(msg.sender, address(this), amount);
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
         emit Boosted(msg.sender, token, amount);
     }
@@ -193,7 +193,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (boosted < amount) revert Vault__Insufficient_Funds_Available(token, amount, boosted);
         vaults[token].boostedAmount -= amount;
         boosters[msg.sender][token] -= amount;
-        IERC20(token).sendTokens(msg.sender, amount);
+        IERC20(token).safeTransfer(msg.sender, amount);
         emit Unboosted(msg.sender, token, amount);
     }
 
@@ -226,7 +226,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (maxWithdrawal < amount) revert Vault__Max_Withdrawal(msg.sender, token, amount, maxWithdrawal);
         uint256 toBurn = wToken.burnWrapped(amount, balance(token), msg.sender);
 
-        IERC20(token).sendTokens(msg.sender, amount);
+        IERC20(token).safeTransfer(msg.sender, amount);
         emit Withdrawal(msg.sender, token, amount, toBurn);
     }
 
@@ -253,7 +253,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         checkWhitelisted(token);
 
         VaultState.VaultData storage vaultData = vaults[token];
-        (uint256 freeLiquidity, ) = vaultData.takeLoan(IERC20(token), amount, riskFactor);
+        uint256 freeLiquidity = vaultData.takeLoan(IERC20(token), amount, riskFactor);
 
         baseInterestRate = VaultMath.computeInterestRateNoLeverage(
             vaultData.netLoans - amount,

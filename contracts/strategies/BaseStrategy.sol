@@ -219,10 +219,11 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         address obtainedToken = order.obtainedToken;
         uint256 riskFactor = computePairRiskFactor(spentToken, obtainedToken);
         uint256 originalCollBal = 0;
+        collateralReceived = order.collateral;
 
         collateralToken = order.collateralIsSpentToken ? order.spentToken : order.obtainedToken;
 
-        (collateralReceived, toBorrow, originalCollBal) = IERC20(collateralToken).transferAsCollateral(order);
+        toBorrow = IERC20(collateralToken).transferAsCollateral(order);
 
         if (collateralReceived < vault.getMinimumMargin(spentToken))
             revert Strategy__Margin_Below_Minimum(collateralReceived, vault.getMinimumMargin(spentToken));
@@ -309,13 +310,13 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
             delete positions[positionId];
-            (, uint256 received) = IERC20(position.owedToken).transferTokens(purchaser, address(vault), price);
-            if (received < position.principal + dueFees)
-                revert Strategy__Insufficient_Amount_Out(received, position.principal + dueFees);
+            IERC20(position.owedToken).safeTransferFrom(purchaser, address(vault), price);
+            if (price < position.principal + dueFees)
+                revert Strategy__Insufficient_Amount_Out(price, position.principal + dueFees);
             else IERC20(position.heldToken).safeTransfer(purchaser, position.allowance);
             vault.repay(
                 position.owedToken,
-                received,
+                price,
                 position.principal,
                 dueFees,
                 riskFactors[position.heldToken],

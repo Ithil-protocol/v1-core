@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { GeneralMath } from "./GeneralMath.sol";
 import { VaultMath } from "./VaultMath.sol";
 import { TransferHelper } from "./TransferHelper.sol";
@@ -10,7 +10,7 @@ import { TransferHelper } from "./TransferHelper.sol";
 /// @author   Ithil
 /// @notice   A library to store the vault status
 library VaultState {
-    using TransferHelper for IERC20;
+    using SafeERC20 for IERC20;
     using GeneralMath for uint256;
 
     error Vault__Insufficient_Funds_Available(address token, uint256 requested);
@@ -64,7 +64,7 @@ library VaultState {
         IERC20 token,
         uint256 amount,
         uint256 riskFactor
-    ) internal returns (uint256 freeLiquidity, uint256 received) {
+    ) internal returns (uint256 freeLiquidity) {
         uint256 totalRisk = self.optimalRatio * self.netLoans;
         self.netLoans += amount;
         self.optimalRatio = (totalRisk + amount * riskFactor) / self.netLoans;
@@ -73,7 +73,7 @@ library VaultState {
 
         if (amount > freeLiquidity) revert Vault__Insufficient_Funds_Available(address(token), amount);
 
-        received = token.sendTokens(msg.sender, amount);
+        token.safeTransfer(msg.sender, amount);
     }
 
     function subtractLoan(VaultState.VaultData storage self, uint256 b) private {
