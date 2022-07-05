@@ -6,7 +6,7 @@ import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy"
 import { MockWETH } from "../../../src/types/MockWETH";
 import { MarginTradingStrategy } from "../../../src/types/MarginTradingStrategy";
 import { Liquidator } from "../../../src/types/Liquidator";
-import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
+import { MockToken } from "../../../src/types/MockToken";
 import { expandToNDecimals } from "../../common/utils";
 import { BigNumber, Wallet } from "ethers";
 import { marginTokenLiquidity, investmentTokenLiquidity, marginTokenMargin, leverage } from "../../common/params";
@@ -42,8 +42,8 @@ let strategy: MarginTradingStrategy;
 let tokensAmount: BigNumber;
 let mockKyberNetworkProxy: MockKyberNetworkProxy;
 
-let marginToken: MockTaxedToken;
-let investmentToken: MockTaxedToken;
+let marginToken: MockToken;
+let investmentToken: MockToken;
 let traderBalance: BigNumber;
 let vaultMarginBalance: BigNumber;
 let vaultInvestmentBalance: BigNumber;
@@ -88,9 +88,9 @@ describe("Strategy tests", function () {
     const signers: SignerWithAddress[] = await ethers.getSigners();
     investor1 = signers[1];
 
-    const tokenArtifact: Artifact = await artifacts.readArtifact("MockTaxedToken");
-    marginToken = <MockTaxedToken>await waffle.deployContract(admin, tokenArtifact, ["Margin mock token", "MGN", 18]);
-    investmentToken = <MockTaxedToken>(
+    const tokenArtifact: Artifact = await artifacts.readArtifact("MockToken");
+    marginToken = <MockToken>await waffle.deployContract(admin, tokenArtifact, ["Margin mock token", "MGN", 18]);
+    investmentToken = <MockToken>(
       await waffle.deployContract(admin, tokenArtifact, ["Investment mock token", "INV", 18])
     );
 

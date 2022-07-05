@@ -9,7 +9,7 @@ import { TestStrategy } from "../../../src/types/TestStrategy";
 import { Wallet, BigNumber } from "ethers";
 
 import { mockTestFixture } from "../../common/mockfixtures";
-import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
+import { MockToken } from "../../../src/types/MockToken";
 
 import { expandToNDecimals, fundVault } from "../../common/utils";
 import { marginTokenMargin, marginTokenLiquidity, leverage, investmentTokenLiquidity } from "../../common/params";
@@ -39,8 +39,8 @@ let strategy: TestStrategy;
 let tokensAmount: BigNumber;
 let mockKyberNetworkProxy: MockKyberNetworkProxy;
 
-let marginToken: MockTaxedToken;
-let investmentToken: MockTaxedToken;
+let marginToken: MockToken;
+let investmentToken: MockToken;
 
 let order: IStrategy.OrderStruct;
 
@@ -64,9 +64,9 @@ describe("Strategy tests", function () {
     const signers: SignerWithAddress[] = await ethers.getSigners();
     const staker = signers[1];
 
-    const tokenArtifact: Artifact = await artifacts.readArtifact("MockTaxedToken");
-    marginToken = <MockTaxedToken>await waffle.deployContract(admin, tokenArtifact, ["Margin mock token", "MGN", 18]);
-    investmentToken = <MockTaxedToken>(
+    const tokenArtifact: Artifact = await artifacts.readArtifact("MockToken");
+    marginToken = <MockToken>await waffle.deployContract(admin, tokenArtifact, ["Margin mock token", "MGN", 18]);
+    investmentToken = <MockToken>(
       await waffle.deployContract(admin, tokenArtifact, ["Investment mock token", "INV", 18])
     );
 

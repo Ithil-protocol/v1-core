@@ -5,14 +5,12 @@ import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/Saf
 import { IKyberNetworkProxy } from "../interfaces/IKyberNetworkProxy.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
-import { TransferHelper } from "../libraries/TransferHelper.sol";
 
 /// @title    MarginTradingStrategy contract
 /// @author   Ithil
 /// @notice   Uses Kyber network for swaps
 contract MarginTradingStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
-    using TransferHelper for IERC20;
 
     IKyberNetworkProxy public immutable kyberProxy;
 

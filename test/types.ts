@@ -4,7 +4,6 @@ import type { Fixture } from "ethereum-waffle";
 import type { Liquidator } from "../src/types/Liquidator";
 import type { MockToken } from "../src/types/MockToken";
 import type { MockKyberNetworkProxy } from "../src/types/MockKyberNetworkProxy";
-import type { MockTaxedToken } from "../src/types/MockTaxedToken";
 import type { MockWETH } from "../src/types/MockWETH";
 import type { MockYearnRegistry } from "../src/types/MockYearnRegistry";
 import type { MockYearnVault } from "../src/types/MockYearnVault";
@@ -17,7 +16,6 @@ declare module "mocha" {
   export interface Context {
     liquidator: Liquidator;
     mockKyberNetworkProxy: MockKyberNetworkProxy;
-    mockTaxedToken: MockTaxedToken;
     mockToken: MockToken;
     mockWETH: MockWETH;
     mockYearnRegistry: MockYearnRegistry;

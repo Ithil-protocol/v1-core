@@ -4,7 +4,7 @@ import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signe
 import type { Vault } from "../../../src/types/Vault";
 import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../../src/types/MockWETH";
-import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
+import { MockToken } from "../../../src/types/MockToken";
 import { YearnStrategy } from "../../../src/types/YearnStrategy";
 import { Liquidator } from "../../../src/types/Liquidator";
 
@@ -36,8 +36,8 @@ let strategy: YearnStrategy;
 let tokensAmount: BigNumber;
 let mockKyberNetworkProxy: MockKyberNetworkProxy;
 
-let marginToken: MockTaxedToken;
-let investmentToken: MockTaxedToken;
+let marginToken: MockToken;
+let investmentToken: MockToken;
 
 let order: {
   spentToken: string;
@@ -67,9 +67,9 @@ describe("Strategy tests", function () {
       const signers: SignerWithAddress[] = await ethers.getSigners();
       const staker = signers[1];
 
-      const tokenArtifact: Artifact = await artifacts.readArtifact("MockTaxedToken");
-      marginToken = <MockTaxedToken>await waffle.deployContract(admin, tokenArtifact, ["Margin mock token", "MGN", 18]);
-      investmentToken = <MockTaxedToken>(
+      const tokenArtifact: Artifact = await artifacts.readArtifact("MockToken");
+      marginToken = <MockToken>await waffle.deployContract(admin, tokenArtifact, ["Margin mock token", "MGN", 18]);
+      investmentToken = <MockToken>(
         await waffle.deployContract(admin, tokenArtifact, ["Investment mock token", "INV", 18])
       );
 

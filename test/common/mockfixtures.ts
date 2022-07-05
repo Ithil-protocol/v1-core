@@ -3,7 +3,7 @@ import { Fixture, deployContract } from "ethereum-waffle";
 import type { Artifact } from "hardhat/types";
 import type { ERC20 } from "../../src/types/ERC20";
 import { MockWETH } from "../../src/types/MockWETH";
-import { MockTaxedToken } from "../../src/types/MockTaxedToken";
+import { MockToken } from "../../src/types/MockToken";
 import { MockYearnRegistry } from "../../src/types/MockYearnRegistry";
 
 import { Vault } from "../../src/types/Vault";
@@ -135,8 +135,8 @@ export const mockYearnFixture: Fixture<MockYearnStrategyFixture> =
     const wethArtifact: Artifact = await artifacts.readArtifact("MockWETH");
     const mockWETH = <MockWETH>await deployContract(admin, wethArtifact, []);
 
-    const tknArtifact: Artifact = await artifacts.readArtifact("MockTaxedToken");
-    const mockTaxedToken = <MockTaxedToken>await deployContract(admin, tknArtifact, ["Dai Stablecoin", "DAI", 18]);
+    const tknArtifact: Artifact = await artifacts.readArtifact("MockToken");
+    const mockToken = <MockToken>await deployContract(admin, tknArtifact, ["Dai Stablecoin", "DAI", 18]);
 
     const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
     const vault = <Vault>await deployContract(admin, vaultArtifact, [mockWETH.address]);
@@ -149,7 +149,7 @@ export const mockYearnFixture: Fixture<MockYearnStrategyFixture> =
     const yearnArtifact: Artifact = await artifacts.readArtifact("MockYearnRegistry");
     const mockYearnRegistry = <MockYearnRegistry>await deployContract(admin, yearnArtifact, []);
     await mockYearnRegistry.newVault(mockWETH.address);
-    await mockYearnRegistry.newVault(mockTaxedToken.address);
+    await mockYearnRegistry.newVault(mockToken.address);
 
     return {
       mockWETH,

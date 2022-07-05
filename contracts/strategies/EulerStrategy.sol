@@ -6,14 +6,12 @@ import { IEulerMarkets } from "../interfaces/IEulerMarkets.sol";
 import { IEulerEToken } from "../interfaces/IEulerEToken.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
-import { TransferHelper } from "../libraries/TransferHelper.sol";
 
 /// @title    EulerStrategy contract
 /// @author   Ithil
 /// @notice   A strategy to perform leveraged staking on any Euler market
 contract EulerStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
-    using TransferHelper for IERC20;
 
     error EulerStrategy__Restricted_Access(address owner, address sender);
     error EulerStrategy__Inexistent_Market(address underlyingToken);

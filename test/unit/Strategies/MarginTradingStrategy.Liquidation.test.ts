@@ -6,7 +6,7 @@ import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy"
 import { MockWETH } from "../../../src/types/MockWETH";
 import { MarginTradingStrategy } from "../../../src/types/MarginTradingStrategy";
 import { Liquidator } from "../../../src/types/Liquidator";
-import { MockTaxedToken } from "../../../src/types/MockTaxedToken";
+import { MockToken } from "../../../src/types/MockToken";
 import { expandToNDecimals } from "../../common/utils";
 import { BigNumber, Wallet } from "ethers";
 import { marginTokenLiquidity, investmentTokenLiquidity, marginTokenMargin, leverage } from "../../common/params";
@@ -41,8 +41,8 @@ let strategy: MarginTradingStrategy;
 let tokensAmount: BigNumber;
 let mockKyberNetworkProxy: MockKyberNetworkProxy;
 
-let marginToken: MockTaxedToken;
-let investmentToken: MockTaxedToken;
+let marginToken: MockToken;
+let investmentToken: MockToken;
 let traderBalance: BigNumber;
 let vaultMarginBalance: BigNumber;
 let vaultInvestmentBalance: BigNumber;
@@ -85,9 +85,9 @@ describe("Strategy tests", function () {
     const signers: SignerWithAddress[] = await ethers.getSigners();
     const staker = signers[1];
 
-    const tokenArtifact: Artifact = await artifacts.readArtifact("MockTaxedToken");
-    marginToken = <MockTaxedToken>await waffle.deployContract(admin, tokenArtifact, ["Margin mock token", "MGN", 18]);
-    investmentToken = <MockTaxedToken>(
+    const tokenArtifact: Artifact = await artifacts.readArtifact("MockToken");
+    marginToken = <MockToken>await waffle.deployContract(admin, tokenArtifact, ["Margin mock token", "MGN", 18]);
+    investmentToken = <MockToken>(
       await waffle.deployContract(admin, tokenArtifact, ["Investment mock token", "INV", 18])
     );
 
@@ -275,6 +275,7 @@ describe("Strategy tests", function () {
     await strategy.connect(trader1).openPosition(order);
     const pairRiskFactor = await strategy.computePairRiskFactor(investmentToken.address, marginToken.address);
     const extraMargin = expandToNDecimals(50, 18);
+    console.log("Pair risk factor", ethers.utils.formatUnits(pairRiskFactor, 0));
 
     // immediate liquidation should fail
     await expect(liquidatorContract.connect(liquidator).marginCall(strategy.address, 3, extraMargin)).to.be.reverted;
@@ -284,6 +285,7 @@ describe("Strategy tests", function () {
     const priceDrop = BigNumber.from(10000).sub(pairRiskFactor).div(leverage);
     const newPrice = BigNumber.from(100).mul(BigNumber.from(10000).sub(priceDrop)).div(10000);
 
+    console.log("newPrice", ethers.utils.formatUnits(newPrice, 0));
     // Liquidation should fail again for higher price
     await mockKyberNetworkProxy.setRate(investmentToken.address, newPrice.add(1));
     await expect(liquidatorContract.connect(liquidator).marginCall(strategy.address, 3, extraMargin)).to.be.reverted;
