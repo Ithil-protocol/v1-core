@@ -95,17 +95,15 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     function openPosition(Order memory order) external validOrder(order) unlocked returns (uint256) {
         (uint256 interestRate, uint256 fees, uint256 toBorrow, address collateralToken) = _borrow(order);
 
-        uint256 collateral = order.collateral;
-
         uint256 amountIn;
         if (!order.collateralIsSpentToken) {
             amountIn = _openPosition(order);
-            amountIn += collateral;
-            interestRate *= amountIn / collateral;
+            amountIn += order.collateral;
+            interestRate *= amountIn / order.collateral;
         } else {
             uint256 initialDstBalance = IERC20(order.obtainedToken).balanceOf(address(this));
             amountIn = _openPosition(order);
-            interestRate *= (toBorrow * initialDstBalance) / (collateral * (initialDstBalance + amountIn));
+            interestRate *= (toBorrow * initialDstBalance) / (order.collateral * (initialDstBalance + amountIn));
         }
 
         if (interestRate > VaultMath.MAX_RATE) revert Strategy__Maximum_Leverage_Exceeded(interestRate);
@@ -116,7 +114,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             owedToken: order.spentToken,
             heldToken: order.obtainedToken,
             collateralToken: collateralToken,
-            collateral: collateral,
+            collateral: order.collateral,
             principal: toBorrow,
             allowance: amountIn,
             interestRate: interestRate,
@@ -130,7 +128,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             order.spentToken,
             order.obtainedToken,
             collateralToken,
-            collateral,
+            order.collateral,
             toBorrow,
             amountIn,
             interestRate,
@@ -203,10 +201,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             address collateralToken
         )
     {
-        address spentToken = order.spentToken;
-        address obtainedToken = order.obtainedToken;
-        uint256 riskFactor = computePairRiskFactor(spentToken, obtainedToken);
-        uint256 collateralReceived = order.collateral;
+        uint256 riskFactor = computePairRiskFactor(order.spentToken, order.obtainedToken);
 
         if (order.collateralIsSpentToken) {
             collateralToken = order.spentToken;
@@ -218,10 +213,10 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
         IERC20(collateralToken).safeTransferFrom(msg.sender, address(this), order.collateral);
 
-        if (collateralReceived < vault.getMinimumMargin(spentToken))
-            revert Strategy__Margin_Below_Minimum(collateralReceived, vault.getMinimumMargin(spentToken));
+        if (order.collateral < vault.getMinimumMargin(order.spentToken))
+            revert Strategy__Margin_Below_Minimum(order.collateral, vault.getMinimumMargin(order.spentToken));
 
-        (interestRate, fees) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
+        (interestRate, fees) = vault.borrow(order.spentToken, toBorrow, riskFactor, msg.sender);
     }
 
     // Liquidator
