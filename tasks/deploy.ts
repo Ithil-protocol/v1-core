@@ -94,7 +94,6 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
       MockKyberNetworkProxy: kyber.address,
       MockYearnRegistry: yearn.address,
       MockWETH: weth.address,
-      MockTaxedToken: tkn.address,
       Vault: vault.address,
       Liquidator: liquidator.address,
       MarginTradingStrategy: mts.address,
@@ -112,7 +111,6 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
     tokens: [
       {
         name: "DAI Stablecoin",
-        address: tkn.address,
         symbol: "DAI",
         decimals: 18,
         chainId: chainIds[hre.network.name],
