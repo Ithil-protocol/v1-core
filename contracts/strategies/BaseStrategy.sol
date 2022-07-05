@@ -216,7 +216,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             toBorrow = order.maxSpent;
         }
 
-        IERC20(collateralToken).transferFrom(msg.sender, address(this), order.collateral);
+        IERC20(collateralToken).safeTransferFrom(msg.sender, address(this), order.collateral);
 
         if (collateralReceived < vault.getMinimumMargin(spentToken))
             revert Strategy__Margin_Below_Minimum(collateralReceived, vault.getMinimumMargin(spentToken));

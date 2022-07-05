@@ -25,9 +25,6 @@ import { MockYearnRegistry__factory } from "../src/types/factories/MockYearnRegi
 import { MockWETH } from "../src/types/MockWETH";
 import { MockWETH__factory } from "../src/types/factories/MockWETH__factory";
 
-import { MockTaxedToken } from "../src/types/MockTaxedToken";
-import { MockTaxedToken__factory } from "../src/types/factories/MockTaxedToken__factory";
-
 task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments, hre: HardhatRuntimeEnvironment) => {
   // MockKyberNetworkProxy
   const kyberFactory: MockKyberNetworkProxy__factory = <MockKyberNetworkProxy__factory>(
@@ -50,14 +47,6 @@ task("deploy", "Deploys the mock contracts", async (taskArguments: TaskArguments
   const weth: MockWETH = <MockWETH>await wethFactory.deploy();
   await weth.deployed();
   console.log("MockWETH deployed to address: ", weth.address);
-
-  // MockTaxedToken
-  const tknFactory: MockTaxedToken__factory = <MockTaxedToken__factory>(
-    await hre.ethers.getContractFactory("MockTaxedToken")
-  );
-  const tkn: MockTaxedToken = <MockTaxedToken>await tknFactory.deploy("Dai Stablecoin", "DAI", 18);
-  await tkn.deployed();
-  console.log("MockTaxedToken deployed to address: ", tkn.address);
 
   // Vault
   const vaultFactory: Vault__factory = <Vault__factory>await hre.ethers.getContractFactory("Vault");
