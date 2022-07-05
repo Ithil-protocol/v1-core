@@ -7,7 +7,6 @@ import { IVault } from "../interfaces/IVault.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { GeneralMath } from "../libraries/GeneralMath.sol";
-import { TransferHelper } from "../libraries/TransferHelper.sol";
 
 /// @title    Liquidator contract
 /// @author   Ithil

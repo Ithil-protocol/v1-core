@@ -7,7 +7,6 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
 import { IVault } from "../interfaces/IVault.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
-import { TransferHelper } from "../libraries/TransferHelper.sol";
 import { PositionHelper } from "../libraries/PositionHelper.sol";
 
 /// @title    BaseStrategy contract
@@ -15,7 +14,6 @@ import { PositionHelper } from "../libraries/PositionHelper.sol";
 /// @notice   Base contract to inherit to keep status updates consistent
 abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     using SafeERC20 for IERC20;
-    using TransferHelper for IERC20;
     using PositionHelper for Position;
 
     address public immutable liquidator;
@@ -95,26 +93,19 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     }
 
     function openPosition(Order memory order) external validOrder(order) unlocked returns (uint256) {
-        (
-            uint256 interestRate,
-            uint256 fees,
-            uint256 toSpend,
-            uint256 collateralReceived,
-            uint256 toBorrow,
-            address collateralToken
-        ) = _borrow(order);
+        (uint256 interestRate, uint256 fees, uint256 toBorrow, address collateralToken) = _borrow(order);
 
-        if (order.collateralIsSpentToken) order.maxSpent = toSpend + collateralReceived;
+        uint256 collateral = order.collateral;
 
         uint256 amountIn;
         if (!order.collateralIsSpentToken) {
             amountIn = _openPosition(order);
-            amountIn += collateralReceived;
-            interestRate *= amountIn / collateralReceived;
+            amountIn += collateral;
+            interestRate *= amountIn / collateral;
         } else {
             uint256 initialDstBalance = IERC20(order.obtainedToken).balanceOf(address(this));
             amountIn = _openPosition(order);
-            interestRate *= (toBorrow * initialDstBalance) / (collateralReceived * (initialDstBalance + amountIn));
+            interestRate *= (toBorrow * initialDstBalance) / (collateral * (initialDstBalance + amountIn));
         }
 
         if (interestRate > VaultMath.MAX_RATE) revert Strategy__Maximum_Leverage_Exceeded(interestRate);
@@ -125,7 +116,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             owedToken: order.spentToken,
             heldToken: order.obtainedToken,
             collateralToken: collateralToken,
-            collateral: collateralReceived,
+            collateral: collateral,
             principal: toBorrow,
             allowance: amountIn,
             interestRate: interestRate,
@@ -139,7 +130,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             order.spentToken,
             order.obtainedToken,
             collateralToken,
-            collateralReceived,
+            collateral,
             toBorrow,
             amountIn,
             interestRate,
@@ -208,33 +199,29 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         returns (
             uint256 interestRate,
             uint256 fees,
-            uint256 toSpend,
-            uint256 collateralReceived,
             uint256 toBorrow,
             address collateralToken
         )
     {
         address spentToken = order.spentToken;
-        IERC20 spentTkn = IERC20(spentToken);
         address obtainedToken = order.obtainedToken;
         uint256 riskFactor = computePairRiskFactor(spentToken, obtainedToken);
-        uint256 originalCollBal = 0;
-        collateralReceived = order.collateral;
+        uint256 collateralReceived = order.collateral;
 
-        collateralToken = order.collateralIsSpentToken ? order.spentToken : order.obtainedToken;
+        if (order.collateralIsSpentToken) {
+            collateralToken = order.spentToken;
+            toBorrow = order.maxSpent - order.collateral;
+        } else {
+            collateralToken = order.obtainedToken;
+            toBorrow = order.maxSpent;
+        }
 
-        toBorrow = IERC20(collateralToken).transferAsCollateral(order);
+        IERC20(collateralToken).transferFrom(msg.sender, address(this), order.collateral);
 
         if (collateralReceived < vault.getMinimumMargin(spentToken))
             revert Strategy__Margin_Below_Minimum(collateralReceived, vault.getMinimumMargin(spentToken));
 
-        toSpend = originalCollBal + collateralReceived;
-        if (!order.collateralIsSpentToken) {
-            toSpend = spentTkn.balanceOf(address(this));
-        }
-
         (interestRate, fees) = vault.borrow(spentToken, toBorrow, riskFactor, msg.sender);
-        toSpend = spentTkn.balanceOf(address(this)) - toSpend;
     }
 
     // Liquidator

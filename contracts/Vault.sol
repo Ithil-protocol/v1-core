@@ -12,7 +12,6 @@ import { VaultState } from "./libraries/VaultState.sol";
 import { GeneralMath } from "./libraries/GeneralMath.sol";
 import { WrappedToken } from "./WrappedToken.sol";
 import { WrappedTokenHelper } from "./libraries/WrappedTokenHelper.sol";
-import { TransferHelper } from "./libraries/TransferHelper.sol";
 
 /// @title    Vault contract
 /// @author   Ithil

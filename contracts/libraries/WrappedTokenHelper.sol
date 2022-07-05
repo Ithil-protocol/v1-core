@@ -2,7 +2,6 @@
 pragma solidity >=0.8.12;
 
 import { VaultMath } from "./VaultMath.sol";
-import { TransferHelper } from "./TransferHelper.sol";
 import { IWrappedToken } from "../interfaces/IWrappedToken.sol";
 
 /// @title    WrappedTokenHelper library

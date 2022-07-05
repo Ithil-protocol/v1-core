@@ -4,7 +4,6 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { GeneralMath } from "./GeneralMath.sol";
 import { VaultMath } from "./VaultMath.sol";
-import { TransferHelper } from "./TransferHelper.sol";
 
 /// @title    VaultState library
 /// @author   Ithil
