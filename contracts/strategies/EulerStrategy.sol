@@ -42,11 +42,9 @@ contract EulerStrategy is BaseStrategy {
         super._maxApprove(tkn, euler);
 
         IEulerEToken eTkn = IEulerEToken(eToken);
-        uint256 initialBalance = eTkn.balanceOf(address(this));
         eTkn.deposit(0, order.maxSpent);
 
-        /// @todo there may be a more efficient way to calculate the obtained tokens
-        amountIn = eTkn.balanceOf(address(this)) - initialBalance;
+        amountIn = eTkn.convertUnderlyingToBalance(order.maxSpent);
     }
 
     function _closePosition(Position memory position, uint256 expectedCost)
