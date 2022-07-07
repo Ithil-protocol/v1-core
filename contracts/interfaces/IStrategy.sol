@@ -113,4 +113,5 @@ interface IStrategy {
     error Strategy__Insufficient_Margin_Provided(int256 newScore);
     error Strategy__Locked();
     error Strategy__Only_Guardian();
+    error Strategy__Incorrect_Obtained_Token();
 }

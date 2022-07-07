@@ -33,6 +33,8 @@ contract YearnStrategy is BaseStrategy {
         if (balance < order.maxSpent) revert YearnStrategy__Not_Enough_Liquidity(balance, order.maxSpent);
 
         address yvault = registry.latestVault(order.spentToken);
+        if (yvault != order.obtainedToken) revert Strategy__Incorrect_Obtained_Token();
+
         super._maxApprove(tkn, yvault);
 
         amountIn = IYearnVault(yvault).deposit(order.maxSpent, address(this));
@@ -43,8 +45,7 @@ contract YearnStrategy is BaseStrategy {
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
-        address vaultAddress = registry.latestVault(position.owedToken);
-        IYearnVault yvault = IYearnVault(vaultAddress);
+        IYearnVault yvault = IYearnVault(position.heldToken);
 
         uint256 pricePerShare = yvault.pricePerShare();
         uint256 maxLoss = ((position.allowance * pricePerShare - expectedCost) * 10000) /

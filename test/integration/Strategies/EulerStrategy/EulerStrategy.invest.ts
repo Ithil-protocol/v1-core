@@ -11,6 +11,7 @@ import {
   minimumMargin,
   stakingCap,
 } from "../../../common/params";
+import { etoken } from "./constants";
 
 export function checkPerformInvestment(): void {
   it("EulerStrategy: trade", async function () {
@@ -34,7 +35,7 @@ export function checkPerformInvestment(): void {
 
     const order = {
       spentToken: marginToken.address,
-      obtainedToken: investmentToken.address,
+      obtainedToken: etoken,
       collateral: marginTokenMargin,
       collateralIsSpentToken: true,
       minObtained: marginTokenMargin,

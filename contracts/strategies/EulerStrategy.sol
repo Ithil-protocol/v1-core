@@ -37,6 +37,7 @@ contract EulerStrategy is BaseStrategy {
 
         address eToken = markets.underlyingToEToken(order.spentToken);
         if (eToken == address(0)) revert EulerStrategy__Inexistent_Market(order.spentToken);
+        if (eToken != order.obtainedToken) revert Strategy__Incorrect_Obtained_Token();
 
         super._maxApprove(tkn, euler);
 
@@ -53,11 +54,8 @@ contract EulerStrategy is BaseStrategy {
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
-        address eToken = markets.underlyingToEToken(position.owedToken);
-        IEulerEToken eTkn = IEulerEToken(eToken);
-
+        IEulerEToken eTkn = IEulerEToken(position.heldToken);
         uint256 toWithdraw = eTkn.convertBalanceToUnderlying(position.allowance);
-
         eTkn.withdraw(0, toWithdraw);
 
         /// @todo add a check on the received balance?

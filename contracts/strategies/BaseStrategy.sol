@@ -47,7 +47,6 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         _;
 
         vault.checkWhitelisted(order.spentToken);
-        vault.checkWhitelisted(order.obtainedToken);
     }
 
     modifier isPositionEditable(uint256 positionId) {
