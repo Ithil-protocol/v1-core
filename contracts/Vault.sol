@@ -229,14 +229,15 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         emit Withdrawal(msg.sender, token, amount, toBurn);
     }
 
+    // slither-disable-next-line reentrancy-eth
     function unstakeETH(uint256 amount) external override isValidAmount(amount) {
         checkWhitelisted(weth);
 
         IWrappedToken wToken = IWrappedToken(vaults[weth].wrappedToken);
-
         uint256 toBurn = wToken.burnWrapped(amount, balance(weth), msg.sender);
         IWETH(weth).withdraw(amount);
 
+        // slither-disable-next-line reentrancy-eth
         (bool success, bytes memory data) = payable(msg.sender).call{ value: amount }("");
         if (!success) revert Vault__ETH_Unstake_Failed(data); // reverts if unsuccessful
 
