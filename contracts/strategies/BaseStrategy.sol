@@ -99,10 +99,14 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         if (!order.collateralIsSpentToken) {
             amountIn = _openPosition(order);
             amountIn += order.collateral;
+
+            // slither-disable-next-line divide-before-multiply
             interestRate *= amountIn / order.collateral;
         } else {
             uint256 initialDstBalance = IERC20(order.obtainedToken).balanceOf(address(this));
             amountIn = _openPosition(order);
+
+            // slither-disable-next-line divide-before-multiply
             interestRate *= (toBorrow * initialDstBalance) / (order.collateral * (initialDstBalance + amountIn));
         }
 
@@ -348,6 +352,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         uint256 amount
     ) public view virtual override returns (uint256, uint256);
 
+    // slither-disable-next-line external-function
     function tokenURI(uint256 tokenId) public view override(ERC721) returns (string memory) {
         require(_exists(tokenId));
         return ""; /// @todo generate SVG on-chain

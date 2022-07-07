@@ -64,6 +64,7 @@ contract MarginTradingStrategy is BaseStrategy {
 
         super._maxApprove(tokenToSell, address(kyberProxy));
 
+        // slither-disable-next-line unused-return
         kyberProxy.trade(
             tokenToSell,
             maxSourceAmount,
