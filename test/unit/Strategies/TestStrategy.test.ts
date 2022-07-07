@@ -96,7 +96,6 @@ describe("Strategy tests", function () {
   // checkSetRiskFactor();
   // checkGetPosition();
   // checkTotalAllowance();
-  // checkVaultAddress();
   // checkOpenPosition();
   // checkClosePosition();
   // checkEditPosition();

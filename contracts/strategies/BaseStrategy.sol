@@ -88,11 +88,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         return positions[positionId];
     }
 
-    function vaultAddress() external view override returns (address) {
-        return address(vault);
-    }
-
-    function openPosition(Order memory order) external validOrder(order) unlocked returns (uint256) {
+    function openPosition(Order memory order) external override validOrder(order) unlocked returns (uint256) {
         (uint256 interestRate, uint256 fees, uint256 toBorrow, address collateralToken) = _borrow(order);
 
         uint256 amountIn;
@@ -140,7 +136,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         return id;
     }
 
-    function closePosition(uint256 positionId, uint256 maxOrMin) external isPositionEditable(positionId) {
+    function closePosition(uint256 positionId, uint256 maxOrMin) external override isPositionEditable(positionId) {
         Position memory position = positions[positionId];
         address owner = ownerOf(positionId);
         delete positions[positionId];
@@ -174,7 +170,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         emit PositionWasClosed(positionId);
     }
 
-    function editPosition(uint256 positionId, uint256 topUp) external unlocked isPositionEditable(positionId) {
+    function editPosition(uint256 positionId, uint256 topUp) external override unlocked isPositionEditable(positionId) {
         Position storage position = positions[positionId];
 
         position.topUpCollateral(
