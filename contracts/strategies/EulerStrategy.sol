@@ -53,11 +53,9 @@ contract EulerStrategy is BaseStrategy {
         returns (uint256 amountIn, uint256 amountOut)
     {
         IEulerEToken eTkn = IEulerEToken(position.heldToken);
-        uint256 toWithdraw = eTkn.convertBalanceToUnderlying(position.allowance);
-        eTkn.withdraw(0, toWithdraw);
-
         /// @todo add a check on the received balance?
-        amountIn = toWithdraw;
+        amountIn = eTkn.convertBalanceToUnderlying(position.allowance);
+        eTkn.withdraw(0, amountIn);
 
         // Transfer WETH to the vault
         IERC20(position.owedToken).safeTransfer(address(vault), amountIn);
