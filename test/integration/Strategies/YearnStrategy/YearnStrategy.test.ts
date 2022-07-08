@@ -95,8 +95,9 @@ describe("Yearn Strategy", function () {
   it("Yearn Strategy: stake DAI and immediately close", async function () {
     await strategy.connect(trader1).openPosition(order);
 
-    const maxSpent = (await strategy.positions(1)).allowance;
-    expect(maxSpent).to.be.above(order.minObtained);
+    const quote = await strategy.quote(order.spentToken, order.obtainedToken, order.maxSpent);
+    const allowance = (await strategy.positions(1)).allowance;
+    const maxSpent: BigNumber = allowance.mul(quote[0]).sub(quote[0]).mul(10000).div(allowance.mul(quote[0]));
 
     await strategy.connect(trader1).closePosition(1, maxSpent);
   });

@@ -45,12 +45,7 @@ contract YearnStrategy is BaseStrategy {
         returns (uint256 amountIn, uint256 amountOut)
     {
         IYearnVault yvault = IYearnVault(position.heldToken);
-
-        uint256 pricePerShare = yvault.pricePerShare();
-        uint256 maxLoss = ((position.allowance * pricePerShare - expectedCost) * 10000) /
-            (position.allowance * pricePerShare);
-
-        amountIn = yvault.withdraw(position.allowance, address(vault), maxLoss);
+        amountIn = yvault.withdraw(position.allowance, address(vault), expectedCost);
     }
 
     function quote(
