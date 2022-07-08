@@ -254,16 +254,16 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     }
 
     function forcefullyClose(
-        uint256 _id,
-        address _liquidator,
+        uint256 positionId,
+        address liquidatorUser,
         uint256 reward
     ) external override onlyLiquidator {
-        Position memory position = positions[_id];
+        Position memory position = positions[positionId];
 
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
-            delete positions[_id];
-            _burn(_id);
+            delete positions[positionId];
+            _burn(positionId);
             uint256 expectedCost = 0;
             bool collateralInHeldTokens = position.collateralToken != position.owedToken;
             if (collateralInHeldTokens)
@@ -276,62 +276,62 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
                 position.principal,
                 dueFees,
                 riskFactors[position.heldToken],
-                _liquidator
+                liquidatorUser
             );
 
-            emit PositionWasLiquidated(_id);
-        } else revert Strategy__Nonpositive_Score(score);
+            emit PositionWasLiquidated(positionId);
+        } else revert Strategy__Healthy_Position(score);
     }
 
     function transferAllowance(
         uint256 positionId,
         uint256 price,
-        address _liquidator,
+        address liquidatorUser,
         uint256 reward
     ) external override onlyLiquidator {
         Position memory position = positions[positionId];
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
             delete positions[positionId];
-            IERC20(position.owedToken).safeTransferFrom(_liquidator, address(vault), price);
+            IERC20(position.owedToken).safeTransferFrom(liquidatorUser, address(vault), price);
             if (price < position.principal + dueFees)
                 revert Strategy__Insufficient_Amount_Out(price, position.principal + dueFees);
-            else IERC20(position.heldToken).safeTransfer(_liquidator, position.allowance);
+            else IERC20(position.heldToken).safeTransfer(liquidatorUser, position.allowance);
             vault.repay(
                 position.owedToken,
                 price,
                 position.principal,
                 dueFees,
                 riskFactors[position.heldToken],
-                _liquidator
+                liquidatorUser
             );
             _burn(positionId);
 
             emit PositionWasLiquidated(positionId);
-        } else revert Strategy__Nonpositive_Score(score);
+        } else revert Strategy__Healthy_Position(score);
     }
 
     function modifyCollateralAndOwner(
-        uint256 _id,
+        uint256 positionId,
         uint256 newCollateral,
-        address _liquidator,
+        address liquidatorUser,
         uint256 reward
     ) external override onlyLiquidator {
-        Position storage position = positions[_id];
+        Position storage position = positions[positionId];
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
-            _transfer(ownerOf(_id), _liquidator, _id);
+            _transfer(ownerOf(positionId), liquidatorUser, positionId);
             position.fees += dueFees;
             position.createdAt = block.timestamp;
             position.topUpCollateral(
-                _liquidator,
+                liquidatorUser,
                 position.collateralToken != position.heldToken ? address(vault) : address(this),
                 newCollateral,
                 position.collateralToken != position.heldToken
             );
             (int256 newScore, ) = computeLiquidationScore(position);
             if (newScore > 0) revert Strategy__Insufficient_Margin_Provided(newScore);
-        } else revert Strategy__Nonpositive_Score(score);
+        } else revert Strategy__Healthy_Position(score);
     }
 
     // Abstract strategy
