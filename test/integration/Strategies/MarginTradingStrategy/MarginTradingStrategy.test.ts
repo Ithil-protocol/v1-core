@@ -5,7 +5,7 @@ import { BigNumber, Wallet } from "ethers";
 
 import { tokens } from "../../../common/mainnet";
 import { getTokens, expandToNDecimals, fundVault } from "../../../common/utils";
-import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
+import { marginTokenLiquidity, investmentTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
 import { marginTradingFixture } from "./fixture";
 
 import type { ERC20 } from "../../../../src/types/ERC20";
@@ -13,6 +13,7 @@ import type { Vault } from "../../../../src/types/Vault";
 import { MarginTradingStrategy } from "../../../../src/types/MarginTradingStrategy";
 import { Liquidator } from "../../../../src/types/Liquidator";
 import { expect } from "chai";
+import exp from "constants";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -34,6 +35,7 @@ let vault: Vault;
 let liquidatorContract: Liquidator;
 let strategy: MarginTradingStrategy;
 let tokensAmount: BigNumber;
+let vaultBalance: BigNumber;
 
 let marginToken: ERC20;
 let investmentToken: ERC20;
@@ -47,6 +49,10 @@ let order: {
   maxSpent: BigNumber;
   deadline: number;
 };
+
+let price: BigNumber;
+let quoted: BigNumber;
+let openingPrice: BigNumber;
 
 describe("MarginTradingStrategy", function () {
   before("create fixture loader", async () => {
@@ -73,10 +79,12 @@ describe("MarginTradingStrategy", function () {
     await vault.whitelistToken(investmentToken.address, 10, 10, 1, expandToNDecimals(1000, 18));
 
     await getTokens(staker.address, marginToken.address, tokens.DAI.whale, marginTokenLiquidity);
-    await getTokens(trader1.address, marginToken.address, tokens.DAI.whale, marginTokenLiquidity);
+    await getTokens(staker.address, investmentToken.address, tokens.WETH.whale, marginTokenLiquidity);
+    await getTokens(trader1.address, marginToken.address, tokens.DAI.whale, investmentTokenLiquidity);
     await fundVault(signers[1], vault, marginToken, marginTokenLiquidity);
+    await fundVault(signers[1], vault, investmentToken, investmentTokenLiquidity);
 
-    await marginToken.connect(trader1).approve(strategy.address, marginTokenMargin);
+    await marginToken.connect(trader1).approve(strategy.address, BigNumber.from(2).pow(255));
 
     order = {
       spentToken: marginToken.address,
@@ -89,15 +97,100 @@ describe("MarginTradingStrategy", function () {
     };
   });
 
-  it("MarginTradingStrategy: swap DAI for WETH and immediately close", async function () {
-    const [price] = await strategy.quote(marginToken.address, investmentToken.address, marginTokenMargin.mul(leverage));
+  it("Check quoter linearly scales", async function () {
+    [openingPrice] = await strategy.quote(
+      marginToken.address,
+      investmentToken.address,
+      marginTokenMargin.mul(leverage),
+    );
+    const [otherPrice] = await strategy.quote(
+      marginToken.address,
+      investmentToken.address,
+      marginTokenMargin.mul(leverage).mul(10),
+    );
+    // Give 1% tolerance
+    expect(otherPrice).to.be.above(openingPrice.mul(10).mul(99).div(100));
+    expect(otherPrice).to.be.below(openingPrice.mul(10).mul(101).div(100));
+  });
 
-    (order.minObtained = price.mul(99).div(100)), // 1% slippage
-      await strategy.connect(trader1).openPosition(order);
+  it("MarginTradingStrategy: too high minObtained should revert", async function () {
+    await expect(strategy.connect(trader1).openPosition(order)).to.be.reverted;
+  });
 
-    const maxSpent = (await strategy.positions(1)).allowance;
-    expect(maxSpent).to.be.above(order.minObtained);
+  it("MarginTradingStrategy: swap DAI for WETH", async function () {
+    vaultBalance = await marginToken.balanceOf(vault.address);
+    // 1% slippage
+    order.minObtained = openingPrice.mul(99).div(100);
+    await strategy.connect(trader1).openPosition(order);
 
-    await strategy.connect(trader1).closePosition(1, maxSpent);
+    expect((await strategy.positions(1)).allowance).to.be.above(order.minObtained);
+  });
+
+  it("Price did not change much (within 1%)", async function () {
+    [price] = await strategy.quote(marginToken.address, investmentToken.address, marginTokenMargin.mul(leverage));
+    expect(price).to.be.below(openingPrice.mul(101).div(100));
+    expect(price).to.be.above(openingPrice.mul(99).div(100));
+  });
+
+  it("Too high min obtained should revert", async function () {
+    const allowance = (await strategy.positions(1)).allowance;
+    [quoted] = await strategy.quote(investmentToken.address, marginToken.address, allowance);
+    // Try to obtain much more than the quoted amount
+    const minObtained = quoted.mul(11).div(10);
+    await expect(strategy.connect(trader1).closePosition(1, minObtained)).to.be.reverted;
+  });
+
+  it("Decent slippage should close successfully", async function () {
+    // 1% slippage
+    const minObtained = quoted.mul(99).div(100);
+    const [, dueFees] = await strategy.computeLiquidationScore(await strategy.positions(1));
+    await strategy.connect(trader1).closePosition(1, minObtained);
+
+    // vault should gain
+    expect(await marginToken.balanceOf(vault.address)).to.be.above(vaultBalance.add(dueFees).sub(1));
+  });
+
+  it("Margin trading strategy: short position", async function () {
+    vaultBalance = await investmentToken.balanceOf(vault.address);
+
+    order.deadline = deadline;
+    order.spentToken = investmentToken.address;
+    order.obtainedToken = marginToken.address;
+    order.collateralIsSpentToken = false;
+
+    // check how many investments token margin * leverage margin tokens are worth
+    const [toBorrow] = await strategy.quote(
+      marginToken.address,
+      investmentToken.address,
+      marginTokenMargin.mul(leverage),
+    );
+
+    order.maxSpent = toBorrow;
+
+    // min obtained too high should revert
+    order.minObtained = marginTokenMargin.mul(leverage).mul(11).div(10);
+    await expect(strategy.connect(trader1).openPosition(order)).to.be.reverted;
+
+    // 1% slippage
+    order.minObtained = marginTokenMargin.mul(leverage).mul(99).div(100);
+    await strategy.connect(trader1).openPosition(order);
+  });
+
+  it("Close short position", async function () {
+    const position = await strategy.positions(2);
+    const principal = position.principal;
+    const [, dueFees] = await strategy.computeLiquidationScore(position);
+    [quoted] = await strategy.quote(investmentToken.address, marginToken.address, principal.add(dueFees));
+
+    // max spent too high should revert
+    let maxSpent = position.allowance.add(1);
+    await expect(strategy.connect(trader1).closePosition(2, maxSpent)).to.be.reverted;
+
+    // 1% slippage
+    maxSpent = quoted.mul(101).div(100);
+    await strategy.connect(trader1).closePosition(2, maxSpent);
+
+    // vault should gain
+    expect(await investmentToken.balanceOf(vault.address)).to.be.above(vaultBalance.add(dueFees).sub(1));
   });
 });

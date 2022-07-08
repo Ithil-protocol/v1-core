@@ -12,7 +12,7 @@ library VaultState {
     using SafeERC20 for IERC20;
     using GeneralMath for uint256;
 
-    error Vault__Insufficient_Funds_Available(address token, uint256 requested);
+    error Vault__Insufficient_Free_Liquidity(address token, uint256 requested, uint256 freeLiquidity);
     error Vault__Repay_Failed();
 
     uint256 internal constant DEGRADATION_COEFFICIENT = 21600; // six hours
@@ -70,7 +70,7 @@ library VaultState {
 
         freeLiquidity = IERC20(token).balanceOf(address(this)) - self.insuranceReserveBalance;
 
-        if (amount > freeLiquidity) revert Vault__Insufficient_Funds_Available(address(token), amount);
+        if (amount > freeLiquidity) revert Vault__Insufficient_Free_Liquidity(address(token), amount, freeLiquidity);
 
         token.safeTransfer(msg.sender, amount);
     }
