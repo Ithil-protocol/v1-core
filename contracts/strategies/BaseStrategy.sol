@@ -36,7 +36,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         locked = false;
     }
 
-    modifier validOrder(Order memory order) {
+    modifier validOrder(Order calldata order) {
         if (block.timestamp > order.deadline) revert Strategy__Order_Expired(block.timestamp, order.deadline);
         if (order.spentToken == order.obtainedToken) revert Strategy__Source_Eq_Dest(order.spentToken);
         if (order.collateral == 0) revert Strategy__Insufficient_Collateral(order.collateral);
@@ -85,7 +85,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         return positions[positionId];
     }
 
-    function openPosition(Order memory order) external override validOrder(order) unlocked returns (uint256) {
+    function openPosition(Order calldata order) external override validOrder(order) unlocked returns (uint256) {
         (uint256 interestRate, uint256 fees, uint256 toBorrow, address collateralToken) = _borrow(order);
 
         uint256 amountIn;
@@ -193,7 +193,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         }
     }
 
-    function _borrow(Order memory order)
+    function _borrow(Order calldata order)
         internal
         returns (
             uint256 interestRate,
@@ -336,7 +336,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
     // Abstract strategy
 
-    function _openPosition(Order memory order) internal virtual returns (uint256);
+    function _openPosition(Order calldata order) internal virtual returns (uint256);
 
     function _closePosition(Position memory position, uint256 expectedCost)
         internal

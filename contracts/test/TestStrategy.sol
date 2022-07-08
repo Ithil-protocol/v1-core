@@ -14,7 +14,7 @@ contract TestStrategy is BaseStrategy {
         BaseStrategy(_vault, _liquidator, "TestStrategy", "ITHIL-TS-POS")
     {}
 
-    function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
+    function _openPosition(Order calldata order) internal override returns (uint256 amountIn) {
         return order.maxSpent;
     }
 
