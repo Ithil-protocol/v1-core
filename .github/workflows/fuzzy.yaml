@@ -21,6 +21,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
       - run: yarn install
+
       - name: Compile
         env:
           FORK_URL: ${{ secrets.FORK_URL }}
@@ -29,6 +30,7 @@ jobs:
           ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         run: yarn compile
+
       - name: Set up Python 3.8
         uses: actions/setup-python@v2
         with:
