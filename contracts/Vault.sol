@@ -138,6 +138,8 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         bytes calldata data
     ) external override onlyOwner {
         whitelistToken(token, baseFee, fixedFee, minimumMargin, stakingCap);
+
+        // slither-disable-next-line controlled-delegatecall
         (bool success, ) = token.delegatecall(data);
         assert(success);
     }
@@ -233,12 +235,12 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         checkWhitelisted(weth);
 
         IWrappedToken wToken = IWrappedToken(vaults[weth].wrappedToken);
-
         uint256 toBurn = wToken.burnWrapped(amount, balance(weth), msg.sender);
         IWETH(weth).withdraw(amount);
 
+        // slither-disable-next-line reentrancy-events,arbitrary-send
         (bool success, bytes memory data) = payable(msg.sender).call{ value: amount }("");
-        if (!success) revert Vault__ETH_Unstake_Failed(data); // reverts if unsuccessful
+        if (!success) revert Vault__ETH_Unstake_Failed(data);
 
         emit Withdrawal(msg.sender, weth, amount, toBurn);
     }

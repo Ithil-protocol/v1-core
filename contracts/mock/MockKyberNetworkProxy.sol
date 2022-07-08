@@ -45,6 +45,7 @@ contract MockKyberNetworkProxy is IKyberNetworkProxy {
         return dest.balanceOf(destAddress) - amountToDest;
     }
 
+    // slither-disable-next-line divide-before-multiply
     function getExpectedRate(
         IERC20 src,
         IERC20 dest,

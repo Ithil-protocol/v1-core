@@ -1,13 +1,12 @@
-name: Static Analysis
+name: Fuzzy Analysis
 
 on:
   push:
     branches: [master]
-  pull_request:
 
 jobs:
-  static-analysis:
-    name: "Echidna and Slither"
+  fuzzy-analysis:
+    name: "Echidna"
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -22,6 +21,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
       - run: yarn install
+
       - name: Compile
         env:
           FORK_URL: ${{ secrets.FORK_URL }}
@@ -30,6 +30,7 @@ jobs:
           ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         run: yarn compile
+
       - name: Set up Python 3.8
         uses: actions/setup-python@v2
         with:
@@ -55,8 +56,3 @@ jobs:
       - name: Run ${{ matrix.testName }}
         if: always()
         run: echidna-test . --contract ${{ matrix.testName }} --config echidna.config.yml
-
-      # Run Slither static analysis
-      - name: Run Slither static analysis
-        if: always()
-        run: slither --npx-disable --hardhat-ignore-compile --exclude-dependencies --exclude-informational --exclude-low  --exclude controlled-delegatecall,divide-before-multiply,unused-return,arbitrary-send,external-function .
