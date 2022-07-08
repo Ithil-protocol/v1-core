@@ -57,7 +57,13 @@ interface IStrategy {
         uint256 createdAt
     );
 
-    function computePairRiskFactor(address token0, address token1) external view returns (uint256);
+    function getPosition(uint256 positionId) external view returns (Position memory);
+
+    function openPosition(Order memory order) external returns (uint256);
+
+    function closePosition(uint256 positionId, uint256 maxOrMin) external;
+
+    function editPosition(uint256 positionId, uint256 topUp) external;
 
     function quote(
         address src,
@@ -85,9 +91,7 @@ interface IStrategy {
         uint256 penalty
     ) external;
 
-    function getPosition(uint256 positionId) external view returns (Position memory);
-
-    function vaultAddress() external view returns (address);
+    function computePairRiskFactor(address token0, address token1) external view returns (uint256);
 
     /// @notice Emitted when a position is closed
     event PositionWasClosed(uint256 indexed id);
