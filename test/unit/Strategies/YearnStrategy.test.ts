@@ -49,7 +49,7 @@ let order: {
   deadline: number;
 };
 
-describe("Strategy tests", function () {
+describe("Yearn strategy unit tests", function () {
   before("create fixture loader", async () => {
     before("create fixture loader", async () => {
       [wallet, other] = await (ethers as any).getSigners();
