@@ -42,9 +42,10 @@ contract EulerStrategy is BaseStrategy {
         super._maxApprove(tkn, euler);
 
         IEulerEToken eTkn = IEulerEToken(eToken);
-        eTkn.deposit(0, order.maxSpent);
 
+        // must be called before, the deposit affects the exchange rate
         amountIn = eTkn.convertUnderlyingToBalance(order.maxSpent);
+        eTkn.deposit(0, order.maxSpent);
     }
 
     function _closePosition(Position memory position, uint256 expectedCost)
