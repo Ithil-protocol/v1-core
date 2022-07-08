@@ -13,8 +13,8 @@ contract MockKyberNetworkProxy is IKyberNetworkProxy {
     mapping(IERC20 => uint256) internal rates;
     mapping(IERC20 => uint256) internal slippages;
 
-    event PriceWasChanged(address indexed token, uint256 oldRate, uint256 newRate);
-    event SlippageWasChanged(address indexed token, uint256 oldSlippage, uint256 newSlippage);
+    event PriceWasUpdated(address indexed token, uint256 oldRate, uint256 newRate);
+    event SlippageWasUpdated(address indexed token, uint256 oldSlippage, uint256 newSlippage);
 
     function trade(
         IERC20 src,
@@ -64,13 +64,13 @@ contract MockKyberNetworkProxy is IKyberNetworkProxy {
     }
 
     function setRate(IERC20 token, uint256 rate) external {
-        emit PriceWasChanged(address(token), rates[token], rate);
+        emit PriceWasUpdated(address(token), rates[token], rate);
 
         rates[token] = rate;
     }
 
     function setSlippage(IERC20 token, uint256 slippage) external {
-        emit SlippageWasChanged(address(token), slippages[token], slippage);
+        emit SlippageWasUpdated(address(token), slippages[token], slippage);
 
         slippages[token] = slippage;
     }

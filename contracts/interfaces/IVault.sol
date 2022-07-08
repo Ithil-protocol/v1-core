@@ -134,10 +134,10 @@ interface IVault {
     /// ==== EVENTS ==== ///
 
     /// @notice Emitted when the governance changes the min margin requirement for a token
-    event MinimumMarginWasChanged(address indexed token, uint256 minimumMargin);
+    event MinimumMarginWasUpdated(address indexed token, uint256 minimumMargin);
 
     /// @notice Emitted when the governance changes the min margin requirement for a token
-    event StakingCapWasChanged(address indexed token, uint256 stakingCap);
+    event StakingCapWasUpdated(address indexed token, uint256 stakingCap);
 
     /// @notice Emitted when a deposit has been performed
     event Deposit(address indexed user, address indexed token, uint256 amount, uint256 minted);

@@ -147,7 +147,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         vaults[token].minimumMargin = minimumMargin;
 
-        emit MinimumMarginWasChanged(token, minimumMargin);
+        emit MinimumMarginWasUpdated(token, minimumMargin);
     }
 
     function editCap(address token, uint256 stakingCap) external override onlyOwner {
@@ -155,7 +155,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         vaults[token].stakingCap = stakingCap;
 
-        emit StakingCapWasChanged(token, stakingCap);
+        emit StakingCapWasUpdated(token, stakingCap);
     }
 
     function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {

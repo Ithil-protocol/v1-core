@@ -98,6 +98,9 @@ interface IStrategy {
     /// @notice Emitted when the strategy lock toggle is changes
     event StrategyLockWasToggled(bool newLockStatus);
 
+    /// @notice Emitted when the risk factor for a specific token is changed
+    event RiskFactorWasUpdated(address indexed token, uint256 newRiskFactor);
+
     error Strategy__Invalid_Position(uint256 id, address strategy);
     error Strategy__Order_Expired(uint256 timestamp, uint256 deadline);
     error Strategy__Source_Eq_Dest(address token);
