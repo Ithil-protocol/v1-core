@@ -30,7 +30,7 @@ contract EulerStrategy is BaseStrategy {
         euler = _euler;
     }
 
-    function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
+    function _openPosition(Order calldata order) internal override returns (uint256 amountIn) {
         IERC20 tkn = IERC20(order.spentToken);
         uint256 balance = tkn.balanceOf(address(this));
         if (balance < order.maxSpent) revert EulerStrategy__Not_Enough_Liquidity(balance, order.maxSpent);

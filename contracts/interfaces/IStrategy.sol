@@ -59,7 +59,7 @@ interface IStrategy {
 
     function getPosition(uint256 positionId) external view returns (Position memory);
 
-    function openPosition(Order memory order) external returns (uint256);
+    function openPosition(Order calldata order) external returns (uint256);
 
     function closePosition(uint256 positionId, uint256 maxOrMin) external;
 
