@@ -47,7 +47,7 @@ let order: IStrategy.OrderStruct;
 let riskFactor = BigNumber.from(100);
 let fixedFee = BigNumber.from(10);
 
-describe("Strategy tests", function () {
+describe("Test strategy unit tests", function () {
   before("create fixture loader", async () => {
     [wallet, other] = await (ethers as any).getSigners();
     loadFixture = createFixtureLoader([wallet, other]);

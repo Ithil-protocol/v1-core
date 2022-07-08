@@ -26,13 +26,10 @@ contract MockKyberNetworkProxy is IKyberNetworkProxy {
         address payable platformWallet
     ) external payable override returns (uint256) {
         (uint256 destAmount, ) = getExpectedRate(src, dest, srcAmount);
+        uint256 srcDec = 10**IERC20Metadata(address(src)).decimals();
+        destAmount = (destAmount * srcAmount) / srcDec;
         require(destAmount >= minConversionRate, "KyberMock: Tokens obtained below minimum");
         uint256 amountToDest = dest.balanceOf(destAddress);
-        uint256 srcTokenAllowance = src.allowance(msg.sender, address(this));
-        uint256 srcTokenBalance = src.balanceOf(msg.sender);
-
-        require(srcTokenAllowance >= srcAmount, "KyberMock: Insufficient src token allowance");
-        require(srcTokenBalance >= srcAmount, "KyberMock: Insufficient src token balance");
 
         src.safeTransferFrom(msg.sender, address(this), srcAmount);
 
@@ -52,14 +49,16 @@ contract MockKyberNetworkProxy is IKyberNetworkProxy {
         uint256 srcAmount
     ) public view override returns (uint256, uint256) {
         if (address(src) == address(dest)) return (1, 1);
-        uint256 srcDec = IERC20Metadata(address(src)).decimals();
-        uint256 destDec = IERC20Metadata(address(dest)).decimals();
+        uint256 srcDec = 10**IERC20Metadata(address(src)).decimals();
+        uint256 destDec = 10**IERC20Metadata(address(dest)).decimals();
         uint256 rate1 = rates[src] * destDec;
         uint256 rate2 = rates[dest] * srcDec;
         if (rate2 == 0) return (0, 0);
 
-        uint256 res = (srcAmount * rate1) / rate2;
+        uint256 res = (rate1 * srcDec) / rate2;
         res = (res * (VaultMath.RESOLUTION - slippages[src])) / VaultMath.RESOLUTION;
+
+        if (res * rate2 < rate1 * srcDec) res++;
 
         return (res, res);
     }

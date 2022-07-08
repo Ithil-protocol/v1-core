@@ -152,6 +152,10 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         IERC20 owedToken = IERC20(position.owedToken);
         uint256 vaultRepaid = owedToken.balanceOf(address(vault));
         (uint256 amountIn, uint256 amountOut) = _closePosition(position, maxOrMin);
+        if (
+            (amountIn < maxOrMin && position.collateralToken != position.heldToken) ||
+            (amountOut > maxOrMin && position.collateralToken != position.owedToken)
+        ) revert Strategy__Insufficient_Amount_Out(amountIn, maxOrMin);
         vault.repay(
             position.owedToken,
             amountIn,

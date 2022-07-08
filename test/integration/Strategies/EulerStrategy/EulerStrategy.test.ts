@@ -15,7 +15,7 @@ import { Liquidator } from "../../../../src/types/Liquidator";
 
 import { checkPerformInvestment } from "./EulerStrategy.invest";
 
-describe("Strategy integration tests", function () {
+describe("Euler strategy integration tests", function () {
   before(async function () {
     this.signers = {} as Signers;
 

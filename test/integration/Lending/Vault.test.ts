@@ -50,6 +50,13 @@ describe("Lending integration tests", function () {
     expect(await WETH.balanceOf(investor1.address)).to.equal(tokensAmount);
   });
 
+  after("give tokens back to whale", async () => {
+    const investor1Amount = await WETH.balanceOf(investor1.address);
+    await WETH.connect(investor1).transfer(tokens.WETH.whale, investor1Amount);
+    const investor2Amount = await WETH.balanceOf(investor2.address);
+    await WETH.connect(investor2).transfer(tokens.WETH.whale, investor2Amount);
+  });
+
   describe("Base functions", function () {
     let vaultState;
     let wrappedWETH: ERC20;

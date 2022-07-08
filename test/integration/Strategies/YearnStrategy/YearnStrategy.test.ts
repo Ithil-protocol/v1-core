@@ -51,7 +51,7 @@ let order: {
   deadline: number;
 };
 
-describe("Yearn Strategy", function () {
+describe("Yearn Strategy integration test", function () {
   before("create fixture loader", async () => {
     [wallet, other] = await (ethers as any).getSigners();
     loadFixture = createFixtureLoader([wallet, other]);

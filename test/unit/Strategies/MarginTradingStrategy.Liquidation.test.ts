@@ -60,7 +60,7 @@ let order: {
   deadline: number;
 };
 
-describe("Strategy tests", function () {
+describe("Margin Trading Strategy Liquidation unit tests", function () {
   before("create fixture loader", async () => {
     [wallet, other] = await (ethers as any).getSigners();
     loadFixture = createFixtureLoader([wallet, other]);
