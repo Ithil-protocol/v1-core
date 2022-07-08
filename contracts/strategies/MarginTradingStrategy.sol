@@ -23,6 +23,8 @@ contract MarginTradingStrategy is BaseStrategy {
     }
 
     function _openPosition(Order memory order) internal override returns (uint256 amountIn) {
+        vault.checkWhitelisted(order.obtainedToken);
+
         (amountIn, ) = _swap(order.spentToken, order.obtainedToken, order.maxSpent, order.minObtained, address(this));
     }
 

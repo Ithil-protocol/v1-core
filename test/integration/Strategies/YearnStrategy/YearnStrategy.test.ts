@@ -8,10 +8,12 @@ import type { ERC20 } from "../../../../src/types/ERC20";
 import { tokens } from "../../../common/mainnet";
 import { getTokens, expandToNDecimals, fundVault } from "../../../common/utils";
 import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
-import { yearnFixture } from "./fixture";
 
 import { YearnStrategy } from "../../../../src/types/YearnStrategy";
 import { Liquidator } from "../../../../src/types/Liquidator";
+
+import { yvault } from "./constants";
+import { yearnFixture } from "./fixture";
 
 import { expect } from "chai";
 
@@ -81,7 +83,7 @@ describe("Yearn Strategy", function () {
 
     order = {
       spentToken: marginToken.address,
-      obtainedToken: investmentToken.address,
+      obtainedToken: yvault,
       collateral: marginTokenMargin,
       collateralIsSpentToken: true,
       minObtained: marginTokenMargin, // todo: refine

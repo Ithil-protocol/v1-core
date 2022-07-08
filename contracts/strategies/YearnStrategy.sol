@@ -14,7 +14,6 @@ contract YearnStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
 
     error YearnStrategy__Restricted_Access(address owner, address sender);
-    error YearnStrategy__Inexistent_Pool(address nativeToken);
     error YearnStrategy__Not_Enough_Liquidity(uint256 balance, uint256 spent);
 
     IYearnRegistry internal immutable registry;
@@ -33,6 +32,8 @@ contract YearnStrategy is BaseStrategy {
         if (balance < order.maxSpent) revert YearnStrategy__Not_Enough_Liquidity(balance, order.maxSpent);
 
         address yvault = registry.latestVault(order.spentToken);
+        if (yvault != order.obtainedToken) revert Strategy__Incorrect_Obtained_Token();
+
         super._maxApprove(tkn, yvault);
 
         amountIn = IYearnVault(yvault).deposit(order.maxSpent, address(this));
@@ -43,8 +44,7 @@ contract YearnStrategy is BaseStrategy {
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
-        address vaultAddress = registry.latestVault(position.owedToken);
-        IYearnVault yvault = IYearnVault(vaultAddress);
+        IYearnVault yvault = IYearnVault(position.heldToken);
 
         uint256 pricePerShare = yvault.pricePerShare();
         uint256 maxLoss = ((position.allowance * pricePerShare - expectedCost) * 10000) /
@@ -58,13 +58,7 @@ contract YearnStrategy is BaseStrategy {
         address dst,
         uint256 amount
     ) public view override returns (uint256, uint256) {
-        (bool success, bytes memory return_data) = address(registry).staticcall(
-            abi.encodePacked(registry.latestVault.selector, abi.encode(src))
-        );
-
-        if (!success) revert YearnStrategy__Inexistent_Pool(src);
-
-        address vaultAddress = abi.decode(return_data, (address));
+        address vaultAddress = registry.latestVault(src);
         IYearnVault yvault = IYearnVault(vaultAddress);
 
         uint256 obtained = yvault.pricePerShare();
