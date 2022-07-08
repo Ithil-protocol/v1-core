@@ -286,24 +286,24 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     function transferAllowance(
         uint256 positionId,
         uint256 price,
-        address purchaser,
+        address _liquidator,
         uint256 reward
     ) external override onlyLiquidator {
         Position memory position = positions[positionId];
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
             delete positions[positionId];
-            IERC20(position.owedToken).safeTransferFrom(purchaser, address(vault), price);
+            IERC20(position.owedToken).safeTransferFrom(_liquidator, address(vault), price);
             if (price < position.principal + dueFees)
                 revert Strategy__Insufficient_Amount_Out(price, position.principal + dueFees);
-            else IERC20(position.heldToken).safeTransfer(purchaser, position.allowance);
+            else IERC20(position.heldToken).safeTransfer(_liquidator, position.allowance);
             vault.repay(
                 position.owedToken,
                 price,
                 position.principal,
                 dueFees,
                 riskFactors[position.heldToken],
-                purchaser
+                _liquidator
             );
             _burn(positionId);
 
@@ -314,17 +314,17 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     function modifyCollateralAndOwner(
         uint256 _id,
         uint256 newCollateral,
-        address newOwner,
+        address _liquidator,
         uint256 reward
     ) external override onlyLiquidator {
         Position storage position = positions[_id];
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
-            _transfer(ownerOf(_id), newOwner, _id);
+            _transfer(ownerOf(_id), _liquidator, _id);
             position.fees += dueFees;
             position.createdAt = block.timestamp;
             position.topUpCollateral(
-                newOwner,
+                _liquidator,
                 position.collateralToken != position.heldToken ? address(vault) : address(this),
                 newCollateral,
                 position.collateralToken != position.heldToken

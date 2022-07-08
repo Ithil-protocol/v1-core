@@ -57,40 +57,71 @@ interface IStrategy {
         uint256 createdAt
     );
 
+    /// @notice obtain the position at particular id
+    /// @param positionId the id of the position
     function getPosition(uint256 positionId) external view returns (Position memory);
 
+    /// @notice open a position by borrowing from the vault and executing external contract calls
+    /// @param order the structure with the order parameters
     function openPosition(Order calldata order) external returns (uint256);
 
+    /// @notice close the position and repays the vault and the user
+    /// @param positionId the id of the position to be closed
+    /// @param maxOrMin depending on the Position structure, either the maximum amount to spend, or the minimum amount obtained while closing the position
     function closePosition(uint256 positionId, uint256 maxOrMin) external;
 
+    /// @notice function allowing the position's owner to top up the position's collateral
+    /// @param positionId the id of the position to be modified
+    /// @param topUp the extra collateral to be transferred
     function editPosition(uint256 positionId, uint256 topUp) external;
 
+    /// @notice gives the amount of destination tokens the external protocol would produce by spending an amount of source token
+    /// @param src the token to give to the external strategy
+    /// @param dst the token expected from the external strategy
+    /// @param amount the amount of src tokens to be given
     function quote(
         address src,
         address dst,
         uint256 amount
     ) external view returns (uint256, uint256);
 
+    /// @notice liquidation method: forcefully close a position and repays the vault and the liquidator
+    /// @param _id the id of the position to be closed
+    /// @param _liquidator the address of the liquidator
+    /// @param reward the liquidator's reward ratio
     function forcefullyClose(
         uint256 _id,
-        address liquidator,
-        uint256 penalty
+        address _liquidator,
+        uint256 reward
     ) external;
 
+    /// @notice liquidation method: transfers the allowance to the liquidator after liquidator repays the vault
+    /// @param _id the id of the position to be closed
+    /// @param price the amount transferred to the vault by the liquidator
+    /// @param _liquidator the address of the liquidator
+    /// @param reward the liquidator's reward ratio
     function transferAllowance(
-        uint256 positionId,
+        uint256 _id,
         uint256 price,
-        address purchaser,
-        uint256 penalty
+        address _liquidator,
+        uint256 reward
     ) external;
 
+    /// @notice liquidation method: tops up the collateral of a position and transfers its ownership to the liquidator
+    /// @param _id the id of the position to be transferred
+    /// @param newCollateral the amount extra collateral transferred to the vault by the liquidator
+    /// @param _liquidator the address of the purchaser (liquidator)
+    /// @param reward the liquidator's reward ratio
     function modifyCollateralAndOwner(
         uint256 _id,
         uint256 newCollateral,
-        address newOwner,
-        uint256 penalty
+        address _liquidator,
+        uint256 reward
     ) external;
 
+    /// @notice computes the risk factor of the token pair, from the individual risk factors
+    /// @param token0 first token of the pair
+    /// @param token1 second token of the pair
     function computePairRiskFactor(address token0, address token1) external view returns (uint256);
 
     /// @notice Emitted when a position is closed
