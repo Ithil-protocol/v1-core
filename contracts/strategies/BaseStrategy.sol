@@ -24,10 +24,6 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     address public guardian;
     mapping(address => uint256) public riskFactors;
 
-    error Position_Not_Liquidable(int256 liquidationScore);
-    error Insufficient_Margin_Call(uint256 received);
-    error Insufficient_Price(uint256 price);
-
     constructor(
         address _vault,
         address _liquidator,
@@ -76,6 +72,8 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
     function setRiskFactor(address token, uint256 riskFactor) external onlyOwner {
         riskFactors[token] = riskFactor;
+
+        emit RiskFactorWasUpdated(token, riskFactor);
     }
 
     function toggleLock(bool _locked) external onlyGuardian {

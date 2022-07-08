@@ -14,7 +14,7 @@ contract MockYearnRegistry is IYearnRegistry, Ownable {
     mapping(address => address) public yvaults;
     uint256 public priceForShare = 0;
 
-    event SharePriceWasChanged(uint256 indexed oldPrice, uint256 indexed newPrice);
+    event SharePriceWasUpdated(uint256 indexed oldPrice, uint256 indexed newPrice);
 
     modifier vaultExists(address token) {
         require(yvaults[token] != address(0), "MockYearnRegistry: Unsupported token");
@@ -32,7 +32,7 @@ contract MockYearnRegistry is IYearnRegistry, Ownable {
     }
 
     function setSharePrice(uint256 newPrice) external onlyOwner {
-        emit SharePriceWasChanged(priceForShare, newPrice);
+        emit SharePriceWasUpdated(priceForShare, newPrice);
 
         priceForShare = newPrice;
     }
