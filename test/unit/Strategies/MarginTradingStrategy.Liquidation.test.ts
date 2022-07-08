@@ -275,7 +275,6 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     await strategy.connect(trader1).openPosition(order);
     const pairRiskFactor = await strategy.computePairRiskFactor(investmentToken.address, marginToken.address);
     const extraMargin = expandToNDecimals(50, 18);
-    console.log("Pair risk factor", ethers.utils.formatUnits(pairRiskFactor, 0));
 
     // immediate liquidation should fail
     await expect(liquidatorContract.connect(liquidator).marginCall(strategy.address, 3, extraMargin)).to.be.reverted;
@@ -285,7 +284,6 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     const priceDrop = BigNumber.from(10000).sub(pairRiskFactor).div(leverage);
     const newPrice = BigNumber.from(100).mul(BigNumber.from(10000).sub(priceDrop)).div(10000);
 
-    console.log("newPrice", ethers.utils.formatUnits(newPrice, 0));
     // Liquidation should fail again for higher price
     await mockKyberNetworkProxy.setRate(investmentToken.address, newPrice.add(1));
     await expect(liquidatorContract.connect(liquidator).marginCall(strategy.address, 3, extraMargin)).to.be.reverted;

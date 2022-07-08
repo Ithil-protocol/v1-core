@@ -90,38 +90,38 @@ interface IStrategy {
     ) external view returns (uint256, uint256);
 
     /// @notice liquidation method: forcefully close a position and repays the vault and the liquidator
-    /// @param _id the id of the position to be closed
-    /// @param _liquidator the address of the liquidator
+    /// @param positionId the id of the position to be closed
+    /// @param liquidatorUser the address of the user performing the liquidation
     /// @param reward the liquidator's reward ratio
     function forcefullyClose(
-        uint256 _id,
-        address _liquidator,
+        uint256 positionId,
+        address liquidatorUser,
         uint256 reward
     ) external;
 
     /// @notice liquidation method: transfers the allowance to the liquidator after
     ///         the liquidator repays the debt with the vault
-    /// @param _id the id of the position to be closed
+    /// @param positionId the id of the position to be closed
     /// @param price the amount transferred to the vault by the liquidator
-    /// @param _liquidator the address of the liquidator
+    /// @param liquidatorUser the address of the user performing the liquidation
     /// @param reward the liquidator's reward ratio
     function transferAllowance(
-        uint256 _id,
+        uint256 positionId,
         uint256 price,
-        address _liquidator,
+        address liquidatorUser,
         uint256 reward
     ) external;
 
     /// @notice liquidation method: tops up the collateral of a position and transfers its ownership
     ///         to the liquidator
-    /// @param _id the id of the position to be transferred
+    /// @param positionId the id of the position to be transferred
     /// @param newCollateral the amount extra collateral transferred to the vault by the liquidator
-    /// @param _liquidator the address of the purchaser (liquidator)
+    /// @param liquidatorUser the address of the user performing the liquidation
     /// @param reward the liquidator's reward ratio
     function modifyCollateralAndOwner(
-        uint256 _id,
+        uint256 positionId,
         uint256 newCollateral,
-        address _liquidator,
+        address liquidatorUser,
         uint256 reward
     ) external;
 
@@ -152,7 +152,7 @@ interface IStrategy {
     error Strategy__Insufficient_Amount_Out(uint256 amountIn, uint256 minAmountOut);
     error Strategy__Loan_Not_Repaid(uint256 repaid, uint256 debt);
     error Strategy__Only_Liquidator(address sender, address liquidator);
-    error Strategy__Nonpositive_Score(int256 score);
+    error Strategy__Healthy_Position(int256 score);
     error Strategy__Margin_Below_Minimum(uint256 marginProvider, uint256 minimumMargin);
     error Strategy__Insufficient_Margin_Provided(int256 newScore);
     error Strategy__Locked();
