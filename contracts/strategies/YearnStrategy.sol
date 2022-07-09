@@ -2,8 +2,8 @@
 pragma solidity >=0.8.12;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IYearnRegistry } from "../interfaces/IYearnRegistry.sol";
-import { IYearnVault } from "../interfaces/IYearnVault.sol";
+import { IYearnRegistry } from "../interfaces/external/IYearnRegistry.sol";
+import { IYearnVault } from "../interfaces/external/IYearnVault.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 
@@ -12,9 +12,6 @@ import { BaseStrategy } from "./BaseStrategy.sol";
 /// @notice   A strategy to perform leveraged staking on any Yearn vault
 contract YearnStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
-
-    error YearnStrategy__Restricted_Access(address owner, address sender);
-    error YearnStrategy__Not_Enough_Liquidity(uint256 balance, uint256 spent);
 
     IYearnRegistry internal immutable registry;
 
@@ -27,14 +24,10 @@ contract YearnStrategy is BaseStrategy {
     }
 
     function _openPosition(Order calldata order) internal override returns (uint256 amountIn) {
-        IERC20 tkn = IERC20(order.spentToken);
-        uint256 balance = tkn.balanceOf(address(this));
-        if (balance < order.maxSpent) revert YearnStrategy__Not_Enough_Liquidity(balance, order.maxSpent);
-
         address yvault = registry.latestVault(order.spentToken);
         if (yvault != order.obtainedToken) revert Strategy__Incorrect_Obtained_Token();
 
-        super._maxApprove(tkn, yvault);
+        super._maxApprove(IERC20(order.spentToken), yvault);
 
         amountIn = IYearnVault(yvault).deposit(order.maxSpent, address(this));
     }

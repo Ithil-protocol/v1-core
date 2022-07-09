@@ -49,8 +49,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         if (ownerOf(positionId) != msg.sender) revert Strategy__Restricted_Access(ownerOf(positionId), msg.sender);
 
         // flashloan protection
-        if (positions[positionId].createdAt >= block.timestamp)
-            revert Strategy__Throttled(positions[positionId].createdAt, block.timestamp);
+        if (positions[positionId].createdAt == block.timestamp) revert Strategy__Action_Throttled();
 
         _;
     }
@@ -88,7 +87,10 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     function openPosition(Order calldata order) external override validOrder(order) unlocked returns (uint256) {
         (uint256 interestRate, uint256 fees, uint256 toBorrow, address collateralToken) = _borrow(order);
 
-        uint256 amountIn;
+        uint256 balance = IERC20(order.spentToken).balanceOf(address(this));
+        if (balance < order.maxSpent) revert Strategy__Not_Enough_Liquidity(balance, order.maxSpent);
+
+        uint256 amountIn = 0;
         if (!order.collateralIsSpentToken) {
             amountIn = _openPosition(order);
             amountIn += order.collateral;
@@ -193,6 +195,10 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         }
     }
 
+    function _resetApproval(IERC20 token, address receiver) internal {
+        token.safeApprove(receiver, 0);
+    }
+
     function _borrow(Order calldata order)
         internal
         returns (
@@ -280,7 +286,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             );
 
             emit PositionWasLiquidated(positionId);
-        } else revert Strategy__Healthy_Position(score);
+        } else revert Strategy__Position_Not_Liquidable(positionId, score);
     }
 
     function transferAllowance(
@@ -308,7 +314,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             _burn(positionId);
 
             emit PositionWasLiquidated(positionId);
-        } else revert Strategy__Healthy_Position(score);
+        } else revert Strategy__Position_Not_Liquidable(positionId, score);
     }
 
     function modifyCollateralAndOwner(
@@ -331,7 +337,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             );
             (int256 newScore, ) = computeLiquidationScore(position);
             if (newScore > 0) revert Strategy__Insufficient_Margin_Provided(newScore);
-        } else revert Strategy__Healthy_Position(score);
+        } else revert Strategy__Position_Not_Liquidable(positionId, score);
     }
 
     // Abstract strategy

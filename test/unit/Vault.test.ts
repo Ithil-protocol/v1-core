@@ -13,7 +13,7 @@ import {
   expandToNDecimals,
   mintAndStake,
 } from "../common/utils";
-import { baseFee, fixedFee, minimumMargin, stakingCap } from "../common/params";
+import { baseFee, fixedFee, minimumMargin } from "../common/params";
 
 import { mockVaultFixture } from "../common/mockfixtures";
 import { expect } from "chai";
@@ -54,7 +54,7 @@ describe("Lending unit tests", function () {
       compareVaultStates(initialState, INITIAL_VAULT_STATE);
 
       // Whitelist
-      await vault.whitelistToken(token, baseFee, fixedFee, minimumMargin, stakingCap);
+      await vault.whitelistToken(token, baseFee, fixedFee, minimumMargin);
 
       const finalState = await vault.vaults(token);
 

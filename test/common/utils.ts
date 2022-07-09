@@ -74,7 +74,6 @@ export const matchState = (
   fixedFee: BigNumber,
   netLoans: BigNumber,
   minimumMargin: BigNumber,
-  stakingCap: BigNumber,
   insuranceReserveBalance: BigNumber,
   optimalRatio: BigNumber,
 ) => {
@@ -84,7 +83,6 @@ export const matchState = (
   expect(state1.fixedFee).to.equal(fixedFee);
   expect(state1.netLoans).to.equal(netLoans);
   expect(state1.minimumMargin).to.equal(minimumMargin);
-  expect(state1.stakingCap).to.equal(stakingCap);
   expect(state1.insuranceReserveBalance).to.equal(insuranceReserveBalance);
   expect(state1.optimalRatio).to.equal(optimalRatio);
 };
