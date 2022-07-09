@@ -71,13 +71,11 @@ interface IVault {
     /// @param baseFee the minimum fee
     /// @param fixedFee the constant fee
     /// @param minimumMargin the min margin needed to open a position
-    /// @param stakingCap the maximum full amount of assets which can be staked (including loans)
     function whitelistToken(
         address token,
         uint256 baseFee,
         uint256 fixedFee,
-        uint256 minimumMargin,
-        uint256 stakingCap
+        uint256 minimumMargin
     ) external;
 
     /// @notice adds a new supported token and executes an arbitrary function on it
@@ -87,15 +85,11 @@ interface IVault {
         uint256 baseFee,
         uint256 fixedFee,
         uint256 minimumMargin,
-        uint256 stakingCap,
         bytes calldata data
     ) external;
 
     /// @notice edits the current min margin for a specific token
     function editMinimumMargin(address token, uint256 minimumMargin) external;
-
-    /// @notice edits the current staking cap for a specific token
-    function editCap(address token, uint256 stakingCap) external;
 
     /// ==== LENDING ==== ///
 
@@ -136,9 +130,6 @@ interface IVault {
     /// @notice Emitted when the governance changes the min margin requirement for a token
     event MinimumMarginWasUpdated(address indexed token, uint256 minimumMargin);
 
-    /// @notice Emitted when the governance changes the min margin requirement for a token
-    event StakingCapWasUpdated(address indexed token, uint256 stakingCap);
-
     /// @notice Emitted when a deposit has been performed
     event Deposit(address indexed user, address indexed token, uint256 amount, uint256 minted);
 
@@ -173,16 +164,13 @@ interface IVault {
 
     error Vault__Unsupported_Token(address token);
     error Vault__Token_Already_Supported(address token);
-    error Vault__ETH_Transfer_Failed(address sender, address weth);
-    error Vault__Restricted_Access(address sender);
+    error Vault__ETH_Callback_Failed();
+    error Vault__Restricted_Access();
     error Vault__Insufficient_Funds_Available(address token, uint256 amount, uint256 freeLiquidity);
     error Vault__Locked(address token);
     error Vault__Max_Withdrawal(address user, address token, uint256 amount, uint256 maxWithdrawal);
     error Vault__Null_Amount();
     error Vault__Insufficient_ETH(uint256 value, uint256 amount);
     error Vault__ETH_Unstake_Failed(bytes data);
-    error Vault__Insufficient_TOL(uint256 tol);
-    error Vault__Insurance_Below_OR(uint256 insuranceReserve, uint256 optimalRatio);
-    error Vault__Staking_Cap_Exceeded(address token, uint256 totalWealth, uint256 stakingCap);
     error Vault__Only_Guardian();
 }

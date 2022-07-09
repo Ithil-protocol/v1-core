@@ -70,8 +70,8 @@ describe("Test strategy unit tests", function () {
       await waffle.deployContract(admin, tokenArtifact, ["Investment mock token", "INV", 18])
     );
 
-    await vault.whitelistToken(marginToken.address, 10, 10, 1000, expandToNDecimals(1000000, 18));
-    await vault.whitelistToken(investmentToken.address, 10, 10, 1, expandToNDecimals(1000, 18));
+    await vault.whitelistToken(marginToken.address, 10, 10, 1000);
+    await vault.whitelistToken(investmentToken.address, 10, 10, 1);
 
     // mint tokens to staker
     await marginToken.mintTo(staker.address, expandToNDecimals(100000, 18));

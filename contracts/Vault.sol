@@ -5,13 +5,13 @@ import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/Saf
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IVault } from "./interfaces/IVault.sol";
-import { IWETH } from "./interfaces/IWETH.sol";
 import { IWrappedToken } from "./interfaces/IWrappedToken.sol";
+import { IWETH } from "./interfaces/external/IWETH.sol";
 import { VaultMath } from "./libraries/VaultMath.sol";
 import { VaultState } from "./libraries/VaultState.sol";
 import { GeneralMath } from "./libraries/GeneralMath.sol";
-import { WrappedToken } from "./WrappedToken.sol";
 import { WrappedTokenHelper } from "./libraries/WrappedTokenHelper.sol";
+import { WrappedToken } from "./WrappedToken.sol";
 
 /// @title    Vault contract
 /// @author   Ithil
@@ -47,7 +47,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     }
 
     modifier onlyStrategy() {
-        if (!strategies[msg.sender]) revert Vault__Restricted_Access(msg.sender);
+        if (!strategies[msg.sender]) revert Vault__Restricted_Access();
         _;
     }
 
@@ -58,7 +58,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
     // only accept ETH from the WETH contract
     receive() external payable {
-        if (msg.sender != weth) revert Vault__ETH_Transfer_Failed(msg.sender, weth);
+        if (msg.sender != weth) revert Vault__ETH_Callback_Failed();
     }
 
     function setGuardian(address _guardian) external onlyOwner {
@@ -112,8 +112,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         address token,
         uint256 baseFee,
         uint256 fixedFee,
-        uint256 minimumMargin,
-        uint256 stakingCap
+        uint256 minimumMargin
     ) public override onlyOwner {
         if (vaults[token].supported) revert Vault__Token_Already_Supported(token);
 
@@ -124,7 +123,6 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         vaults[token].baseFee = baseFee;
         vaults[token].fixedFee = fixedFee;
         vaults[token].minimumMargin = minimumMargin;
-        vaults[token].stakingCap = stakingCap;
 
         emit TokenWasWhitelisted(token);
     }
@@ -134,10 +132,9 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 baseFee,
         uint256 fixedFee,
         uint256 minimumMargin,
-        uint256 stakingCap,
         bytes calldata data
     ) external override onlyOwner {
-        whitelistToken(token, baseFee, fixedFee, minimumMargin, stakingCap);
+        whitelistToken(token, baseFee, fixedFee, minimumMargin);
 
         // slither-disable-next-line controlled-delegatecall
         (bool success, ) = token.delegatecall(data);
@@ -152,21 +149,10 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         emit MinimumMarginWasUpdated(token, minimumMargin);
     }
 
-    function editCap(address token, uint256 stakingCap) external override onlyOwner {
-        checkWhitelisted(token);
-
-        vaults[token].stakingCap = stakingCap;
-
-        emit StakingCapWasUpdated(token, stakingCap);
-    }
-
     function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
         checkWhitelisted(token);
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
         uint256 totalWealth = balance(token);
-        uint256 stakingCap = vaults[token].stakingCap;
-
-        if (totalWealth + amount > stakingCap) revert Vault__Staking_Cap_Exceeded(token, totalWealth, stakingCap);
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
@@ -180,9 +166,6 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 totalWealth = balance(token);
         vaults[token].boostedAmount += amount;
         boosters[msg.sender][token] += amount;
-
-        uint256 stakingCap = vaults[token].stakingCap;
-        if (totalWealth + amount > stakingCap) revert Vault__Staking_Cap_Exceeded(token, totalWealth, stakingCap);
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
@@ -205,8 +188,6 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         IWrappedToken wToken = IWrappedToken(vaults[weth].wrappedToken);
         uint256 totalWealth = balance(weth);
-        uint256 stakingCap = vaults[weth].stakingCap;
-        if (totalWealth + amount > stakingCap) revert Vault__Staking_Cap_Exceeded(weth, totalWealth, stakingCap);
 
         IWETH(weth).deposit{ value: amount }();
 

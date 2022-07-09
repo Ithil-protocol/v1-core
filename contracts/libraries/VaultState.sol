@@ -37,7 +37,6 @@ library VaultState {
         uint256 baseFee;
         uint256 fixedFee;
         uint256 minimumMargin;
-        uint256 stakingCap;
         uint256 boostedAmount;
         uint256 netLoans;
         uint256 insuranceReserveBalance;
@@ -81,8 +80,7 @@ library VaultState {
     }
 
     function subtractInsuranceReserve(VaultState.VaultData storage self, uint256 b) private {
-        if (self.insuranceReserveBalance > b) self.insuranceReserveBalance -= b;
-        else self.insuranceReserveBalance = 0;
+        self.insuranceReserveBalance = GeneralMath.positiveSub(self.insuranceReserveBalance, b);
     }
 
     function repayLoan(

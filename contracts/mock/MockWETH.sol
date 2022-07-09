@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
 
-import { IWETH } from "../interfaces/IWETH.sol";
+import { IWETH } from "../interfaces/external/IWETH.sol";
 import { MockToken } from "./MockToken.sol";
 
 /// @dev Used for testing, unaudited

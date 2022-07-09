@@ -45,20 +45,6 @@ interface IStrategy {
         uint256 createdAt;
     }
 
-    /// @notice Emitted when a new position has been opened
-    event PositionWasOpened(
-        uint256 indexed id,
-        address indexed owner,
-        address owedToken,
-        address heldToken,
-        address collateralToken,
-        uint256 collateral,
-        uint256 principal,
-        uint256 allowance,
-        uint256 interestRtae,
-        uint256 createdAt
-    );
-
     /// @notice obtain the position at particular id
     /// @param positionId the id of the position
     function getPosition(uint256 positionId) external view returns (Position memory);
@@ -130,6 +116,22 @@ interface IStrategy {
     /// @param token1 second token of the pair
     function computePairRiskFactor(address token0, address token1) external view returns (uint256);
 
+    /// ==== EVENTS ==== ///
+
+    /// @notice Emitted when a new position has been opened
+    event PositionWasOpened(
+        uint256 indexed id,
+        address indexed owner,
+        address owedToken,
+        address heldToken,
+        address collateralToken,
+        uint256 collateral,
+        uint256 principal,
+        uint256 allowance,
+        uint256 interestRtae,
+        uint256 createdAt
+    );
+
     /// @notice Emitted when a position is closed
     event PositionWasClosed(uint256 indexed id);
 
@@ -142,19 +144,21 @@ interface IStrategy {
     /// @notice Emitted when the risk factor for a specific token is changed
     event RiskFactorWasUpdated(address indexed token, uint256 newRiskFactor);
 
-    error Strategy__Invalid_Position(uint256 id, address strategy);
+    /// ==== ERRORS ==== ///
+
     error Strategy__Order_Expired(uint256 timestamp, uint256 deadline);
     error Strategy__Source_Eq_Dest(address token);
     error Strategy__Insufficient_Collateral(uint256 collateral);
     error Strategy__Restricted_Access(address owner, address sender);
-    error Strategy__Throttled(uint256 createdAt, uint256 timestamp);
+    error Strategy__Action_Throttled();
     error Strategy__Maximum_Leverage_Exceeded(uint256 interestRate);
     error Strategy__Insufficient_Amount_Out(uint256 amountIn, uint256 minAmountOut);
     error Strategy__Loan_Not_Repaid(uint256 repaid, uint256 debt);
     error Strategy__Only_Liquidator(address sender, address liquidator);
-    error Strategy__Healthy_Position(int256 score);
+    error Strategy__Position_Not_Liquidable(uint256 id, int256 score);
     error Strategy__Margin_Below_Minimum(uint256 marginProvider, uint256 minimumMargin);
     error Strategy__Insufficient_Margin_Provided(int256 newScore);
+    error Strategy__Not_Enough_Liquidity(uint256 balance, uint256 amount);
     error Strategy__Locked();
     error Strategy__Only_Guardian();
     error Strategy__Incorrect_Obtained_Token();

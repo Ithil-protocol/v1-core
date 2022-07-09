@@ -13,7 +13,7 @@ import type { Artifact } from "hardhat/types";
 
 import { vaultFixture } from "../../common/fixtures";
 
-import { amount, baseFee, fixedFee, marginTokenLiquidity, minimumMargin, stakingCap } from "../../common/params";
+import { amount, baseFee, fixedFee, marginTokenLiquidity, minimumMargin, stakedValue } from "../../common/params";
 import { WritableStream } from "stream/web";
 
 const createFixtureLoader = waffle.createFixtureLoader;
@@ -61,7 +61,7 @@ describe("Lending integration tests", function () {
     let vaultState;
     let wrappedWETH: ERC20;
     it("Vault: whitelist WETH", async function () {
-      await vault.whitelistToken(WETH.address, baseFee, fixedFee, minimumMargin, stakingCap);
+      await vault.whitelistToken(WETH.address, baseFee, fixedFee, minimumMargin);
       const state = await vault.vaults(WETH.address);
       vaultState = state;
       matchState(
@@ -72,7 +72,6 @@ describe("Lending integration tests", function () {
         fixedFee,
         BigNumber.from(0),
         minimumMargin,
-        stakingCap,
         BigNumber.from(0),
         BigNumber.from(0),
       );
@@ -87,14 +86,14 @@ describe("Lending integration tests", function () {
     });
 
     it("Vault: whitelist already whitelisted", async function () {
-      await expect(vault.whitelistToken(WETH.address, baseFee, fixedFee, minimumMargin, stakingCap)).to.be.reverted;
+      await expect(vault.whitelistToken(WETH.address, baseFee, fixedFee, minimumMargin)).to.be.reverted;
     });
 
     it("Vault: stake WETH", async function () {
-      const rsp = await vault.connect(investor1).stake(WETH.address, stakingCap);
-      expect(await vault.balance(WETH.address)).to.equal(stakingCap);
-      expect(await WETH.balanceOf(investor1.address)).to.equal(tokensAmount.sub(stakingCap));
-      expect(await wrappedWETH.balanceOf(investor1.address)).to.equal(stakingCap);
+      const rsp = await vault.connect(investor1).stake(WETH.address, stakedValue);
+      expect(await vault.balance(WETH.address)).to.equal(stakedValue);
+      expect(await WETH.balanceOf(investor1.address)).to.equal(tokensAmount.sub(stakedValue));
+      expect(await wrappedWETH.balanceOf(investor1.address)).to.equal(stakedValue);
 
       const events = (await rsp.wait()).events;
       const validEvents = events?.filter(
@@ -103,19 +102,11 @@ describe("Lending integration tests", function () {
       expect(validEvents?.length).equal(1);
     });
 
-    it("Vault: stake more than cap", async function () {
-      await expect(vault.connect(investor1).stake(WETH.address, 1)).to.be.reverted;
-    });
-
-    it("Vault: edit cap", async function () {
-      await vault.connect(admin).editCap(WETH.address, stakingCap.add(1));
-    });
-
     it("Vault: stake again", async function () {
       const rsp = await vault.connect(investor1).stake(WETH.address, 1);
-      expect(await vault.balance(WETH.address)).to.equal(stakingCap.add(1));
-      expect(await WETH.balanceOf(investor1.address)).to.equal(tokensAmount.sub(stakingCap.add(1)));
-      expect(await wrappedWETH.balanceOf(investor1.address)).to.equal(stakingCap.add(1));
+      expect(await vault.balance(WETH.address)).to.equal(stakedValue.add(1));
+      expect(await WETH.balanceOf(investor1.address)).to.equal(tokensAmount.sub(stakedValue.add(1)));
+      expect(await wrappedWETH.balanceOf(investor1.address)).to.equal(stakedValue.add(1));
 
       const events = (await rsp.wait()).events;
       const validEvents = events?.filter(
@@ -125,7 +116,7 @@ describe("Lending integration tests", function () {
     });
 
     it("Vault: unstake WETH", async function () {
-      const rsp = await vault.connect(investor1).unstake(WETH.address, stakingCap);
+      const rsp = await vault.connect(investor1).unstake(WETH.address, stakedValue);
       expect(await vault.balance(WETH.address)).to.equal(1);
       expect(await WETH.balanceOf(investor1.address)).to.equal(tokensAmount.sub(1));
       expect(await wrappedWETH.balanceOf(investor1.address)).to.equal(1);
@@ -137,12 +128,7 @@ describe("Lending integration tests", function () {
       expect(validEvents?.length).equal(1);
     });
 
-    it("Vault: decrease staking cap when tokens are still staked and try to stake", async function () {
-      await vault.connect(admin).editCap(WETH.address, stakingCap.sub(1));
-      await expect(vault.connect(investor1).stake(WETH.address, stakingCap.sub(1))).to.be.reverted;
-    });
-
-    it("Vault: unstake after staking cap is decreased", async function () {
+    it("Vault: unstake again", async function () {
       const rsp = await vault.connect(investor1).unstake(WETH.address, 1);
       expect(await vault.balance(WETH.address)).to.equal(0);
       expect(await WETH.balanceOf(investor1.address)).to.equal(tokensAmount);
@@ -213,7 +199,7 @@ describe("Lending integration tests", function () {
         '[{"inputs": [],"name": "rebaseOptIn","outputs": [],"stateMutability": "nonpayable","type": "function"}]';
       let iface = new ethers.utils.Interface(ABI);
       const data = iface.encodeFunctionData("rebaseOptIn");
-      await vault.whitelistTokenAndExec(OUSD, baseFee, fixedFee, ethers.utils.parseEther("100000"), stakingCap, data);
+      await vault.whitelistTokenAndExec(OUSD, baseFee, fixedFee, ethers.utils.parseEther("100000"), data);
 
       const state = await vault.vaults(OUSD);
       vaultState = state;
@@ -225,7 +211,6 @@ describe("Lending integration tests", function () {
         fixedFee,
         BigNumber.from(0),
         expandToNDecimals(100000, 18),
-        stakingCap,
         BigNumber.from(0),
         BigNumber.from(0),
       );

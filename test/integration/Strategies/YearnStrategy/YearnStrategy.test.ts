@@ -72,8 +72,8 @@ describe("Yearn Strategy integration test", function () {
     marginToken = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.DAI.address);
     investmentToken = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.WETH.address);
 
-    await vault.whitelistToken(marginToken.address, 10, 10, 1000, expandToNDecimals(1000000, 18));
-    await vault.whitelistToken(investmentToken.address, 10, 10, 1, expandToNDecimals(1000, 18));
+    await vault.whitelistToken(marginToken.address, 10, 10, 1000);
+    await vault.whitelistToken(investmentToken.address, 10, 10, 1);
 
     await getTokens(staker.address, marginToken.address, tokens.DAI.whale, marginTokenLiquidity);
     await getTokens(trader1.address, marginToken.address, tokens.DAI.whale, marginTokenLiquidity);

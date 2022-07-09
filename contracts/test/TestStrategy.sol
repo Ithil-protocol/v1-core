@@ -2,7 +2,6 @@
 pragma solidity >=0.8.12;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IKyberNetworkProxy } from "../interfaces/IKyberNetworkProxy.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "../strategies/BaseStrategy.sol";
 
