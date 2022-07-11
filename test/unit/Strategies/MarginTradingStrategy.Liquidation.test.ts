@@ -181,7 +181,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     // Trader lost everything
     expect(await marginToken.balanceOf(trader1.address)).to.equal(initialTraderBalance.sub(marginTokenMargin));
     // Vault should gain the due fees + missed liquidator reward (precise calculations in another test)
-    expect(await marginToken.balanceOf(vault.address)).to.equal(vaultMarginBalance.add(newDueFees));
+    expect(await marginToken.balanceOf(vault.address)).to.be.above(vaultMarginBalance.add(newDueFees));
   });
 
   it("Check forced closure on a short position", async function () {
@@ -390,7 +390,8 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     const initialAllowance = position.allowance;
     let [liquidationScore, dueFees] = await strategy.computeLiquidationScore(position);
     const pairRiskFactor = await strategy.computePairRiskFactor(investmentToken.address, marginToken.address);
-    const price = position.principal.add(dueFees);
+    let [fairPrice] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);
+    let price = fairPrice.add(dueFees);
 
     // immediate liquidation should fail
     await expect(liquidatorContract.connect(liquidator).purchaseAssets(strategy.address, 5, price)).to.be.reverted;
@@ -407,13 +408,14 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     // But it should occur for newPrice
     await mockKyberNetworkProxy.setRate(investmentToken.address, newPrice);
     let [, newDueFees] = await strategy.computeLiquidationScore(position);
-    const newPriceToPurchase = position.principal.add(newDueFees);
-    await liquidatorContract.connect(liquidator).purchaseAssets(strategy.address, 5, newPriceToPurchase);
+    [fairPrice] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);
+    price = fairPrice.add(dueFees);
+    await liquidatorContract.connect(liquidator).purchaseAssets(strategy.address, 5, price);
     position = await strategy.positions(5);
     expect(position.principal).to.equal(0);
 
     // The vault gained
-    expect(await marginToken.balanceOf(vault.address)).to.equal(vaultMarginBalance.add(newDueFees));
+    expect(await marginToken.balanceOf(vault.address)).to.be.above(vaultMarginBalance.add(newDueFees));
     // The trader lost
     expect(await marginToken.balanceOf(trader1.address)).to.equal(traderBalance.sub(marginTokenMargin));
     // The liquidator got the position's allowance
@@ -452,7 +454,9 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     const initialAllowance = position.allowance;
     let [liquidationScore, dueFees] = await strategy.computeLiquidationScore(position);
     const pairRiskFactor = await strategy.computePairRiskFactor(investmentToken.address, marginToken.address);
-    const priceToPurchase = position.principal.add(dueFees);
+    let [fairPrice] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);
+    // some "slippage" is needed liquidator side because the dueFees are increased in the meantime
+    let priceToPurchase = fairPrice.add(dueFees);
 
     // immediate liquidation should fail
     await expect(liquidatorContract.connect(liquidator).purchaseAssets(strategy.address, 6, priceToPurchase)).to.be
@@ -473,8 +477,10 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     let [, newDueFees] = await strategy.computeLiquidationScore(position);
 
     // precise time fees are difficult to predict: we allow for 0.1% slippage to be sure to repay the vault and not make the call be reverted
-    const newPriceToPurchase = position.principal.add(newDueFees).mul(1001).div(1000);
-    await liquidatorContract.connect(liquidator).purchaseAssets(strategy.address, 6, newPriceToPurchase);
+    [fairPrice] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);
+    // some "slippage" is needed liquidator side because the dueFees are increased in the meantime
+    priceToPurchase = fairPrice.add(newDueFees).mul(101).div(100);
+    await liquidatorContract.connect(liquidator).purchaseAssets(strategy.address, 6, priceToPurchase);
 
     // The vault gained
     expect(await investmentToken.balanceOf(vault.address)).to.be.above(vaultInvestmentBalance.add(newDueFees));

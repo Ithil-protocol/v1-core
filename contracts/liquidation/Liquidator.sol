@@ -15,35 +15,44 @@ contract Liquidator is Ownable {
     using SafeERC20 for IERC20;
     using GeneralMath for uint256;
 
-    IERC20 public immutable ithil;
-    mapping(address => uint256) public stakes;
+    IERC20 public rewardToken;
+    // Token may be released in another moment or can change
+    // Double mapping needed
+    mapping(address => mapping(address => uint256)) public stakes;
+    // maximumStake is always denominated in rewardToken
     uint256 public maximumStake;
 
     error Liquidator__Not_Enough_Ithil_Allowance(uint256 allowance);
     error Liquidator__Not_Enough_Ithil();
     error Liquidator__Unstaking_Too_Much(uint256 maximum);
 
-    constructor(address _ithil) {
-        ithil = IERC20(_ithil);
+    constructor(address _rewardToken) {
+        rewardToken = IERC20(_rewardToken);
     }
 
     function setMaximumStake(uint256 amount) external onlyOwner {
         maximumStake = amount;
     }
 
-    function stake(uint256 amount) external {
-        uint256 allowance = ithil.allowance(msg.sender, address(this));
-        if (ithil.balanceOf(msg.sender) < amount) revert Liquidator__Not_Enough_Ithil();
-        if (allowance < amount) revert Liquidator__Not_Enough_Ithil_Allowance(allowance);
-        stakes[msg.sender] += amount;
-        ithil.safeTransferFrom(msg.sender, address(this), amount);
+    function setToken(address token) external onlyOwner {
+        rewardToken = IERC20(token);
     }
 
-    function unstake(uint256 amount) external {
-        uint256 staked = stakes[msg.sender];
+    // Only rewardToken can be staked
+    function stake(uint256 amount) external {
+        uint256 allowance = rewardToken.allowance(msg.sender, address(this));
+        if (rewardToken.balanceOf(msg.sender) < amount) revert Liquidator__Not_Enough_Ithil();
+        if (allowance < amount) revert Liquidator__Not_Enough_Ithil_Allowance(allowance);
+        stakes[address(rewardToken)][msg.sender] += amount;
+        rewardToken.safeTransferFrom(msg.sender, address(this), amount);
+    }
+
+    // When the token changes, people must be able to unstake the old one
+    function unstake(address token, uint256 amount) external {
+        uint256 staked = stakes[token][msg.sender];
         if (staked < amount) revert Liquidator__Unstaking_Too_Much(staked);
-        stakes[msg.sender] -= amount;
-        ithil.safeTransfer(msg.sender, amount);
+        stakes[token][msg.sender] -= amount;
+        IERC20(token).safeTransfer(msg.sender, amount);
     }
 
     function liquidateSingle(IStrategy strategy, uint256 positionId) external {
@@ -69,11 +78,12 @@ contract Liquidator is Ownable {
         strategy.transferAllowance(positionId, price, msg.sender, reward);
     }
 
+    // rewardPercentage is computed as of the stakes of rewardTokens
     function rewardPercentage() public view returns (uint256) {
         if (maximumStake > 0) {
-            uint256 stakePercentage = (stakes[msg.sender] * VaultMath.RESOLUTION) / maximumStake;
+            uint256 stakePercentage = (stakes[address(rewardToken)][msg.sender] * VaultMath.RESOLUTION) / maximumStake;
             if (stakePercentage > VaultMath.RESOLUTION) return VaultMath.RESOLUTION;
-            else return (stakes[msg.sender] * VaultMath.RESOLUTION) / maximumStake;
+            else return stakePercentage;
         } else return 0;
     }
 }
