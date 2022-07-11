@@ -7,6 +7,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
 import { IVault } from "../interfaces/IVault.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
+import { GeneralMath } from "../libraries/GeneralMath.sol";
 import { PositionHelper } from "../libraries/PositionHelper.sol";
 
 /// @title    BaseStrategy contract
@@ -15,6 +16,7 @@ import { PositionHelper } from "../libraries/PositionHelper.sol";
 abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     using SafeERC20 for IERC20;
     using PositionHelper for Position;
+    using GeneralMath for uint256;
 
     address public immutable liquidator;
     IVault public immutable vault;
@@ -270,12 +272,18 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         if (score > 0) {
             delete positions[positionId];
             _burn(positionId);
-            uint256 expectedCost = 0;
+            uint256 maxOrMin = 0;
             bool collateralInHeldTokens = position.collateralToken != position.owedToken;
             if (collateralInHeldTokens)
-                (expectedCost, ) = quote(position.owedToken, position.heldToken, position.principal + dueFees);
-            else expectedCost = position.allowance;
-            (uint256 amountIn, ) = _closePosition(position, expectedCost);
+                (maxOrMin, ) = quote(position.owedToken, position.heldToken, position.principal + dueFees);
+            else (maxOrMin, ) = quote(position.heldToken, position.owedToken, position.allowance);
+            (uint256 amountIn, ) = _closePosition(position, maxOrMin);
+            // Computation of reward is done by adding to the dueFees
+            if (amountIn >= position.principal + dueFees)
+                dueFees +=
+                    ((amountIn - position.principal - dueFees) * (VaultMath.RESOLUTION - reward)) /
+                    VaultMath.RESOLUTION;
+
             vault.repay(
                 position.owedToken,
                 amountIn,
@@ -284,6 +292,13 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
                 riskFactors[position.heldToken],
                 liquidatorUser
             );
+
+            // In a bad liquidation event, 5% of the paid amount is transferred
+            // A direct transfer is needed since repay does not transfer anything
+            // The check is done *after* the repay because surely the vault has the balance
+            if (amountIn < position.principal + dueFees) {
+                IERC20(position.owedToken).transferFrom(address(vault), liquidatorUser, amountIn / 20);
+            }
 
             emit PositionWasLiquidated(positionId);
         } else revert Strategy__Position_Not_Liquidable(positionId, score);
@@ -299,10 +314,22 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
             delete positions[positionId];
-            IERC20(position.owedToken).safeTransferFrom(liquidatorUser, address(vault), price);
-            if (price < position.principal + dueFees)
-                revert Strategy__Insufficient_Amount_Out(price, position.principal + dueFees);
-            else IERC20(position.heldToken).safeTransfer(liquidatorUser, position.allowance);
+            uint256 fairPrice = 0;
+            // This is the market price of the position's allowance in owedTokens
+            // No need to distinguish between collateral in held tokens or not
+            (fairPrice, ) = quote(position.heldToken, position.owedToken, position.allowance);
+            fairPrice += dueFees;
+            // Apply discount based on reward (max 5%)
+            // In this case there is no distinction between good or bad liquidation
+            fairPrice -= (fairPrice * reward) / (VaultMath.RESOLUTION * 20);
+            if (price < fairPrice) revert Strategy__Insufficient_Amount_Out(price, fairPrice);
+            else {
+                IERC20(position.owedToken).safeTransferFrom(liquidatorUser, address(vault), price);
+                IERC20(position.heldToken).safeTransfer(liquidatorUser, position.allowance);
+                // The following is necessary to avoid residual transfers during the repay
+                // It means that everything "extra" from principal is fees
+                dueFees = price.positiveSub(position.principal);
+            }
             vault.repay(
                 position.owedToken,
                 price,
@@ -327,7 +354,8 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         (int256 score, uint256 dueFees) = computeLiquidationScore(position);
         if (score > 0) {
             _transfer(ownerOf(positionId), liquidatorUser, positionId);
-            position.fees += dueFees;
+            // reduce due fees based on reward (max 50%)
+            position.fees += (dueFees * (2 * VaultMath.RESOLUTION - reward)) / (2 * VaultMath.RESOLUTION);
             position.createdAt = block.timestamp;
             position.topUpCollateral(
                 liquidatorUser,
