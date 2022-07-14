@@ -19,26 +19,6 @@ import { NetworkUserConfig } from "hardhat/types";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
-// Ensure that we have all the environment variables we need.
-const privateKey: string | undefined = process.env.PRIVATE_KEY;
-if (!privateKey) {
-  throw new Error("Please set your PRIVATE_KEY in a .env file");
-}
-
-const alchemyApiKey: string | undefined = process.env.ALCHEMY_API_KEY;
-if (!alchemyApiKey) {
-  throw new Error("Please set your ALCHEMY_API_KEY in a .env file");
-}
-
-function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
-  const url: string = "https://" + network + ".alchemyapi.io/v2/" + alchemyApiKey;
-  return {
-    accounts: [`${privateKey}`],
-    chainId: chainIds[network],
-    url,
-  };
-}
-
 const config: HardhatUserConfig = {
   abiExporter: {
     path: "./abi",
@@ -63,14 +43,20 @@ const config: HardhatUserConfig = {
       chainId: chainIds.hardhat,
       forking: {
         enabled: process.env.FORKING ? true : false,
-        url: "https://eth-mainnet.alchemyapi.io/v2/" + process.env.ALCHEMY_API_KEY,
+        url: "https://eth-mainnet.g.alchemy.com/v2/" + process.env.MAINNET_ALCHEMY_API_KEY,
         blockNumber: 14967494,
       },
     },
-    goerli: getChainConfig("goerli"),
-    kovan: getChainConfig("kovan"),
-    rinkeby: getChainConfig("rinkeby"),
-    ropsten: getChainConfig("ropsten"),
+    mainnet: {
+      chainId: chainIds.mainnet,
+      url: "https://eth-mainnet.g.alchemy.com/v2/" + process.env.MAINNET_ALCHEMY_API_KEY,
+      accounts: [`${process.env.PRIVATE_KEY}`],
+    },
+    goerli: {
+      chainId: chainIds.goerli,
+      url: "https://eth-goerli.g.alchemy.com/v2/" + process.env.TESTNET_ALCHEMY_API_KEY,
+      accounts: [`${process.env.PRIVATE_KEY}`],
+    },
   },
   paths: {
     artifacts: "./artifacts",

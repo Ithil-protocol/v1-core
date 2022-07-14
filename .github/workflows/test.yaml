@@ -22,13 +22,10 @@ jobs:
           cache: "yarn"
       - run: yarn install
       - name: Run yarn compile
-        env:
-          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         run: yarn compile
       - name: Run integration tests
         env:
-          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+          MAINNET_ALCHEMY_API_KEY: ${{ secrets.MAINNET_ALCHEMY_API_KEY }}
           FORK_URL: ${{ secrets.FORK_URL }}
           REPORT_GAS: false
           FORKING: true

@@ -25,13 +25,7 @@ jobs:
           cache: "yarn"
       - run: yarn install
 
-      - name: Compile
-        env:
-          FORK_URL: ${{ secrets.FORK_URL }}
-          REPORT_GAS: false
-          FORKING: true
-          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+      - name: Run yarn compile
         run: yarn compile
 
       - name: Run Slither
