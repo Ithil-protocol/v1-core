@@ -6,6 +6,7 @@ import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/I
 import { IYearnRegistry } from "../interfaces/external/IYearnRegistry.sol";
 import { IYearnVault } from "../interfaces/external/IYearnVault.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
+import { GeneralMath } from "../libraries/GeneralMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 
 /// @title    YearnStrategy contract
@@ -13,6 +14,7 @@ import { BaseStrategy } from "./BaseStrategy.sol";
 /// @notice   A strategy to perform leveraged staking on any Yearn vault
 contract YearnStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
+    using GeneralMath for uint256;
 
     IYearnRegistry internal immutable registry;
 
@@ -33,13 +35,20 @@ contract YearnStrategy is BaseStrategy {
         amountIn = IYearnVault(yvault).deposit(order.maxSpent, address(this));
     }
 
-    function _closePosition(Position memory position, uint256 expectedCost)
+    function _closePosition(Position memory position, uint256 maxOrMin)
         internal
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
+        // We only support native token margin (to avoid whitelisting nightmares)
+        // In particular, maxOrMin is always a "min"
         IYearnVault yvault = IYearnVault(position.heldToken);
-        amountIn = yvault.withdraw(position.allowance, address(vault), expectedCost);
+
+        uint256 expectedObtained = (yvault.pricePerShare() * position.allowance) /
+            (10**IERC20Metadata(position.owedToken).decimals());
+        uint256 maxLoss = (expectedObtained.positiveSub(maxOrMin) * 10000) / expectedObtained;
+
+        amountIn = yvault.withdraw(position.allowance, address(vault), maxLoss);
     }
 
     function quote(
@@ -47,11 +56,21 @@ contract YearnStrategy is BaseStrategy {
         address dst,
         uint256 amount
     ) public view override returns (uint256, uint256) {
-        address vaultAddress = registry.latestVault(src);
-        IYearnVault yvault = IYearnVault(vaultAddress);
+        IYearnVault yvault;
 
-        uint256 decimals = 10**IERC20Metadata(src).decimals();
-        uint256 obtained = yvault.pricePerShare();
-        return ((amount * decimals) / obtained, (amount * decimals) / obtained);
+        uint256 amountOut;
+
+        try registry.latestVault(src) returns (address vaultAddress) {
+            yvault = IYearnVault(vaultAddress);
+            uint256 decimals = 10**IERC20Metadata(src).decimals();
+            amountOut = (amount * decimals) / yvault.pricePerShare();
+        } catch {
+            address vaultAddress = registry.latestVault(dst);
+            uint256 decimals = 10**IERC20Metadata(dst).decimals();
+            yvault = IYearnVault(vaultAddress);
+            amountOut = (amount * yvault.pricePerShare()) / decimals;
+        }
+
+        return (amountOut, amountOut);
     }
 }

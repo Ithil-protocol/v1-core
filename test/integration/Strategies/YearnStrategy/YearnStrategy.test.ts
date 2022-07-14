@@ -112,4 +112,18 @@ describe("Yearn Strategy integration test", function () {
     // Check that the strategy actually got the assets
     expect(await investmentToken.balanceOf(strategy.address)).to.equal(allowance);
   });
+
+  it("Yearn strategy: unstake DAI", async function () {
+    const position = await strategy.positions(1);
+    const [expectedObtained] = await strategy.quote(order.obtainedToken, order.spentToken, position.allowance);
+
+    // This position does not have margin in held token
+    // Therefore the slippage parameter is a minimum obtained
+
+    // Should fail if minimum obtained is too much
+    await expect(strategy.connect(trader1).closePosition(1, expectedObtained.mul(11).div(10))).to.be.reverted;
+
+    // Slippage of 0.1% should work
+    await strategy.connect(trader1).closePosition(1, expectedObtained.mul(999).div(1000));
+  });
 });
