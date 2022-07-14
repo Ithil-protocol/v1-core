@@ -385,7 +385,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
     // slither-disable-next-line external-function
     function tokenURI(uint256 tokenId) public view override(ERC721) returns (string memory) {
-        require(_exists(tokenId));
+        assert(_exists(tokenId));
         return ""; /// @todo generate SVG on-chain
     }
 }

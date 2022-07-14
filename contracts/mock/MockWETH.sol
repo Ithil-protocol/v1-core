@@ -6,6 +6,7 @@ import { MockToken } from "./MockToken.sol";
 
 /// @dev Used for testing, unaudited
 contract MockWETH is MockToken, IWETH {
+    // solhint-disable-next-line no-empty-blocks
     constructor() MockToken("Wrapped Ether", "WETH", 18) {}
 
     receive() external payable {

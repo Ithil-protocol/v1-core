@@ -1,4 +1,4 @@
-export var chainIds: { [id: string]: number } = {};
+export const chainIds: { [id: string]: number } = {};
 chainIds["goerli"] = 5;
 chainIds["hardhat"] = 31337;
 chainIds["kovan"] = 42;
