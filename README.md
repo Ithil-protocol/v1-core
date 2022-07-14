@@ -48,9 +48,11 @@ cp .env.example .env
 and add the following content:
 
 ```text
-ALCHEMY_API_KEY=your alchemy.com api key
+TESTNET_ALCHEMY_API_KEY=needed to run test or deploy on goerli testnet
+MAINNET_ALCHEMY_API_KEY=needed to deploy on Ethereum mainnet
 FORKING=true to enable mainnet fork
 REPORT_GAS=true to enable gas report at the end of tests
+PRIVATE_KEY=a private key for test and deploy
 ```
 
 Load it in your local env with `source .env` and finally you can compile the contracts:

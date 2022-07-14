@@ -11,11 +11,11 @@ plugins:
 root: true
 rules:
   "@typescript-eslint/no-floating-promises":
-    - error
+    - warn
     - ignoreIIFE: true
       ignoreVoid: true
   "@typescript-eslint/no-inferrable-types": "off"
   "@typescript-eslint/no-unused-vars":
-    - error
+    - warn
     - argsIgnorePattern: "_"
       varsIgnorePattern: "_"
