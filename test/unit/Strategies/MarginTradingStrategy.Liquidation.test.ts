@@ -46,8 +46,8 @@ let investmentToken: MockToken;
 let traderBalance: BigNumber;
 let vaultMarginBalance: BigNumber;
 let vaultInvestmentBalance: BigNumber;
-let price1 = BigNumber.from(1);
-let price2 = BigNumber.from(100);
+const price1 = BigNumber.from(1);
+const price2 = BigNumber.from(100);
 let fees: BigNumber;
 
 let order: {
@@ -149,7 +149,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
 
     // check liquidation score math
     let position = await strategy.positions(1);
-    let [liquidationScore, dueFees] = await strategy.computeLiquidationScore(position);
+    const [liquidationScore, dueFees] = await strategy.computeLiquidationScore(position);
     const pairRiskFactor = await strategy.computePairRiskFactor(investmentToken.address, marginToken.address);
     const profitAndLoss = (await strategy.quote(investmentToken.address, marginToken.address, position.allowance))[0]
       .sub(position.principal)
@@ -173,7 +173,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
 
     // But it should occur for newPrice
     await mockKyberNetworkProxy.setRate(investmentToken.address, newPrice);
-    let [, newDueFees] = await strategy.computeLiquidationScore(position);
+    const [, newDueFees] = await strategy.computeLiquidationScore(position);
     await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 1);
     position = await strategy.positions(1);
     expect(position.principal).to.equal(0);
@@ -217,7 +217,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
 
     // check liquidation score math
     let position = await strategy.positions(2);
-    let [liquidationScore, dueFees] = await strategy.computeLiquidationScore(position);
+    const [liquidationScore, dueFees] = await strategy.computeLiquidationScore(position);
 
     const pairRiskFactor = await strategy.computePairRiskFactor(investmentToken.address, marginToken.address);
     const profitAndLoss = position.allowance.sub(
@@ -240,7 +240,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
 
     // But it should occur for newPrice + 1 (modulo approximation errors)
     await mockKyberNetworkProxy.setRate(investmentToken.address, newPrice.add(1));
-    let [, newDueFees] = await strategy.computeLiquidationScore(position);
+    const [, newDueFees] = await strategy.computeLiquidationScore(position);
     await liquidatorContract.connect(liquidator).liquidateSingle(strategy.address, 2);
     position = await strategy.positions(2);
     expect(position.principal).to.equal(0);
@@ -292,7 +292,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     await mockKyberNetworkProxy.setRate(investmentToken.address, newPrice);
     await liquidatorContract.connect(liquidator).marginCall(strategy.address, 3, extraMargin);
 
-    let position = await strategy.positions(3);
+    const position = await strategy.positions(3);
     const maxSpent = position.allowance;
 
     expect(await strategy.ownerOf(3)).to.be.equal(liquidator.address);
@@ -329,7 +329,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     await strategy.connect(trader1).openPosition(order);
 
     // check liquidation score math
-    let position = await strategy.positions(4);
+    const position = await strategy.positions(4);
     const pairRiskFactor = await strategy.computePairRiskFactor(investmentToken.address, marginToken.address);
     const extraMargin = expandToNDecimals(50, 18);
 
@@ -381,14 +381,14 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     );
     order.minObtained = minObtained;
 
-    let vaultMarginBalance = await marginToken.balanceOf(vault.address);
-    let traderBalance = await marginToken.balanceOf(trader1.address);
-    let liquidatorBalance = await investmentToken.balanceOf(liquidator.address);
+    const vaultMarginBalance = await marginToken.balanceOf(vault.address);
+    const traderBalance = await marginToken.balanceOf(trader1.address);
+    const liquidatorBalance = await investmentToken.balanceOf(liquidator.address);
     // open position
     await strategy.connect(trader1).openPosition(order);
     let position = await strategy.positions(5);
     const initialAllowance = position.allowance;
-    let [liquidationScore, dueFees] = await strategy.computeLiquidationScore(position);
+    const [liquidationScore, dueFees] = await strategy.computeLiquidationScore(position);
     const pairRiskFactor = await strategy.computePairRiskFactor(investmentToken.address, marginToken.address);
     let [fairPrice] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);
     let price = fairPrice.add(dueFees);
@@ -407,7 +407,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
 
     // But it should occur for newPrice
     await mockKyberNetworkProxy.setRate(investmentToken.address, newPrice);
-    let [, newDueFees] = await strategy.computeLiquidationScore(position);
+    const [, newDueFees] = await strategy.computeLiquidationScore(position);
     [fairPrice] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);
     price = fairPrice.add(dueFees);
     await liquidatorContract.connect(liquidator).purchaseAssets(strategy.address, 5, price);
@@ -445,14 +445,14 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     order.maxSpent = toBorrow;
     traderBalance = await marginToken.balanceOf(trader1.address);
     vaultInvestmentBalance = await investmentToken.balanceOf(vault.address);
-    let liquidatorBalance = await marginToken.balanceOf(liquidator.address);
+    const liquidatorBalance = await marginToken.balanceOf(liquidator.address);
 
     await strategy.connect(trader1).openPosition(order);
 
     // check liquidation score math
-    let position = await strategy.positions(6);
+    const position = await strategy.positions(6);
     const initialAllowance = position.allowance;
-    let [liquidationScore, dueFees] = await strategy.computeLiquidationScore(position);
+    const [liquidationScore, dueFees] = await strategy.computeLiquidationScore(position);
     const pairRiskFactor = await strategy.computePairRiskFactor(investmentToken.address, marginToken.address);
     let [fairPrice] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);
     // some "slippage" is needed liquidator side because the dueFees are increased in the meantime
@@ -474,7 +474,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
 
     // But it should occur for newPrice + 1 (modulo approximation errors)
     await mockKyberNetworkProxy.setRate(investmentToken.address, newPrice.add(1));
-    let [, newDueFees] = await strategy.computeLiquidationScore(position);
+    const [, newDueFees] = await strategy.computeLiquidationScore(position);
 
     // precise time fees are difficult to predict: we allow for 0.1% slippage to be sure to repay the vault and not make the call be reverted
     [fairPrice] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);

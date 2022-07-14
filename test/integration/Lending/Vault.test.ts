@@ -195,9 +195,9 @@ describe("Lending integration tests", function () {
 
     it("Vault: whitelist OUSD", async function () {
       const OUSD = "0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86";
-      let ABI =
+      const ABI =
         '[{"inputs": [],"name": "rebaseOptIn","outputs": [],"stateMutability": "nonpayable","type": "function"}]';
-      let iface = new ethers.utils.Interface(ABI);
+      const iface = new ethers.utils.Interface(ABI);
       const data = iface.encodeFunctionData("rebaseOptIn");
       await vault.whitelistTokenAndExec(OUSD, baseFee, fixedFee, ethers.utils.parseEther("100000"), data);
 

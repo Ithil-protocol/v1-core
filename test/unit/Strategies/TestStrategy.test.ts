@@ -44,8 +44,8 @@ let investmentToken: MockToken;
 
 let order: IStrategy.OrderStruct;
 
-let riskFactor = BigNumber.from(100);
-let fixedFee = BigNumber.from(10);
+const riskFactor = BigNumber.from(100);
+const fixedFee = BigNumber.from(10);
 
 describe("Test strategy unit tests", function () {
   before("create fixture loader", async () => {
