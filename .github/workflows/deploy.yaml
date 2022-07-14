@@ -45,7 +45,7 @@ jobs:
           REPORT_GAS: false
           FORKING: false
         run: |
-          yarn deploy --network rinkeby
+          yarn deploy --network goerli
           yarn export-abi
 
       - name: Prepare release files
