@@ -17,17 +17,26 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+
+      - name: Setup NodeJs
+        uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
-      - run: yarn install
+
+      - name: Run yarn install
+        run: yarn install
+
       - name: Run yarn compile
         run: yarn compile
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+
       - name: Configure git information
         run: |
           git config --global user.name $GITHUB_ACTOR
           git config --global user.email $GITHUB_ACTOR@users.noreply.github.com
+
       - name: Deploy
         env:
           TESTNET_ALCHEMY_API_KEY: ${{ secrets.TESTNET_ALCHEMY_API_KEY }}
@@ -38,11 +47,13 @@ jobs:
         run: |
           yarn deploy --network rinkeby
           yarn export-abi
+
       - name: Prepare release files
         run: |
           git add .
           git commit -am "feat: new testnet deployment"
           git push
+
       - name: Pushes the smart contract addresses to the deployed repo
         id: push_addresses
         uses: cpina/github-action-push-to-another-repository@main
@@ -56,6 +67,7 @@ jobs:
           commit-message: "new addresses"
           target-branch: master
           target-directory: latest
+
       - name: Pushes the smart contract abi to the deployed repo
         id: push_abi
         uses: cpina/github-action-push-to-another-repository@main
