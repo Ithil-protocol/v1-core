@@ -70,7 +70,7 @@ describe("Yearn Strategy integration test", function () {
 
     const tokenArtifact: Artifact = await artifacts.readArtifact("ERC20");
     marginToken = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.DAI.address);
-    investmentToken = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.WETH.address);
+    investmentToken = <ERC20>await ethers.getContractAt(tokenArtifact.abi, yvault);
 
     await vault.whitelistToken(marginToken.address, 10, 10, 1000);
     await vault.whitelistToken(investmentToken.address, 10, 10, 1);
@@ -86,19 +86,30 @@ describe("Yearn Strategy integration test", function () {
       obtainedToken: yvault,
       collateral: marginTokenMargin,
       collateralIsSpentToken: true,
-      minObtained: marginTokenMargin, // todo: refine
+      minObtained: BigNumber.from(2).pow(255), // this order is invalid unless we reduce this parameter
       maxSpent: marginTokenMargin.mul(leverage),
       deadline: deadline,
     };
   });
 
-  it("Yearn Strategy: stake DAI and immediately close", async function () {
+  it("Yearn Strategy: stake DAI", async function () {
+    // First call should revert since minObtained is too high
+    await expect(strategy.connect(trader1).openPosition(order)).to.be.reverted;
+
+    const [firstQuote] = await strategy.quote(order.spentToken, order.obtainedToken, order.maxSpent);
+
+    // 0.1% slippage
+    order.minObtained = firstQuote.mul(999).div(1000);
+
     await strategy.connect(trader1).openPosition(order);
 
-    const quote = await strategy.quote(order.spentToken, order.obtainedToken, order.maxSpent);
     const allowance = (await strategy.positions(1)).allowance;
-    const maxSpent: BigNumber = allowance.mul(quote[0]).sub(quote[0]).mul(10000).div(allowance.mul(quote[0]));
 
-    await strategy.connect(trader1).closePosition(1, maxSpent);
+    // 0.01% tolerance
+    expect(allowance).to.be.above(firstQuote.mul(9999).div(10000));
+    expect(allowance).to.be.below(firstQuote.mul(10001).div(10000));
+
+    // Check that the strategy actually got the assets
+    expect(await investmentToken.balanceOf(strategy.address)).to.equal(allowance);
   });
 });
