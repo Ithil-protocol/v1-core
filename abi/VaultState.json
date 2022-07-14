@@ -1,0 +1,28 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "requested",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "freeLiquidity",
+        "type": "uint256"
+      }
+    ],
+    "name": "Vault__Insufficient_Free_Liquidity",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Vault__Repay_Failed",
+    "type": "error"
+  }
+]

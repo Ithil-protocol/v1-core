@@ -1,5 +1,42 @@
 [
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_vault",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_liquidator",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_markets",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_euler",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "EulerStrategy__Inexistent_Market",
+    "type": "error"
+  },
+  {
     "inputs": [],
     "name": "Strategy__Action_Throttled",
     "type": "error"

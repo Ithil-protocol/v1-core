@@ -1,15 +1,15 @@
 {
   "name": "Deployed Contracts",
   "version": "1.0.0",
-  "timestamp": "2022-07-14T07:56:27.978Z",
-  "chainId": 31337,
+  "timestamp": "2022-07-14T10:01:39.603Z",
+  "chainId": 5,
   "addresses": {
-    "MockKyberNetworkProxy": "0x139e1D41943ee15dDe4DF876f9d0E7F85e26660A",
-    "MockYearnRegistry": "0xAdE429ba898c34722e722415D722A70a297cE3a2",
-    "MockWETH": "0x7B4f352Cd40114f12e82fC675b5BA8C7582FC513",
-    "Vault": "0xcE0066b1008237625dDDBE4a751827de037E53D2",
-    "Liquidator": "0x82EdA215Fa92B45a3a76837C65Ab862b6C7564a8",
-    "MarginTradingStrategy": "0x87006e75a5B6bE9D1bbF61AC8Cd84f05D9140589",
-    "YearnStrategy": "0x51C65cd0Cdb1A8A8b79dfc2eE965B1bA0bb8fc89"
+    "MockKyberNetworkProxy": "0x763e9210cC75bA284e78209540a141a25327BEe9",
+    "MockYearnRegistry": "0x6a9783Fc3397cF904d7225C99D2f679f6f5E4858",
+    "MockWETH": "0x710BC8FcE37189b3E0B7bc0581966CAa48f86E7b",
+    "Vault": "0x450637AB161716238e39272DA1a3C2CCFc15C9a2",
+    "Liquidator": "0x0AFb343f6517b94518F10943D5f99288DB75Ec7C",
+    "MarginTradingStrategy": "0x09A37C94DF2b68831F0e56b943A416a00E5FA154",
+    "YearnStrategy": "0x8741B6108C759A05f9f8f609464a7aF76E1d683D"
   }
 }

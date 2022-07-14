@@ -1,88 +1,194 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "Insufficient_Collateral",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "Invalid_Position",
+    "inputs": [],
+    "name": "Strategy__Action_Throttled",
     "type": "error"
   },
   {
     "inputs": [],
-    "name": "Maximum_Leverage_Exceeded",
+    "name": "Strategy__Incorrect_Obtained_Token",
     "type": "error"
   },
   {
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "amountIn",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minAmountOut",
         "type": "uint256"
       }
     ],
-    "name": "No_Withdraw",
+    "name": "Strategy__Insufficient_Amount_Out",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "collateral",
+        "type": "uint256"
+      }
+    ],
+    "name": "Strategy__Insufficient_Collateral",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "int256",
+        "name": "newScore",
+        "type": "int256"
+      }
+    ],
+    "name": "Strategy__Insufficient_Margin_Provided",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "repaid",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "debt",
+        "type": "uint256"
+      }
+    ],
+    "name": "Strategy__Loan_Not_Repaid",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Strategy__Locked",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "marginProvider",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minimumMargin",
+        "type": "uint256"
+      }
+    ],
+    "name": "Strategy__Margin_Below_Minimum",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "interestRate",
+        "type": "uint256"
+      }
+    ],
+    "name": "Strategy__Maximum_Leverage_Exceeded",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "balance",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Strategy__Not_Enough_Liquidity",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Strategy__Only_Guardian",
     "type": "error"
   },
   {
     "inputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "sender",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "",
+        "name": "liquidator",
         "type": "address"
       }
     ],
-    "name": "Only_Liquidator",
+    "name": "Strategy__Only_Liquidator",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "deadline",
+        "type": "uint256"
+      }
+    ],
+    "name": "Strategy__Order_Expired",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "int256",
+        "name": "score",
+        "type": "int256"
+      }
+    ],
+    "name": "Strategy__Position_Not_Liquidable",
     "type": "error"
   },
   {
     "inputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "owner",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "",
+        "name": "sender",
         "type": "address"
       }
     ],
-    "name": "Restricted_Access",
+    "name": "Strategy__Restricted_Access",
     "type": "error"
   },
   {
     "inputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "token",
         "type": "address"
       }
     ],
-    "name": "Source_Eq_Dest",
+    "name": "Strategy__Source_Eq_Dest",
     "type": "error"
   },
   {
@@ -165,7 +271,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "fees",
+        "name": "interestRtae",
         "type": "uint256"
       },
       {
@@ -177,6 +283,56 @@
     ],
     "name": "PositionWasOpened",
     "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newRiskFactor",
+        "type": "uint256"
+      }
+    ],
+    "name": "RiskFactorWasUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "newLockStatus",
+        "type": "bool"
+      }
+    ],
+    "name": "StrategyLockWasToggled",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "positionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxOrMin",
+        "type": "uint256"
+      }
+    ],
+    "name": "closePosition",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
     "inputs": [
@@ -206,11 +362,16 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_id",
+        "name": "positionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "topUp",
         "type": "uint256"
       }
     ],
-    "name": "forcefullyClose",
+    "name": "editPosition",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -218,22 +379,22 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "purchaser",
-        "type": "address"
-      },
-      {
         "internalType": "uint256",
         "name": "positionId",
         "type": "uint256"
       },
       {
+        "internalType": "address",
+        "name": "liquidatorUser",
+        "type": "address"
+      },
+      {
         "internalType": "uint256",
-        "name": "price",
+        "name": "reward",
         "type": "uint256"
       }
     ],
-    "name": "forcefullyDelete",
+    "name": "forcefullyClose",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -250,11 +411,6 @@
     "outputs": [
       {
         "components": [
-          {
-            "internalType": "address",
-            "name": "owner",
-            "type": "address"
-          },
           {
             "internalType": "address",
             "name": "owedToken",
@@ -313,7 +469,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_id",
+        "name": "positionId",
         "type": "uint256"
       },
       {
@@ -323,12 +479,73 @@
       },
       {
         "internalType": "address",
-        "name": "newOwner",
+        "name": "liquidatorUser",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "reward",
+        "type": "uint256"
       }
     ],
     "name": "modifyCollateralAndOwner",
     "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "spentToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "obtainedToken",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "collateral",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "collateralIsSpentToken",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minObtained",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxSpent",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct IStrategy.Order",
+        "name": "order",
+        "type": "tuple"
+      }
+    ],
+    "name": "openPosition",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -367,16 +584,31 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "vaultAddress",
-    "outputs": [
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "positionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
+      },
       {
         "internalType": "address",
-        "name": "",
+        "name": "liquidatorUser",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "reward",
+        "type": "uint256"
       }
     ],
-    "stateMutability": "view",
+    "name": "transferAllowance",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]

@@ -34,7 +34,7 @@
         "type": "uint256"
       }
     ],
-    "name": "SharePriceWasChanged",
+    "name": "SharePriceWasUpdated",
     "type": "event"
   },
   {

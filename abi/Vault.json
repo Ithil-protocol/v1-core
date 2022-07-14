@@ -11,42 +11,73 @@
     "type": "constructor"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "TransferHelper__Insufficient_Token_Allowance",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "TransferHelper__Insufficient_Token_Balance",
-    "type": "error"
-  },
-  {
     "inputs": [],
-    "name": "Vault__ETH_Transfer_Failed",
+    "name": "Vault__ETH_Callback_Failed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "Vault__ETH_Unstake_Failed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Vault__Insufficient_ETH",
     "type": "error"
   },
   {
     "inputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "token",
         "type": "address"
       },
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "requested",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "freeLiquidity",
+        "type": "uint256"
+      }
+    ],
+    "name": "Vault__Insufficient_Free_Liquidity",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "freeLiquidity",
         "type": "uint256"
       }
     ],
@@ -57,23 +88,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "Vault__Insufficient_Margin",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
+        "name": "token",
         "type": "address"
       }
     ],
@@ -84,13 +99,23 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "user",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "",
+        "name": "token",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxWithdrawal",
+        "type": "uint256"
       }
     ],
     "name": "Vault__Max_Withdrawal",
@@ -103,6 +128,16 @@
   },
   {
     "inputs": [],
+    "name": "Vault__Only_Guardian",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Vault__Repay_Failed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "Vault__Restricted_Access",
     "type": "error"
   },
@@ -110,7 +145,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "token",
         "type": "address"
       }
     ],
@@ -121,12 +156,37 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "token",
         "type": "address"
       }
     ],
     "name": "Vault__Unsupported_Token",
     "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Boosted",
+    "type": "event"
   },
   {
     "anonymous": false,
@@ -221,6 +281,25 @@
       {
         "indexed": true,
         "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "minimumMargin",
+        "type": "uint256"
+      }
+    ],
+    "name": "MinimumMarginWasUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "previousOwner",
         "type": "address"
       },
@@ -271,6 +350,31 @@
       }
     ],
     "name": "TokenWasWhitelisted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Unboosted",
     "type": "event"
   },
   {
@@ -366,6 +470,48 @@
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
+      }
+    ],
+    "name": "boost",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "boosters",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
       },
       {
         "internalType": "uint256",
@@ -402,12 +548,75 @@
         "type": "address"
       }
     ],
+    "name": "checkWhitelisted",
+    "outputs": [],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
     "name": "claimable",
     "outputs": [
       {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minimumMargin",
+        "type": "uint256"
+      }
+    ],
+    "name": "editMinimumMargin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "getMinimumMargin",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "guardian",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -469,12 +678,30 @@
         "type": "uint256"
       },
       {
+        "internalType": "uint256",
+        "name": "riskFactor",
+        "type": "uint256"
+      },
+      {
         "internalType": "address",
         "name": "borrower",
         "type": "address"
       }
     ],
     "name": "repay",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_guardian",
+        "type": "address"
+      }
+    ],
+    "name": "setGuardian",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -495,6 +722,19 @@
     "name": "stake",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "stakeETH",
+    "outputs": [],
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -560,7 +800,38 @@
         "type": "uint256"
       }
     ],
+    "name": "unboost",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
     "name": "unstake",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "unstakeETH",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -607,6 +878,16 @@
       },
       {
         "internalType": "uint256",
+        "name": "minimumMargin",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "boostedAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
         "name": "netLoans",
         "type": "uint256"
       },
@@ -614,6 +895,34 @@
         "internalType": "uint256",
         "name": "insuranceReserveBalance",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "optimalRatio",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "latestRepay",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "currentProfits",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "weth",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -634,6 +943,11 @@
       {
         "internalType": "uint256",
         "name": "fixedFee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minimumMargin",
         "type": "uint256"
       }
     ],
@@ -657,6 +971,11 @@
       {
         "internalType": "uint256",
         "name": "fixedFee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minimumMargin",
         "type": "uint256"
       },
       {
