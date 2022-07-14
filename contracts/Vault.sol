@@ -163,7 +163,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
     function boost(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
         checkWhitelisted(token);
-        uint256 totalWealth = balance(token);
+
         vaults[token].boostedAmount += amount;
         boosters[msg.sender][token] += amount;
 
