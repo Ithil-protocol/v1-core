@@ -47,7 +47,7 @@ jobs:
           git commit -am "feat: new testnet deployment"
           git push
       - name: Pushes the smart contract addresses to the deployed repo
-        id: push_directory
+        id: push_addresses
         uses: cpina/github-action-push-to-another-repository@main
         env:
           API_TOKEN_GITHUB: ${{ secrets.BOT_GITHUB_TOKEN }}
@@ -60,7 +60,7 @@ jobs:
           target-branch: master
           target-directory: latest
       - name: Pushes the smart contract abi to the deployed repo
-        id: push_directory
+        id: push_abi
         uses: cpina/github-action-push-to-another-repository@main
         env:
           API_TOKEN_GITHUB: ${{ secrets.BOT_GITHUB_TOKEN }}
