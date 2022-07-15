@@ -15,16 +15,16 @@ task(
     // verify Liquidator
     await hre.run("verify:verify", {
       address: addresses["addresses"].Liquidator,
-      constructorArguments: [],
+      constructorArguments: ["0x0000000000000000000000000000000000000000"],
     });
 
     // verify MarginTradingStrategy
     await hre.run("verify:verify", {
       address: addresses["addresses"].MarginTradingStrategy,
       constructorArguments: [
-        addresses["addresses"].MockKyberNetworkProxy,
         addresses["addresses"].Vault,
         addresses["addresses"].Liquidator,
+        addresses["addresses"].MockKyberNetworkProxy,
       ],
     });
 
@@ -32,9 +32,9 @@ task(
     await hre.run("verify:verify", {
       address: addresses["addresses"].YearnStrategy,
       constructorArguments: [
-        addresses["addresses"].MockYearnRegistry,
         addresses["addresses"].Vault,
         addresses["addresses"].Liquidator,
+        addresses["addresses"].MockYearnRegistry,
       ],
     });
   },
