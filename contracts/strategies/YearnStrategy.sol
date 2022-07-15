@@ -49,6 +49,7 @@ contract YearnStrategy is BaseStrategy {
         uint256 maxLoss = (expectedObtained.positiveSub(maxOrMin) * 10000) / expectedObtained;
 
         amountIn = yvault.withdraw(position.allowance, address(vault), maxLoss);
+        amountOut = position.allowance;
     }
 
     function quote(
@@ -66,8 +67,8 @@ contract YearnStrategy is BaseStrategy {
             amountOut = (amount * decimals) / yvault.pricePerShare();
         } catch {
             address vaultAddress = registry.latestVault(dst);
-            uint256 decimals = 10**IERC20Metadata(dst).decimals();
             yvault = IYearnVault(vaultAddress);
+            uint256 decimals = 10**IERC20Metadata(dst).decimals();
             amountOut = (amount * yvault.pricePerShare()) / decimals;
         }
 
