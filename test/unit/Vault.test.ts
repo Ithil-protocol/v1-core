@@ -1,6 +1,5 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
-import { addresses } from "../../deployments/addresses.json";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import type { Vault } from "../../src/types/Vault";
 import type { MockWETH } from "../../src/types/MockWETH";
@@ -171,7 +170,7 @@ describe("Lending unit tests", function () {
     });
 
     it("Vault: addStrategy", async function () {
-      const strategy = addresses.MarginTradingStrategy;
+      const strategy = "0x0000000000000000000000000000000000000000"; // use null as mock strategy address
 
       const initialState = {
         strategyAdded: await vault.strategies(strategy),
@@ -194,7 +193,7 @@ describe("Lending unit tests", function () {
     });
 
     it("Vault: removeStrategy", async function () {
-      const strategy = addresses.MarginTradingStrategy;
+      const strategy = "0x0000000000000000000000000000000000000000"; // use null as mock strategy address
 
       await vault.addStrategy(strategy);
 

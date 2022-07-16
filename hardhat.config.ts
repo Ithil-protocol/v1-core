@@ -7,9 +7,6 @@ import "hardhat-gas-reporter";
 import "hardhat-spdx-license-identifier";
 import "solidity-coverage";
 
-import "./tasks/deploy";
-import "./tasks/publish";
-
 import { chainIds } from "./constants";
 import { resolve } from "path";
 
