@@ -7,6 +7,8 @@ import { IEulerEToken } from "../interfaces/external/IEulerEToken.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 
+import "hardhat/console.sol";
+
 /// @title    EulerStrategy contract
 /// @author   Ithil
 /// @notice   A strategy to perform leveraged staking on any Euler market
@@ -59,7 +61,7 @@ contract EulerStrategy is BaseStrategy {
         uint256 amount
     ) public view override returns (uint256, uint256) {
         address eToken = markets.underlyingToEToken(src);
-        uint256 obtained = IEulerEToken(eToken).convertBalanceToUnderlying(amount);
+        uint256 obtained = IEulerEToken(eToken).convertUnderlyingToBalance(amount);
 
         return (obtained, obtained);
     }

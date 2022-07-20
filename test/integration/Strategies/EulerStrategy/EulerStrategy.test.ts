@@ -15,6 +15,7 @@ import { EulerStrategy } from "../../../../src/types/EulerStrategy";
 import { Liquidator } from "../../../../src/types/Liquidator";
 
 import { eulerFixture } from "./fixture";
+import { expect } from "chai";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -69,7 +70,7 @@ describe("Euler strategy integration tests", function () {
 
     const tokenArtifact: Artifact = await artifacts.readArtifact("ERC20");
     marginToken = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.DAI.address);
-    investmentToken = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.WETH.address);
+    investmentToken = <ERC20>await ethers.getContractAt(tokenArtifact.abi, etoken);
 
     await vault.whitelistToken(marginToken.address, 10, 10, 1000);
     await vault.whitelistToken(investmentToken.address, 10, 10, 1);
@@ -85,14 +86,31 @@ describe("Euler strategy integration tests", function () {
       obtainedToken: etoken,
       collateral: marginTokenMargin,
       collateralIsSpentToken: true,
-      minObtained: marginTokenMargin, // todo: refine
+      minObtained: BigNumber.from(2).pow(255),
       maxSpent: marginTokenMargin.mul(leverage),
       deadline: deadline,
     };
   });
 
   it("Euler Strategy: open position", async function () {
+    // First call should revert since minObtained is too high
+    await expect(strategy.connect(trader1).openPosition(order)).to.be.reverted;
+
+    const [firstQuote] = await strategy.quote(order.spentToken, order.obtainedToken, order.maxSpent);
+
+    // 0.1% slippage
+    order.minObtained = firstQuote.mul(999).div(1000);
+
     await strategy.connect(trader1).openPosition(order);
+
+    const allowance = (await strategy.positions(1)).allowance;
+
+    // 0.01% tolerance
+    expect(allowance).to.be.above(firstQuote.mul(9999).div(10000));
+    expect(allowance).to.be.below(firstQuote.mul(10001).div(10000));
+
+    // Check that the strategy actually got the assets
+    expect(await investmentToken.balanceOf(strategy.address)).to.equal(allowance);
   });
 
   // await this.eulerStrategy
