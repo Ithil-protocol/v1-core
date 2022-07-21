@@ -214,7 +214,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
         if (order.collateralIsSpentToken) {
             collateralToken = order.spentToken;
-            toBorrow = order.maxSpent - order.collateral;
+            toBorrow = order.maxSpent.positiveSub(order.collateral);
         } else {
             collateralToken = order.obtainedToken;
             toBorrow = order.maxSpent;
