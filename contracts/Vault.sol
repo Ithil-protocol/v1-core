@@ -246,7 +246,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
                 vaultData.baseFee
             );
         }
-        fees = VaultMath.computeFees(amount, vaultData.fixedFee);
+        fees = vaultData.fixedFee;
 
         emit LoanTaken(borrower, token, amount, baseInterestRate);
     }

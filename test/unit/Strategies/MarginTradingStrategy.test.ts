@@ -160,13 +160,16 @@ describe("Margin Trading Strategy unit tests", function () {
     order.maxSpent = marginTokenMargin;
 
     const tBalanceBefore = await marginToken.balanceOf(trader1.address);
+    console.log("tBalanceBefore", ethers.utils.formatUnits(tBalanceBefore, 0));
 
     await strategy.connect(trader1).openPosition(order);
     const position = await strategy.positions(positionId);
+    console.log("Position fees", ethers.utils.formatUnits(position.fees, 0));
     const [maxOrMin] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);
     await strategy.connect(trader1).closePosition(positionId, maxOrMin);
     positionId++;
     const tBalanceAfter = await marginToken.balanceOf(trader1.address);
+    console.log("tBalanceAfter", ethers.utils.formatUnits(tBalanceAfter, 0));
   });
 
   it("Open a sub-1-leverage position and close immediately", async function () {
@@ -175,13 +178,11 @@ describe("Margin Trading Strategy unit tests", function () {
     order.minObtained = minObtained;
     order.maxSpent = marginTokenMargin.div(2);
 
-    const tBalanceBefore = await marginToken.balanceOf(trader1.address);
     await strategy.connect(trader1).openPosition(order);
     const position = await strategy.positions(positionId);
     const [maxOrMin] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);
     await strategy.connect(trader1).closePosition(positionId, maxOrMin);
     positionId++;
-    const tBalanceAfter = await marginToken.balanceOf(trader1.address);
   });
 
   it("Open position with price1", async function () {
@@ -213,8 +214,8 @@ describe("Margin Trading Strategy unit tests", function () {
 
     const position = await strategy.positions(positionId);
     fees = position.fees;
-    // Fees should be principal * fixedFee / 10000;
-    expect(fees).to.equal(position.principal.mul((await vault.vaults(marginToken.address)).fixedFee).div(10000));
+    // Fees should be (maxSpent) * fixedFee / 10000;
+    expect(fees).to.equal(order.maxSpent.mul((await vault.vaults(marginToken.address)).fixedFee).div(10000));
     expect(position.allowance).to.equal(minObtained);
     expect(position.principal).to.equal(marginTokenMargin.mul(leverage - 1));
     // no previous risk (first position open: interest rate is zero)

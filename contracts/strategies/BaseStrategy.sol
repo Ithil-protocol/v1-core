@@ -119,7 +119,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             principal: toBorrow,
             allowance: amountIn,
             interestRate: interestRate,
-            fees: fees,
+            fees: (fees * order.maxSpent) / VaultMath.RESOLUTION,
             createdAt: block.timestamp
         });
 
