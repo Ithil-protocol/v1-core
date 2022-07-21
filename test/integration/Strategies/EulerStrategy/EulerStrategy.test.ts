@@ -7,7 +7,7 @@ import { Signers } from "../../../types";
 import type { ERC20 } from "../../../../src/types/ERC20";
 
 import { tokens } from "../../../common/mainnet";
-import { euler, eulerMarkets, etoken } from "./constants";
+import { euler, eulerMarkets, etokenDAI } from "./constants";
 import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
 import { getTokens, expandToNDecimals, fundVault } from "../../../common/utils";
 
@@ -38,8 +38,10 @@ let liquidatorContract: Liquidator;
 let strategy: EulerStrategy;
 let tokensAmount: BigNumber;
 
-let marginToken: ERC20;
-let investmentToken: ERC20;
+let marginTokenDAI: ERC20;
+let marginTokenWETH: ERC20;
+let investmentTokenDAI: ERC20;
+let investmentTokenWETH: ERC20;
 
 let order: {
   spentToken: string;
@@ -69,21 +71,21 @@ describe("Euler strategy integration tests", function () {
     const staker = signers[1];
 
     const tokenArtifact: Artifact = await artifacts.readArtifact("ERC20");
-    marginToken = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.DAI.address);
-    investmentToken = <ERC20>await ethers.getContractAt(tokenArtifact.abi, etoken);
+    marginTokenDAI = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.DAI.address);
+    investmentTokenDAI = <ERC20>await ethers.getContractAt(tokenArtifact.abi, etokenDAI);
 
-    await vault.whitelistToken(marginToken.address, 10, 10, 1000);
-    await vault.whitelistToken(investmentToken.address, 10, 10, 1);
+    await vault.whitelistToken(marginTokenDAI.address, 10, 10, 1000);
+    await vault.whitelistToken(investmentTokenDAI.address, 10, 10, 1);
 
-    await getTokens(staker.address, marginToken.address, tokens.DAI.whale, marginTokenLiquidity);
-    await getTokens(trader1.address, marginToken.address, tokens.DAI.whale, marginTokenLiquidity);
-    await fundVault(signers[1], vault, marginToken, marginTokenLiquidity);
+    await getTokens(staker.address, marginTokenDAI.address, tokens.DAI.whale, marginTokenLiquidity);
+    await getTokens(trader1.address, marginTokenDAI.address, tokens.DAI.whale, marginTokenLiquidity);
+    await fundVault(signers[1], vault, marginTokenDAI, marginTokenLiquidity);
 
-    await marginToken.connect(trader1).approve(strategy.address, marginTokenMargin);
+    await marginTokenDAI.connect(trader1).approve(strategy.address, marginTokenMargin);
 
     order = {
-      spentToken: marginToken.address,
-      obtainedToken: etoken,
+      spentToken: marginTokenDAI.address,
+      obtainedToken: etokenDAI,
       collateral: marginTokenMargin,
       collateralIsSpentToken: true,
       minObtained: BigNumber.from(2).pow(255),
@@ -92,8 +94,10 @@ describe("Euler strategy integration tests", function () {
     };
   });
 
-  it("Euler Strategy: open position", async function () {
+  it("Euler Strategy: open position on DAI", async function () {
+    const initialVaultBalance = await marginTokenDAI.balanceOf(vault.address);
     // First call should revert since minObtained is too high
+
     await expect(strategy.connect(trader1).openPosition(order)).to.be.reverted;
 
     const [firstQuote] = await strategy.quote(order.spentToken, order.obtainedToken, order.maxSpent);
@@ -101,7 +105,9 @@ describe("Euler strategy integration tests", function () {
     // 0.1% slippage
     order.minObtained = firstQuote.mul(999).div(1000);
 
-    await strategy.connect(trader1).openPosition(order);
+    await strategy
+      .connect(trader1)
+      .openPosition(order, { gasPrice: ethers.utils.parseUnits("500", "gwei"), gasLimit: 30000000 });
 
     const allowance = (await strategy.positions(1)).allowance;
 
@@ -110,10 +116,44 @@ describe("Euler strategy integration tests", function () {
     expect(allowance).to.be.below(firstQuote.mul(10001).div(10000));
 
     // Check that the strategy actually got the assets
-    expect(await investmentToken.balanceOf(strategy.address)).to.equal(allowance);
+    expect(await investmentTokenDAI.balanceOf(strategy.address)).to.equal(allowance);
+
+    // Check that the vault has borrowed the expected tokens
+    expect(await marginTokenDAI.balanceOf(vault.address)).to.equal(
+      initialVaultBalance.sub(order.maxSpent.sub(order.collateral)),
+    );
   });
 
-  // await this.eulerStrategy
-  // .connect(trader)
-  // .closePosition(1, maxSpent, { gasPrice: ethers.utils.parseUnits("500", "gwei"), gasLimit: 30000000 });
+  it("Euler Strategy: close position on DAI", async function () {
+    const initialVaultBalance = await marginTokenDAI.balanceOf(vault.address);
+    const initialTraderBalance = await marginTokenDAI.balanceOf(trader1.address);
+    // Calculate how much we will obtain
+    const position = await strategy.positions(1);
+    const [obtained] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);
+
+    // Revert if we want to obtain too much
+    let minObtained = obtained.mul(11).div(10);
+    await expect(strategy.connect(trader1).closePosition(1, minObtained)).to.be.reverted;
+
+    // 0.1% slippage
+    minObtained = obtained.mul(999).div(1000);
+    const [, dueFees] = await strategy.computeLiquidationScore(position);
+    const tx = await strategy
+      .connect(trader1)
+      .closePosition(1, minObtained, { gasPrice: ethers.utils.parseUnits("500", "gwei"), gasLimit: 30000000 });
+    const receipt = await tx.wait();
+    const amountIn = receipt.events?.[receipt.events?.length - 1].args?.amountIn as BigNumber;
+
+    // Check that vault has gained
+    expect(await marginTokenDAI.balanceOf(vault.address)).to.equal(
+      initialVaultBalance.add(position.principal).add(dueFees),
+    );
+
+    // Check that the trader has the rest
+    expect(await marginTokenDAI.balanceOf(trader1.address)).to.equal(
+      initialTraderBalance.add(amountIn).sub(position.principal).sub(dueFees),
+    );
+  });
+
+  // todo: test the same but with WETH
 });

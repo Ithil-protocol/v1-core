@@ -7,8 +7,6 @@ import { IEulerEToken } from "../interfaces/external/IEulerEToken.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 
-import "hardhat/console.sol";
-
 /// @title    EulerStrategy contract
 /// @author   Ithil
 /// @notice   A strategy to perform leveraged staking on any Euler market
@@ -43,13 +41,16 @@ contract EulerStrategy is BaseStrategy {
         eTkn.deposit(0, order.maxSpent);
     }
 
-    function _closePosition(Position memory position, uint256 expectedCost)
+    function _closePosition(Position memory position, uint256 maxOrMin)
         internal
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
         IEulerEToken eTkn = IEulerEToken(position.heldToken);
+        amountOut = position.allowance;
         amountIn = eTkn.convertBalanceToUnderlying(position.allowance);
+        // We only support underlying margin, therefore maxOrMin is always a min
+        if (amountIn < maxOrMin) revert Strategy__Insufficient_Amount_Out(amountIn, maxOrMin);
         eTkn.withdraw(0, amountIn);
 
         IERC20(position.owedToken).safeTransfer(address(vault), amountIn);
@@ -61,8 +62,13 @@ contract EulerStrategy is BaseStrategy {
         uint256 amount
     ) public view override returns (uint256, uint256) {
         address eToken = markets.underlyingToEToken(src);
-        uint256 obtained = IEulerEToken(eToken).convertUnderlyingToBalance(amount);
-
+        uint256 obtained;
+        if (eToken != address(0)) {
+            obtained = IEulerEToken(eToken).convertUnderlyingToBalance(amount);
+        } else {
+            eToken = markets.underlyingToEToken(dst);
+            obtained = IEulerEToken(eToken).convertBalanceToUnderlying(amount);
+        }
         return (obtained, obtained);
     }
 }

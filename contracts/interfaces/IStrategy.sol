@@ -133,7 +133,7 @@ interface IStrategy {
     );
 
     /// @notice Emitted when a position is closed
-    event PositionWasClosed(uint256 indexed id);
+    event PositionWasClosed(uint256 indexed id, uint256 amountIn, uint256 amountOut, uint256 fees);
 
     /// @notice Emitted when a position is liquidated
     event PositionWasLiquidated(uint256 indexed id);

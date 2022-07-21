@@ -176,7 +176,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         if (vaultRepaid < position.principal + position.fees)
             revert Strategy__Loan_Not_Repaid(vaultRepaid, position.principal + position.fees);
 
-        emit PositionWasClosed(positionId);
+        emit PositionWasClosed(positionId, amountIn, amountOut, position.fees);
     }
 
     function editPosition(uint256 positionId, uint256 topUp) external override unlocked isPositionEditable(positionId) {
