@@ -279,10 +279,20 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             else (maxOrMin, ) = quote(position.heldToken, position.owedToken, position.allowance);
             (uint256 amountIn, ) = _closePosition(position, maxOrMin);
             // Computation of reward is done by adding to the dueFees
-            if (amountIn >= position.principal + dueFees)
-                dueFees +=
-                    ((amountIn - position.principal - dueFees) * (VaultMath.RESOLUTION - reward)) /
-                    VaultMath.RESOLUTION;
+            dueFees +=
+                ((amountIn.positiveSub(position.principal + dueFees)) * (VaultMath.RESOLUTION - reward)) /
+                VaultMath.RESOLUTION;
+
+            // In a bad liquidation event, 5% of the paid amount is transferred
+            // Linearly scales with reward (with 0 reward corresponding to 0 transfer)
+            // A direct transfer is needed since repay does not transfer anything
+            // The check is done *after* the repay because surely the vault has the balance
+
+            // If position.principal + dueFees < amountIn < 20 * (position.principal + dueFees) / 19
+            // then amountIn / 20 > amountIn - principal - dueFees and the liquidator may be better off
+            // not liquidating the position and instead wait for it to become bad liquidation
+            if (amountIn < (20 * (position.principal + dueFees)) / 19)
+                amountIn -= (amountIn * reward) / (20 * VaultMath.RESOLUTION);
 
             vault.repay(
                 position.owedToken,
@@ -292,13 +302,6 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
                 riskFactors[position.heldToken],
                 liquidatorUser
             );
-
-            // In a bad liquidation event, 5% of the paid amount is transferred
-            // A direct transfer is needed since repay does not transfer anything
-            // The check is done *after* the repay because surely the vault has the balance
-            if (amountIn < position.principal + dueFees) {
-                IERC20(position.owedToken).transferFrom(address(vault), liquidatorUser, amountIn / 20);
-            }
 
             emit PositionWasLiquidated(positionId);
         } else revert Strategy__Position_Not_Liquidable(positionId, score);

@@ -80,7 +80,7 @@ library VaultState {
     }
 
     function subtractInsuranceReserve(VaultState.VaultData storage self, uint256 b) private {
-        self.insuranceReserveBalance = GeneralMath.positiveSub(self.insuranceReserveBalance, b);
+        self.insuranceReserveBalance = self.insuranceReserveBalance.positiveSub(b);
     }
 
     function repayLoan(
@@ -101,7 +101,12 @@ library VaultState {
             self.latestRepay = block.timestamp;
 
             if (!token.transfer(borrower, amount - debt - fees)) revert Vault__Repay_Failed();
-        } else if (amount < debt) subtractInsuranceReserve(self, debt - amount);
+        } else {
+            // Bad liquidation: rewards the liquidator with 5% of the amountIn
+            // amount is already adjusted in BaseStrategy
+            if (amount < debt) subtractInsuranceReserve(self, debt - amount);
+            if (!token.transfer(borrower, amount / 19)) revert Vault__Repay_Failed();
+        }
     }
 
     function calculateLockedProfit(VaultState.VaultData memory self) internal view returns (uint256) {
