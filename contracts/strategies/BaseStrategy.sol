@@ -133,6 +133,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             toBorrow,
             amountIn,
             interestRate,
+            fees,
             block.timestamp
         );
 
