@@ -152,7 +152,7 @@ interface IVault {
     event StrategyWasRemoved(address strategy);
 
     /// @notice Emitted when a token is whitelisted
-    event TokenWasWhitelisted(address indexed token);
+    event TokenWasWhitelisted(address indexed token, uint256 baseFee, uint256 fixedFee, uint256 minimumMargin);
 
     /// @notice Emitted when a loan is opened and issued
     event LoanTaken(address indexed user, address indexed token, uint256 amount, uint256 baseInterestRate);

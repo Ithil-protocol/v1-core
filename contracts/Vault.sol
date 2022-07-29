@@ -124,7 +124,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         vaults[token].fixedFee = fixedFee;
         vaults[token].minimumMargin = minimumMargin;
 
-        emit TokenWasWhitelisted(token);
+        emit TokenWasWhitelisted(token, baseFee, fixedFee, minimumMargin);
     }
 
     function whitelistTokenAndExec(
