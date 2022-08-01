@@ -87,25 +87,17 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     }
 
     function openPosition(Order calldata order) external override validOrder(order) unlocked returns (uint256) {
+        uint256 initialDstBalance = IERC20(order.obtainedToken).balanceOf(address(this));
         (uint256 interestRate, uint256 fees, uint256 toBorrow, address collateralToken) = _borrow(order);
 
-        uint256 balance = IERC20(order.spentToken).balanceOf(address(this));
-        if (balance < order.maxSpent) revert Strategy__Not_Enough_Liquidity(balance, order.maxSpent);
+        uint256 amountIn = _openPosition(order);
 
-        uint256 amountIn = 0;
-        if (!order.collateralIsSpentToken) {
-            amountIn = _openPosition(order);
-            amountIn += order.collateral;
+        if (!order.collateralIsSpentToken) amountIn += order.collateral;
 
-            // slither-disable-next-line divide-before-multiply
-            interestRate *= amountIn / order.collateral;
-        } else {
-            uint256 initialDstBalance = IERC20(order.obtainedToken).balanceOf(address(this));
-            amountIn = _openPosition(order);
-
-            // slither-disable-next-line divide-before-multiply
-            interestRate *= (toBorrow * initialDstBalance) / (order.collateral * (initialDstBalance + amountIn));
-        }
+        // slither-disable-next-line divide-before-multiply
+        interestRate *=
+            (toBorrow * (amountIn + 2 * initialDstBalance)) /
+            (2 * order.collateral * (initialDstBalance + amountIn));
 
         if (interestRate > VaultMath.MAX_RATE) revert Strategy__Maximum_Leverage_Exceeded(interestRate);
 
@@ -274,10 +266,9 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             _burn(positionId);
             uint256 maxOrMin = 0;
             bool collateralInHeldTokens = position.collateralToken != position.owedToken;
-            if (collateralInHeldTokens)
-                (maxOrMin, ) = quote(position.owedToken, position.heldToken, position.principal + dueFees);
+            if (collateralInHeldTokens) maxOrMin = position.allowance;
             else (maxOrMin, ) = quote(position.heldToken, position.owedToken, position.allowance);
-            (uint256 amountIn, ) = _closePosition(position, maxOrMin);
+            (uint256 amountIn, uint256 amountOut) = _closePosition(position, maxOrMin);
             // Computation of reward is done by adding to the dueFees
             if (amountIn >= position.principal + dueFees)
                 dueFees +=
@@ -357,11 +348,21 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             // reduce due fees based on reward (max 50%)
             position.fees += (dueFees * (2 * VaultMath.RESOLUTION - reward)) / (2 * VaultMath.RESOLUTION);
             position.createdAt = block.timestamp;
+            bool collateralInOwedToken = position.collateralToken != position.heldToken;
+            if (collateralInOwedToken)
+                vault.repay(
+                    position.owedToken,
+                    newCollateral,
+                    newCollateral,
+                    0,
+                    riskFactors[position.heldToken],
+                    liquidatorUser
+                );
             position.topUpCollateral(
                 liquidatorUser,
-                position.collateralToken != position.heldToken ? address(vault) : address(this),
+                collateralInOwedToken ? address(vault) : address(this),
                 newCollateral,
-                position.collateralToken != position.heldToken
+                collateralInOwedToken
             );
             (int256 newScore, ) = computeLiquidationScore(position);
             if (newScore > 0) revert Strategy__Insufficient_Margin_Provided(newScore);
