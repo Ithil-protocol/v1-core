@@ -109,7 +109,7 @@ describe("Test strategy unit tests", function () {
     expect(await strategy.symbol()).to.equal("ITHIL-TS-POS");
   });
 
-  it("NFT transfer check", async function () {
+  it("NFT transfer check and close", async function () {
     await strategy.connect(trader1).openPosition(order);
     await expect(strategy.connect(admin).transferFrom(admin.address, trader1.address, 1)).to.be.reverted;
 
@@ -118,17 +118,12 @@ describe("Test strategy unit tests", function () {
     expect(await strategy.ownerOf(1)).to.be.equal(admin.address);
     expect(await strategy.balanceOf(trader1.address)).to.be.equal(0);
     expect(await strategy.balanceOf(admin.address)).to.be.equal(1);
-  });
 
-  it("Open-close position NFT balance check", async function () {
-    await strategy.connect(trader1).openPosition(order);
+    await strategy.connect(admin).closePosition(1, 0);
 
-    await strategy.connect(trader1).transferFrom(trader1.address, trader2.address, 2);
-    await strategy.connect(trader2).closePosition(2, 0);
-
-    expect(await marginToken.balanceOf(trader2.address)).to.be.gt(0);
+    expect(await marginToken.balanceOf(admin.address)).to.be.gt(0);
     expect(await strategy.balanceOf(trader1.address)).to.be.equal(0);
-    expect(await strategy.balanceOf(trader2.address)).to.be.equal(0);
+    expect(await strategy.balanceOf(admin.address)).to.be.equal(0);
   });
 
   it("Arbitrary borrow", async function () {

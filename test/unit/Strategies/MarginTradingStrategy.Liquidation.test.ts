@@ -263,6 +263,10 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     order.maxSpent = marginTokenMargin.mul(leverage);
     order.collateralIsSpentToken = true;
 
+    // at this point the strategy should have no asset
+    expect(await marginToken.balanceOf(strategy.address)).to.equal(0);
+    expect(await investmentToken.balanceOf(strategy.address)).to.equal(0);
+
     // calculate minimum obtained and open position (0% slippage since we are mock)
     const [minObtained] = await strategy.quote(
       marginToken.address,
@@ -300,6 +304,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     // The position is not closed, but it changed ownership
     await expect(strategy.connect(trader1).closePosition(3, maxSpent)).to.be.reverted;
     await strategy.connect(liquidator).closePosition(3, maxSpent);
+    expect((await strategy.positions(3)).principal).to.equal(0);
   });
 
   it("Check margin call on a short position", async function () {
@@ -359,6 +364,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     // The position is not closed, but it changed ownership
     await expect(strategy.connect(trader1).closePosition(4, maxSpent)).to.be.reverted;
     await strategy.connect(liquidator).closePosition(4, maxSpent);
+    expect((await strategy.positions(4)).principal).to.equal(0);
   });
 
   it("Check purchase assets on a long position", async function () {
@@ -409,7 +415,9 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     await mockKyberNetworkProxy.setRate(investmentToken.address, newPrice);
     const [, newDueFees] = await strategy.computeLiquidationScore(position);
     [fairPrice] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);
-    price = fairPrice.add(dueFees);
+
+    // Allow for 1% slippage
+    price = fairPrice.add(dueFees).mul(101).div(100);
     await liquidatorContract.connect(liquidator).purchaseAssets(strategy.address, 5, price);
     position = await strategy.positions(5);
     expect(position.principal).to.equal(0);

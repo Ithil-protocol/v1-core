@@ -137,12 +137,12 @@ describe("Euler strategy integration tests", function () {
 
     // 0.1% slippage
     minObtained = obtained.mul(999).div(1000);
-    const [, dueFees] = await strategy.computeLiquidationScore(position);
     const tx = await strategy
       .connect(trader1)
       .closePosition(1, minObtained, { gasPrice: ethers.utils.parseUnits("500", "gwei"), gasLimit: 30000000 });
     const receipt = await tx.wait();
     const amountIn = receipt.events?.[receipt.events?.length - 1].args?.amountIn as BigNumber;
+    const dueFees = receipt.events?.[receipt.events?.length - 1].args?.fees as BigNumber;
 
     // Check that vault has gained
     expect(await marginTokenDAI.balanceOf(vault.address)).to.equal(
