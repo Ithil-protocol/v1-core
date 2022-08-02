@@ -24,6 +24,7 @@ coverage.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+crytic-export/
 
 # generated types and abi
 abi/*
