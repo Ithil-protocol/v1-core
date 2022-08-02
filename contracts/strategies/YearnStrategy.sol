@@ -2,9 +2,11 @@
 pragma solidity >=0.8.12;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IYearnRegistry } from "../interfaces/external/IYearnRegistry.sol";
 import { IYearnVault } from "../interfaces/external/IYearnVault.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
+import { GeneralMath } from "../libraries/GeneralMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 
 /// @title    YearnStrategy contract
@@ -12,6 +14,7 @@ import { BaseStrategy } from "./BaseStrategy.sol";
 /// @notice   A strategy to perform leveraged staking on any Yearn vault
 contract YearnStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
+    using GeneralMath for uint256;
 
     IYearnRegistry internal immutable registry;
 
@@ -32,13 +35,21 @@ contract YearnStrategy is BaseStrategy {
         amountIn = IYearnVault(yvault).deposit(order.maxSpent, address(this));
     }
 
-    function _closePosition(Position memory position, uint256 expectedCost)
+    function _closePosition(Position memory position, uint256 maxOrMin)
         internal
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
+        // We only support native token margin (to avoid whitelisting nightmares)
+        // In particular, maxOrMin is always a "min"
         IYearnVault yvault = IYearnVault(position.heldToken);
-        amountIn = yvault.withdraw(position.allowance, address(vault), expectedCost);
+
+        uint256 expectedObtained = (yvault.pricePerShare() * position.allowance) /
+            (10**IERC20Metadata(position.owedToken).decimals());
+        uint256 maxLoss = (expectedObtained.positiveSub(maxOrMin) * 10000) / expectedObtained;
+
+        amountIn = yvault.withdraw(position.allowance, address(vault), maxLoss);
+        amountOut = position.allowance;
     }
 
     function quote(
@@ -46,11 +57,21 @@ contract YearnStrategy is BaseStrategy {
         address dst,
         uint256 amount
     ) public view override returns (uint256, uint256) {
-        address vaultAddress = registry.latestVault(src);
-        IYearnVault yvault = IYearnVault(vaultAddress);
+        IYearnVault yvault;
 
-        uint256 obtained = yvault.pricePerShare();
-        obtained *= amount;
-        return (obtained, obtained);
+        uint256 amountOut;
+
+        try registry.latestVault(src) returns (address vaultAddress) {
+            yvault = IYearnVault(vaultAddress);
+            uint256 decimals = 10**IERC20Metadata(src).decimals();
+            amountOut = (amount * decimals) / yvault.pricePerShare();
+        } catch {
+            address vaultAddress = registry.latestVault(dst);
+            yvault = IYearnVault(vaultAddress);
+            uint256 decimals = 10**IERC20Metadata(dst).decimals();
+            amountOut = (amount * yvault.pricePerShare()) / decimals;
+        }
+
+        return (amountOut, amountOut);
     }
 }

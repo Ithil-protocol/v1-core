@@ -124,7 +124,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         vaults[token].fixedFee = fixedFee;
         vaults[token].minimumMargin = minimumMargin;
 
-        emit TokenWasWhitelisted(token);
+        emit TokenWasWhitelisted(token, baseFee, fixedFee, minimumMargin);
     }
 
     function whitelistTokenAndExec(
@@ -235,17 +235,18 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         checkWhitelisted(token);
 
         VaultState.VaultData storage vaultData = vaults[token];
-        uint256 freeLiquidity = vaultData.takeLoan(IERC20(token), amount, riskFactor);
+        if (amount > 0) {
+            uint256 freeLiquidity = vaultData.takeLoan(IERC20(token), amount, riskFactor);
 
-        baseInterestRate = VaultMath.computeInterestRateNoLeverage(
-            vaultData.netLoans - amount,
-            freeLiquidity,
-            vaultData.insuranceReserveBalance,
-            riskFactor,
-            vaultData.baseFee
-        );
-
-        fees = VaultMath.computeFees(amount, vaultData.fixedFee);
+            baseInterestRate = VaultMath.computeInterestRateNoLeverage(
+                vaultData.netLoans - amount,
+                freeLiquidity,
+                vaultData.insuranceReserveBalance,
+                riskFactor,
+                vaultData.baseFee
+            );
+        }
+        fees = vaultData.fixedFee;
 
         emit LoanTaken(borrower, token, amount, baseInterestRate);
     }
