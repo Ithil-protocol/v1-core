@@ -65,6 +65,20 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         guardian = _guardian;
     }
 
+    function toggleOusdRebase(bool enabled) external onlyOwner {
+        if (enabled) {
+            (bool success, ) = address(0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86).call(
+                abi.encodeWithSignature("rebaseOptIn()")
+            );
+            assert(success);
+        } else {
+            (bool success, ) = address(0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86).call(
+                abi.encodeWithSignature("rebaseOptOut()")
+            );
+            assert(success);
+        }
+    }
+
     function checkWhitelisted(address token) public view override {
         if (!vaults[token].supported && token != ETH) revert Vault__Unsupported_Token(token);
     }
@@ -125,20 +139,6 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         vaults[token].minimumMargin = minimumMargin;
 
         emit TokenWasWhitelisted(token, baseFee, fixedFee, minimumMargin);
-    }
-
-    function whitelistTokenAndExec(
-        address token,
-        uint256 baseFee,
-        uint256 fixedFee,
-        uint256 minimumMargin,
-        bytes calldata data
-    ) external override onlyOwner {
-        whitelistToken(token, baseFee, fixedFee, minimumMargin);
-
-        // slither-disable-next-line controlled-delegatecall
-        (bool success, ) = token.delegatecall(data);
-        assert(success);
     }
 
     function editMinimumMargin(address token, uint256 minimumMargin) external override onlyOwner {
