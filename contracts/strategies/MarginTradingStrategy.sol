@@ -54,13 +54,8 @@ contract MarginTradingStrategy is BaseStrategy {
         address dst,
         uint256 amount
     ) public view override returns (uint256, uint256) {
-        int256 priceSrc;
-        int256 priceDst;
-        uint256 timestampSrc = 0;
-        uint256 timestampDst = 0;
-
-        (, priceSrc, , timestampSrc, ) = feedRegistry.latestRoundData(src, Denominations.USD);
-        (, priceDst, , timestampDst, ) = feedRegistry.latestRoundData(dst, Denominations.USD);
+        (, int256 priceSrc, , , ) = feedRegistry.latestRoundData(src, Denominations.USD);
+        (, int256 priceDst, , , ) = feedRegistry.latestRoundData(dst, Denominations.USD);
 
         uint256 val = (uint256(priceSrc) / uint256(priceDst)) * amount;
 
