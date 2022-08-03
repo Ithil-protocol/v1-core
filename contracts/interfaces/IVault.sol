@@ -78,16 +78,6 @@ interface IVault {
         uint256 minimumMargin
     ) external;
 
-    /// @notice adds a new supported token and executes an arbitrary function on it
-    /// @param data Arbitrary data to be executed
-    function whitelistTokenAndExec(
-        address token,
-        uint256 baseFee,
-        uint256 fixedFee,
-        uint256 minimumMargin,
-        bytes calldata data
-    ) external;
-
     /// @notice edits the current min margin for a specific token
     function editMinimumMargin(address token, uint256 minimumMargin) external;
 
