@@ -3,6 +3,8 @@ pragma solidity >=0.8.12;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { FeedRegistryInterface } from "@chainlink/contracts/src/v0.8/interfaces/FeedRegistryInterface.sol";
+import { Denominations } from "@chainlink/contracts/src/v0.8/Denominations.sol";
 import { IKyberNetworkProxy } from "../interfaces/external/IKyberNetworkProxy.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
@@ -14,13 +16,16 @@ contract MarginTradingStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
 
     IKyberNetworkProxy public immutable kyberProxy;
+    FeedRegistryInterface public immutable feedRegistry;
 
     constructor(
         address _vault,
         address _liquidator,
-        address _kyber
+        address _kyber,
+        address _feed
     ) BaseStrategy(_vault, _liquidator, "MarginTradingStrategy", "ITHIL-MS-POS") {
         kyberProxy = IKyberNetworkProxy(_kyber);
+        feedRegistry = FeedRegistryInterface(_feed);
     }
 
     function _openPosition(Order calldata order) internal override returns (uint256 amountIn) {
@@ -49,10 +54,17 @@ contract MarginTradingStrategy is BaseStrategy {
         address dst,
         uint256 amount
     ) public view override returns (uint256, uint256) {
-        (uint256 rate, ) = kyberProxy.getExpectedRate(IERC20(src), IERC20(dst), amount);
-        uint256 ratedUnit = 10**IERC20Metadata(src).decimals();
+        int256 priceSrc;
+        int256 priceDst;
+        uint256 timestampSrc = 0;
+        uint256 timestampDst = 0;
 
-        return ((rate * amount) / ratedUnit, (rate * amount) / ratedUnit);
+        (, priceSrc, , timestampSrc, ) = feedRegistry.latestRoundData(src, Denominations.USD);
+        (, priceDst, , timestampDst, ) = feedRegistry.latestRoundData(dst, Denominations.USD);
+
+        uint256 val = (uint256(priceSrc) / uint256(priceDst)) * amount;
+
+        return (val, val);
     }
 
     function _swap(
