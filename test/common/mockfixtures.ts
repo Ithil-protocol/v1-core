@@ -116,6 +116,7 @@ export const mockMarginTradingFixture: Fixture<MockMarginTradingStrategyFixture>
             vault.address,
             liquidatorContract.address,
             mockKyberNetworkProxy.address,
+            "0x0000000000000000000000000000000000000000",
           ])
         );
         await vault.addStrategy(strategy.address);

@@ -7,7 +7,7 @@ import type { ERC20 } from "../../../../src/types/ERC20";
 import { MarginTradingStrategy } from "../../../../src/types/MarginTradingStrategy";
 import { Vault } from "../../../../src/types/Vault";
 import { Liquidator } from "../../../../src/types/Liquidator";
-import { kyberNetwork } from "./constants";
+import { kyberNetwork, chainlinkFeed } from "./constants";
 
 interface MarginTradingStrategyFixture {
   WETH: ERC20;
@@ -49,7 +49,12 @@ export const marginTradingFixture: Fixture<MarginTradingStrategyFixture> =
       createStrategy: async () => {
         const mtsArtifact: Artifact = await artifacts.readArtifact("MarginTradingStrategy");
         const strategy = <MarginTradingStrategy>(
-          await deployContract(admin, mtsArtifact, [vault.address, liquidatorContract.address, kyberNetwork])
+          await deployContract(admin, mtsArtifact, [
+            vault.address,
+            liquidatorContract.address,
+            kyberNetwork,
+            chainlinkFeed,
+          ])
         );
         await vault.addStrategy(strategy.address);
         return strategy;
