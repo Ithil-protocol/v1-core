@@ -31,8 +31,6 @@ jobs:
 
       - name: Run yarn compile
         run: yarn compile
-        env:
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
 
       - name: Run Slither
         uses: crytic/slither-action@v0.1.1
