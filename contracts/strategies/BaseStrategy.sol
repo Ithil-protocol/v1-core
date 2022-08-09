@@ -4,6 +4,7 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
 import { IVault } from "../interfaces/IVault.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
@@ -245,13 +246,13 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
         if (collateralInOwedToken) {
             (expectedTokens, ) = quote(position.heldToken, position.owedToken, position.allowance);
-            profitAndLoss = int256(expectedTokens) - int256(position.principal + dueFees);
+            profitAndLoss = SafeCast.toInt256(expectedTokens) - SafeCast.toInt256(position.principal + dueFees);
         } else {
             (expectedTokens, ) = quote(position.owedToken, position.heldToken, position.principal + dueFees);
-            profitAndLoss = int256(position.allowance) - int256(expectedTokens);
+            profitAndLoss = SafeCast.toInt256(position.allowance) - SafeCast.toInt256(expectedTokens);
         }
 
-        score = int256(position.collateral * pairRiskFactor) - profitAndLoss * int24(VaultMath.RESOLUTION);
+        score = SafeCast.toInt256(position.collateral * pairRiskFactor) - profitAndLoss * int24(VaultMath.RESOLUTION);
     }
 
     function forcefullyClose(
