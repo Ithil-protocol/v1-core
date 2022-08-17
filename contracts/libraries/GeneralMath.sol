@@ -10,4 +10,8 @@ library GeneralMath {
     function positiveSub(uint256 a, uint256 b) internal pure returns (uint256 c) {
         if (a > b) c = a - b;
     }
+
+    function ceilingDiv(uint256 a, uint256 b) internal pure returns (uint256 c) {
+        if (a > 0) c = 1 + (a - 1) / b;
+    }
 }
