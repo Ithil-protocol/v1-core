@@ -58,7 +58,7 @@ contract MockYearnVault is IYearnVault, ERC20, Ownable {
     }
 
     function _pricePerShare() internal view returns (uint256) {
-        (bool success, bytes memory data) = registry.staticcall(abi.encodeWithSignature("priceForShare()"));
+        (bool success, bytes memory data) = registry.staticcall(abi.encodeWithSignature("pricePerShare()"));
         require(success, "MockYearnVault: static call error");
 
         return abi.decode(data, (uint256));
