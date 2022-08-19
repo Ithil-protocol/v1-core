@@ -53,60 +53,60 @@ let order: {
 
 describe("Yearn strategy unit tests", function () {
   before("create fixture loader", async () => {
-    before("create fixture loader", async () => {
-      [wallet, other] = await (ethers as any).getSigners();
-      loadFixture = createFixtureLoader([wallet, other]);
-    });
+    [wallet, other] = await (ethers as any).getSigners();
+    loadFixture = createFixtureLoader([wallet, other]);
+  });
 
-    before("load fixtures", async () => {
-      ({ mockWETH, admin, trader1, trader2, liquidator, vault, liquidatorContract, mockYearnRegistry, createStrategy } =
-        await loadFixture(mockYearnFixture));
-      strategy = await createStrategy();
-    });
+  before("load fixtures", async () => {
+    ({ mockWETH, admin, trader1, trader2, liquidator, vault, liquidatorContract, mockYearnRegistry, createStrategy } =
+      await loadFixture(mockYearnFixture));
+    strategy = await createStrategy();
+  });
 
-    before("prepare vault with default parameters", async () => {
-      const signers: SignerWithAddress[] = await ethers.getSigners();
-      const staker = signers[1];
+  before("prepare vault with default parameters", async () => {
+    const signers: SignerWithAddress[] = await ethers.getSigners();
+    const staker = signers[1];
 
-      const tokenArtifact: Artifact = await artifacts.readArtifact("MockToken");
-      marginToken = <MockToken>await waffle.deployContract(admin, tokenArtifact, ["Margin mock token", "MGN", 18]);
-      investmentToken = <MockToken>(
-        await waffle.deployContract(admin, tokenArtifact, ["Investment mock token", "INV", 18])
-      );
+    const tokenArtifact: Artifact = await artifacts.readArtifact("MockToken");
+    marginToken = <MockToken>await waffle.deployContract(admin, tokenArtifact, ["Margin mock token", "MGN", 18]);
+    investmentToken = <MockToken>(
+      await waffle.deployContract(admin, tokenArtifact, ["Investment mock token", "INV", 18])
+    );
 
-      await vault.whitelistToken(marginToken.address, 10, 10, 1000);
-      await vault.whitelistToken(investmentToken.address, 10, 10, 1);
+    await vault.whitelistToken(marginToken.address, 10, 10, 1000);
+    await vault.whitelistToken(investmentToken.address, 10, 10, 1);
 
-      await fundVault(staker, vault, marginToken, marginTokenLiquidity);
-      await marginToken.connect(trader1).approve(strategy.address, marginTokenMargin);
+    // mint margin tokens to staker and fund vault
+    await marginToken.mintTo(staker.address, expandToNDecimals(100000, 18));
+    await fundVault(staker, vault, marginToken, marginTokenLiquidity);
+    await marginToken.connect(trader1).approve(strategy.address, marginTokenMargin);
 
-      order = {
-        spentToken: marginToken.address,
-        obtainedToken: investmentToken.address,
-        collateral: marginTokenMargin,
-        collateralIsSpentToken: true,
-        minObtained: BigNumber.from(2).pow(255), // this order is invalid unless we reduce this parameter
-        maxSpent: marginTokenMargin.mul(leverage),
-        deadline: deadline,
-      };
-      await strategy.setRiskFactor(marginToken.address, 3000);
-      await strategy.setRiskFactor(investmentToken.address, 4000);
+    order = {
+      spentToken: marginToken.address,
+      obtainedToken: investmentToken.address,
+      collateral: marginTokenMargin,
+      collateralIsSpentToken: true,
+      minObtained: BigNumber.from(2).pow(255), // this order is invalid unless we reduce this parameter
+      maxSpent: marginTokenMargin.mul(leverage),
+      deadline: deadline,
+    };
+    await strategy.setRiskFactor(marginToken.address, 3000);
+    await strategy.setRiskFactor(investmentToken.address, 4000);
 
-      // mint tokens
-      await marginToken.mintTo(mockYearnRegistry.address, ethers.constants.MaxInt256);
-      await investmentToken.mintTo(mockYearnRegistry.address, ethers.constants.MaxInt256);
+    // mint tokens
+    await marginToken.mintTo(mockYearnRegistry.address, ethers.constants.MaxInt256);
+    await investmentToken.mintTo(mockYearnRegistry.address, ethers.constants.MaxInt256);
 
-      // create yvault
-      await mockYearnRegistry.newVault(marginToken.address);
-    });
+    // create yvault
+    await mockYearnRegistry.newVault(marginToken.address);
   });
 
   it("Set rate and quote", async function () {
-    await mockYearnRegistry.setSharePrice(marginToken.address, 1);
-    await mockYearnRegistry.setSharePrice(investmentToken.address, 2);
-    let [quoted] = await strategy.quote(marginToken.address, investmentToken.address, 9); // 5000 * 9 / 15000 = 3
+    await mockYearnRegistry.setSharePrice(marginToken.address, expandToNDecimals(3, 18));
+    const yearnVault = await mockYearnRegistry.latestVault(marginToken.address);
+    let [quoted] = await strategy.quote(marginToken.address, yearnVault, 9); // 5000 * 9 / 15000 = 3
     expect(quoted).to.equal(3);
-    [quoted] = await strategy.quote(investmentToken.address, marginToken.address, 7); // 15000 * 7 / 5000 = 21
+    [quoted] = await strategy.quote(yearnVault, marginToken.address, 7); // 15000 * 7 / 5000 = 21
     expect(quoted).to.equal(21);
   });
 });
