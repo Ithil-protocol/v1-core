@@ -1,8 +1,9 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import type { Artifact } from "hardhat/types";
+import { expect } from "chai";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import type { Vault } from "../../../src/types/Vault";
-import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
+import { MockYearnRegistry } from "../../../src/types/MockYearnRegistry";
 import { MockWETH } from "../../../src/types/MockWETH";
 import { MockToken } from "../../../src/types/MockToken";
 import { YearnStrategy } from "../../../src/types/YearnStrategy";
@@ -13,6 +14,7 @@ import { marginTokenMargin, marginTokenLiquidity, leverage } from "../../common/
 
 import { mockYearnFixture } from "../../common/mockfixtures";
 import { BigNumber, Wallet } from "ethers";
+import { yearnRegistry } from "../../integration/Strategies/YearnStrategy/constants";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -34,7 +36,7 @@ let vault: Vault;
 let liquidatorContract: Liquidator;
 let strategy: YearnStrategy;
 let tokensAmount: BigNumber;
-let mockKyberNetworkProxy: MockKyberNetworkProxy;
+let mockYearnRegistry: MockYearnRegistry;
 
 let marginToken: MockToken;
 let investmentToken: MockToken;
@@ -57,9 +59,8 @@ describe("Yearn strategy unit tests", function () {
     });
 
     before("load fixtures", async () => {
-      ({ mockWETH, admin, trader1, trader2, liquidator, vault, liquidatorContract, createStrategy } = await loadFixture(
-        mockYearnFixture,
-      ));
+      ({ mockWETH, admin, trader1, trader2, liquidator, vault, liquidatorContract, mockYearnRegistry, createStrategy } =
+        await loadFixture(mockYearnFixture));
       strategy = await createStrategy();
     });
 
@@ -92,8 +93,20 @@ describe("Yearn strategy unit tests", function () {
       await strategy.setRiskFactor(investmentToken.address, 4000);
 
       // mint tokens
-      await marginToken.mintTo(mockKyberNetworkProxy.address, ethers.constants.MaxInt256);
-      await investmentToken.mintTo(mockKyberNetworkProxy.address, ethers.constants.MaxInt256);
+      await marginToken.mintTo(mockYearnRegistry.address, ethers.constants.MaxInt256);
+      await investmentToken.mintTo(mockYearnRegistry.address, ethers.constants.MaxInt256);
+
+      // create yvault
+      await mockYearnRegistry.newVault(marginToken.address);
     });
+  });
+
+  it("Set rate and quote", async function () {
+    await mockYearnRegistry.setSharePrice(marginToken.address, 1);
+    await mockYearnRegistry.setSharePrice(investmentToken.address, 2);
+    let [quoted] = await strategy.quote(marginToken.address, investmentToken.address, 9); // 5000 * 9 / 15000 = 3
+    expect(quoted).to.equal(3);
+    [quoted] = await strategy.quote(investmentToken.address, marginToken.address, 7); // 15000 * 7 / 5000 = 21
+    expect(quoted).to.equal(21);
   });
 });

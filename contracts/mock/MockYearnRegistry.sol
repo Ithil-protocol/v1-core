@@ -4,7 +4,6 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IYearnRegistry } from "../interfaces/external/IYearnRegistry.sol";
-import { IYearnVault } from "../interfaces/external/IYearnVault.sol";
 import { MockYearnVault } from "./MockYearnVault.sol";
 
 /// @dev Used for testing, unaudited
