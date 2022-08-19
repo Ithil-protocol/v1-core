@@ -8,7 +8,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 /// @author   Ithil
 /// @notice   A library to create a SVG image on-chain
 library SVGImage {
-    /* eslint-disable quotes, max-line-length */
+    /* solhint-disable quotes, max-line-length */
     function generateMetadata(
         string memory name,
         string memory symbol,
@@ -53,5 +53,5 @@ library SVGImage {
                 )
             );
     }
-    /* eslint-enable quotes, max-line-length */
+    /* solhint-enable quotes, max-line-length */
 }
