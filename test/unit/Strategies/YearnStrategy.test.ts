@@ -92,12 +92,15 @@ describe("Yearn strategy unit tests", function () {
       await strategy.setRiskFactor(marginToken.address, 3000);
       await strategy.setRiskFactor(investmentToken.address, 4000);
 
-      // mint tokens
-      await marginToken.mintTo(mockYearnRegistry.address, ethers.constants.MaxInt256);
-      await investmentToken.mintTo(mockYearnRegistry.address, ethers.constants.MaxInt256);
-
       // create yvault
       await mockYearnRegistry.newVault(marginToken.address);
+      await mockYearnRegistry.newVault(investmentToken.address);
+
+      // mint tokens
+      const marginTokenyVault = await mockYearnRegistry.latestVault(marginToken.address);
+      await marginToken.mintTo(marginTokenyVault, ethers.constants.MaxInt256);
+      const investmentTokenyVault = await mockYearnRegistry.latestVault(marginToken.address);
+      await investmentToken.mintTo(investmentTokenyVault, ethers.constants.MaxInt256);
     });
   });
 
