@@ -10,6 +10,7 @@ import { IVault } from "../interfaces/IVault.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { GeneralMath } from "../libraries/GeneralMath.sol";
 import { PositionHelper } from "../libraries/PositionHelper.sol";
+import { SVGImage } from "../libraries/SVGImage.sol";
 
 /// @title    BaseStrategy contract
 /// @author   Ithil
@@ -392,6 +393,9 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     // slither-disable-next-line external-function
     function tokenURI(uint256 tokenId) public view override(ERC721) returns (string memory) {
         assert(_exists(tokenId));
-        return ""; /// @todo generate SVG on-chain
+
+        Position storage position = positions[tokenId];
+
+        return SVGImage.generateMetadata(name(), symbol(), tokenId, ownerOf(tokenId), position.createdAt);
     }
 }
