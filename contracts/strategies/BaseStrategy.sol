@@ -395,7 +395,17 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         assert(_exists(tokenId));
 
         Position storage position = positions[tokenId];
+        (int256 score, ) = computeLiquidationScore(position);
 
-        return SVGImage.generateMetadata(name(), symbol(), tokenId, ownerOf(tokenId), position.createdAt);
+        return
+            SVGImage.generateMetadata(
+                name(),
+                symbol(),
+                tokenId,
+                position.collateralToken,
+                position.collateral,
+                position.createdAt,
+                score
+            );
     }
 }
