@@ -52,7 +52,7 @@ library SVGImage {
     ) internal pure returns (string memory) {
         string memory colour;
 
-        if (score < 1) colour = "15ac89";
+        if (score > 1) colour = "15ac89";
         else colour = "f35959";
 
         return
