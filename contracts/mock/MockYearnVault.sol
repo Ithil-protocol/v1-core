@@ -33,8 +33,8 @@ contract MockYearnVault is IYearnVault, ERC20, Ownable {
         require(nativeToken.allowance(msg.sender, address(this)) >= amount, "MockYearnVault: allowance error");
 
         nativeToken.safeTransferFrom(msg.sender, address(this), amount);
-        uint256 unitAmount = 10 ** IERC20Metadata(address(nativeToken)).decimals();
-        uint256 shares = amount * unitAmount / _pricePerShare();
+        uint256 unitAmount = 10**IERC20Metadata(address(nativeToken)).decimals();
+        uint256 shares = (amount * unitAmount) / _pricePerShare();
         _mint(recipient, shares);
         return shares;
     }
@@ -46,8 +46,8 @@ contract MockYearnVault is IYearnVault, ERC20, Ownable {
     ) external override returns (uint256) {
         require(maxShares <= balanceOf(msg.sender), "MockYearnVault: not enough shares");
         _burn(msg.sender, maxShares);
-        uint256 unitAmount = 10 ** IERC20Metadata(address(nativeToken)).decimals();
-        uint256 assets = maxShares * _pricePerShare() / unitAmount;
+        uint256 unitAmount = 10**IERC20Metadata(address(nativeToken)).decimals();
+        uint256 assets = (maxShares * _pricePerShare()) / unitAmount;
         require(assets >= (maxShares * (10000 - maxLoss)) / 10000, "MockYearnVault: max loss constraint fails");
 
         nativeToken.safeTransfer(recipient, assets);
