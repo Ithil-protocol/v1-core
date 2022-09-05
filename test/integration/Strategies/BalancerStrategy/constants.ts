@@ -1,0 +1,2 @@
+export const balancerVault = "0xBA12222222228d8Ba445958a75a0704d566BF2C8";
+export const balancerDAIWETH = "0x0b09deA16768f0799065C475bE02919503cB2a35";
