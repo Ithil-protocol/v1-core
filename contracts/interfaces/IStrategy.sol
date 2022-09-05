@@ -160,6 +160,7 @@ interface IStrategy {
     error Strategy__Margin_Below_Minimum(uint256 marginProvider, uint256 minimumMargin);
     error Strategy__Insufficient_Margin_Provided(int256 newScore);
     error Strategy__Not_Enough_Liquidity(uint256 balance, uint256 amount);
+    error Strategy__Zero_Risk(address token0, address token1);
     error Strategy__Locked();
     error Strategy__Only_Guardian();
     error Strategy__Incorrect_Obtained_Token();

@@ -77,6 +77,9 @@ describe("Euler strategy integration tests", function () {
     await vault.whitelistToken(marginTokenDAI.address, 10, 10, 1000);
     await vault.whitelistToken(investmentTokenDAI.address, 10, 10, 1);
 
+    await strategy.setRiskFactor(marginTokenDAI.address, 3000);
+    await strategy.setRiskFactor(investmentTokenDAI.address, 4000);
+
     await getTokens(staker.address, marginTokenDAI.address, tokens.DAI.whale, marginTokenLiquidity);
     await getTokens(trader1.address, marginTokenDAI.address, tokens.DAI.whale, marginTokenLiquidity);
     await fundVault(signers[1], vault, marginTokenDAI, marginTokenLiquidity);

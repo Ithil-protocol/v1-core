@@ -231,7 +231,10 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     }
 
     function computePairRiskFactor(address token0, address token1) public view override returns (uint256) {
-        return (riskFactors[token0] + riskFactors[token1]) / 2;
+        uint256 risk0 = riskFactors[token0];
+        uint256 risk1 = riskFactors[token1];
+        if (risk0 == 0 || risk1 == 0) revert Strategy__Zero_Risk(token0, token1);
+        return (risk0 + risk1) / 2;
     }
 
     function computeLiquidationScore(Position memory position) public view returns (int256 score, uint256 dueFees) {

@@ -7,6 +7,8 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IYearnVault } from "../interfaces/external/IYearnVault.sol";
 
+import "hardhat/console.sol";
+
 /// @dev Used for testing, unaudited
 contract MockYearnVault is IYearnVault, ERC20, Ownable {
     using SafeERC20 for IERC20;
@@ -31,7 +33,6 @@ contract MockYearnVault is IYearnVault, ERC20, Ownable {
     function deposit(uint256 amount, address recipient) external override returns (uint256) {
         require(nativeToken.balanceOf(msg.sender) >= amount, "MockYearnVault: not enough tokens");
         require(nativeToken.allowance(msg.sender, address(this)) >= amount, "MockYearnVault: allowance error");
-
         nativeToken.safeTransferFrom(msg.sender, address(this), amount);
         uint256 unitAmount = 10**IERC20Metadata(address(nativeToken)).decimals();
         uint256 shares = (amount * unitAmount) / _pricePerShare();
