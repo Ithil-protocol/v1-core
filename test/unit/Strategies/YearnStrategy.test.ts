@@ -105,9 +105,9 @@ describe("Yearn strategy unit tests", function () {
   it("Set rate and quote", async function () {
     await mockYearnRegistry.setSharePrice(marginToken.address, expandToNDecimals(1, 18));
     const yearnVault = await mockYearnRegistry.latestVault(marginToken.address);
-    let [quoted] = await strategy.quote(marginToken.address, yearnVault, 9); 
+    let [quoted] = await strategy.quote(marginToken.address, yearnVault, 9);
     expect(quoted).to.equal(9);
-    [quoted] = await strategy.quote(yearnVault, marginToken.address, 7); 
+    [quoted] = await strategy.quote(yearnVault, marginToken.address, 7);
     expect(quoted).to.equal(7);
   });
 
