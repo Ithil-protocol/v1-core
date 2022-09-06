@@ -78,6 +78,9 @@ describe("MarginTradingStrategy integration test", function () {
     await vault.whitelistToken(marginToken.address, 10, 10, 1000);
     await vault.whitelistToken(investmentToken.address, 10, 10, 1);
 
+    await strategy.setRiskFactor(marginToken.address, 3000);
+    await strategy.setRiskFactor(investmentToken.address, 4000);
+
     await getTokens(staker.address, marginToken.address, tokens.DAI.whale, marginTokenLiquidity);
     await getTokens(staker.address, investmentToken.address, tokens.WETH.whale, marginTokenLiquidity);
     await getTokens(trader1.address, marginToken.address, tokens.DAI.whale, investmentTokenLiquidity);

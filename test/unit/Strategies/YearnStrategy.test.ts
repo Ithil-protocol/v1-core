@@ -79,6 +79,8 @@ describe("Yearn strategy unit tests", function () {
     // mint margin tokens to staker and fund vault
     await marginToken.mintTo(staker.address, expandToNDecimals(100000, 18));
     await fundVault(staker, vault, marginToken, marginTokenLiquidity);
+    // mint margin tokens to trader and fund vault
+    await marginToken.mintTo(trader1.address, expandToNDecimals(100000, 18));
     await marginToken.connect(trader1).approve(strategy.address, marginTokenMargin);
 
     order = {
@@ -91,7 +93,6 @@ describe("Yearn strategy unit tests", function () {
       deadline: deadline,
     };
     await strategy.setRiskFactor(marginToken.address, 3000);
-    await strategy.setRiskFactor(investmentToken.address, 4000);
 
     // mint tokens
     await marginToken.mintTo(mockYearnRegistry.address, ethers.constants.MaxInt256);
@@ -102,11 +103,27 @@ describe("Yearn strategy unit tests", function () {
   });
 
   it("Set rate and quote", async function () {
-    await mockYearnRegistry.setSharePrice(marginToken.address, expandToNDecimals(3, 18));
+    await mockYearnRegistry.setSharePrice(marginToken.address, expandToNDecimals(1, 18));
     const yearnVault = await mockYearnRegistry.latestVault(marginToken.address);
-    let [quoted] = await strategy.quote(marginToken.address, yearnVault, 9); // 5000 * 9 / 15000 = 3
-    expect(quoted).to.equal(3);
-    [quoted] = await strategy.quote(yearnVault, marginToken.address, 7); // 15000 * 7 / 5000 = 21
-    expect(quoted).to.equal(21);
+    let [quoted] = await strategy.quote(marginToken.address, yearnVault, 9);
+    expect(quoted).to.equal(9);
+    [quoted] = await strategy.quote(yearnVault, marginToken.address, 7);
+    expect(quoted).to.equal(7);
+  });
+
+  // Open a no-leverage position on Yearn and close immediately
+  it("Deposit", async function () {
+    const yearnVault = await mockYearnRegistry.latestVault(marginToken.address);
+
+    const [minObtained] = await strategy.quote(marginToken.address, yearnVault, marginTokenMargin);
+    await strategy.setRiskFactor(yearnVault, 1);
+    order.obtainedToken = yearnVault;
+    order.minObtained = minObtained;
+    order.maxSpent = marginTokenMargin;
+
+    await strategy.connect(trader1).openPosition(order);
+
+    const allowance = (await strategy.positions(1)).allowance;
+    console.log("Allowance", ethers.utils.formatUnits(allowance, 0));
   });
 });
