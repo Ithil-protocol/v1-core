@@ -398,7 +398,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         uint256 amount
     ) public view virtual override returns (uint256, uint256);
 
-    function exposure(address token) public view virtual returns (uint256); 
+    function exposure(address token) public view virtual returns (uint256);
 
     // slither-disable-next-line external-function
     function tokenURI(uint256 tokenId) public view override(ERC721) returns (string memory) {

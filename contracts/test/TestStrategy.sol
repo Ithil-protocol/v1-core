@@ -54,8 +54,8 @@ contract TestStrategy is BaseStrategy {
     ) external {
         vault.repay(token, amount, debt, fees, riskFactor, borrower);
     }
-    
-    function exposure(address token) public view override returns(uint256) {
+
+    function exposure(address token) public view override returns (uint256) {
         return IERC20(token).balanceOf(address(this));
     }
 }
