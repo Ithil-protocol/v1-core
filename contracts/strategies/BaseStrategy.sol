@@ -68,11 +68,16 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         _;
     }
 
+    modifier validRisk(uint256 riskFactor) {
+        if (riskFactor > VaultMath.RESOLUTION) revert Strategy__Too_High_Risk(riskFactor);
+        _;
+    }
+
     function setGuardian(address _guardian) external onlyOwner {
         guardian = _guardian;
     }
 
-    function setRiskFactor(address token, uint256 riskFactor) external onlyOwner {
+    function setRiskFactor(address token, uint256 riskFactor) external onlyOwner validRisk(riskFactor) {
         riskFactors[token] = riskFactor;
 
         emit RiskFactorWasUpdated(token, riskFactor);
