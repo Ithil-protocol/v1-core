@@ -14,8 +14,6 @@ library VaultState {
 
     error Vault__Insufficient_Free_Liquidity(address token, uint256 requested, uint256 freeLiquidity);
 
-    uint256 internal constant DEGRADATION_COEFFICIENT = 21600; // six hours
-
     /// @notice store data about whitelisted tokens
     /// @param supported Easily check if a token is supported or not (null VaultData struct)
     /// @param locked Whether the token is locked - can only be withdrawn
@@ -101,7 +99,10 @@ library VaultState {
             // At this point amount has been transferred here
             // Insurance reserve increases by a portion of fees
             uint256 insurancePortion = addInsuranceReserve(self, token.balanceOf(address(this)), fees);
-            self.currentProfits = calculateLockedProfit(self) + fees - insurancePortion;
+            self.currentProfits =
+                VaultMath.calculateLockedProfit(self.currentProfits, block.timestamp, self.latestRepay) +
+                fees -
+                insurancePortion;
             self.latestRepay = block.timestamp;
 
             token.safeTransfer(borrower, amount - debt - fees);
@@ -113,10 +114,5 @@ library VaultState {
             if (amount < debt) subtractInsuranceReserve(self, debt - amount);
             token.safeTransfer(borrower, amount / 19);
         }
-    }
-
-    function calculateLockedProfit(VaultState.VaultData memory self) internal view returns (uint256) {
-        uint256 profits = self.currentProfits;
-        return profits.positiveSub(((block.timestamp - self.latestRepay) * profits) / DEGRADATION_COEFFICIENT);
     }
 }
