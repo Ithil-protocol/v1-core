@@ -37,11 +37,7 @@ contract YearnStrategy is BaseStrategy {
         return amountIn;
     }
 
-    function _closePosition(Position memory position, uint256 maxOrMin)
-        internal
-        override
-        returns (uint256, uint256)
-    {
+    function _closePosition(Position memory position, uint256 maxOrMin) internal override returns (uint256, uint256) {
         // We only support native token margin (to avoid whitelisting nightmares)
         // In particular, maxOrMin is always a "min"
         IYearnVault yvault = IYearnVault(position.heldToken);

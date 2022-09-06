@@ -405,10 +405,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
     function _openPosition(Order calldata order) internal virtual returns (uint256);
 
-    function _closePosition(Position memory position, uint256 expectedCost)
-        internal
-        virtual
-        returns (uint256, uint256);
+    function _closePosition(Position memory position, uint256 expectedCost) internal virtual returns (uint256, uint256);
 
     function quote(
         address src,

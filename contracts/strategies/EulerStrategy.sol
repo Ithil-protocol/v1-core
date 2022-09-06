@@ -43,11 +43,7 @@ contract EulerStrategy is BaseStrategy {
         return amountIn;
     }
 
-    function _closePosition(Position memory position, uint256 maxOrMin)
-        internal
-        override
-        returns (uint256, uint256)
-    {
+    function _closePosition(Position memory position, uint256 maxOrMin) internal override returns (uint256, uint256) {
         IEulerEToken eTkn = IEulerEToken(position.heldToken);
         uint256 amountOut = position.allowance;
         uint256 amountIn = eTkn.convertBalanceToUnderlying(position.allowance);

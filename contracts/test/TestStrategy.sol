@@ -17,19 +17,18 @@ contract TestStrategy is BaseStrategy {
         return order.maxSpent;
     }
 
-    function _closePosition(Position memory position, uint256 /*expectedCost*/)
-        internal
-        override
-        returns (uint256, uint256)
-    {
+    function _closePosition(
+        Position memory position,
+        uint256 /*expectedCost*/
+    ) internal override returns (uint256, uint256) {
         IERC20(position.owedToken).safeTransfer(address(vault), position.allowance);
 
         return (position.allowance, position.allowance);
     }
 
     function quote(
-        address /*src*/,
-        address /*dst*/,
+        address, /*src*/
+        address, /*dst*/
         uint256 amount
     ) public view override returns (uint256, uint256) {
         return (amount, amount);

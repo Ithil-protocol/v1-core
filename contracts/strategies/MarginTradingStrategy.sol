@@ -26,15 +26,17 @@ contract MarginTradingStrategy is BaseStrategy {
     function _openPosition(Order calldata order) internal override returns (uint256) {
         vault.checkWhitelisted(order.obtainedToken);
 
-        (uint256 amountIn, ) = _swap(order.spentToken, order.obtainedToken, order.maxSpent, order.minObtained, address(this));
+        (uint256 amountIn, ) = _swap(
+            order.spentToken,
+            order.obtainedToken,
+            order.maxSpent,
+            order.minObtained,
+            address(this)
+        );
         return amountIn;
     }
 
-    function _closePosition(Position memory position, uint256 maxOrMin)
-        internal
-        override
-        returns (uint256, uint256)
-    {
+    function _closePosition(Position memory position, uint256 maxOrMin) internal override returns (uint256, uint256) {
         bool spendAll = position.collateralToken != position.heldToken;
         (uint256 amountIn, uint256 amountOut) = _swap(
             position.heldToken,
