@@ -94,7 +94,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     }
 
     function openPosition(Order calldata order) external override validOrder(order) unlocked returns (uint256) {
-        uint256 initialDstBalance = IERC20(order.obtainedToken).balanceOf(address(this));
+        uint256 initialExposure = exposure(order.obtainedToken);
         (uint256 interestRate, uint256 fees, uint256 toBorrow, address collateralToken) = _borrow(order);
 
         uint256 amountIn = _openPosition(order);
@@ -103,8 +103,8 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
         // slither-disable-next-line divide-before-multiply
         interestRate *=
-            (toBorrow * (amountIn + 2 * initialDstBalance)) /
-            (2 * order.collateral * (initialDstBalance + amountIn));
+            (toBorrow * (amountIn + 2 * initialExposure)) /
+            (2 * order.collateral * (initialExposure + amountIn));
 
         if (interestRate > VaultMath.MAX_RATE) revert Strategy__Maximum_Leverage_Exceeded(interestRate);
 
@@ -397,6 +397,8 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         address dst,
         uint256 amount
     ) public view virtual override returns (uint256, uint256);
+
+    function exposure(address token) public view virtual returns (uint256); 
 
     // slither-disable-next-line external-function
     function tokenURI(uint256 tokenId) public view override(ERC721) returns (string memory) {
