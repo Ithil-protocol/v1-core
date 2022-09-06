@@ -74,7 +74,6 @@ library VaultState {
         if (amount > freeLiquidity) revert Vault__Insufficient_Free_Liquidity(address(token), amount, freeLiquidity);
 
         token.safeTransfer(msg.sender, amount);
-        
         // We have transferred an amount <= freeLiquidity, therefore we now have
         // IERC20(token).balanceOf(address(this)) >= self.insuranceReserveBalance
         return freeLiquidity;
