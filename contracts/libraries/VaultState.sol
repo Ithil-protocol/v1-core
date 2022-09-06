@@ -13,7 +13,6 @@ library VaultState {
     using GeneralMath for uint256;
 
     error Vault__Insufficient_Free_Liquidity(address token, uint256 requested, uint256 freeLiquidity);
-    error Vault__Repay_Failed();
 
     uint256 internal constant DEGRADATION_COEFFICIENT = 21600; // six hours
 
@@ -100,12 +99,12 @@ library VaultState {
             self.currentProfits = calculateLockedProfit(self) + fees - insurancePortion;
             self.latestRepay = block.timestamp;
 
-            if (!token.transfer(borrower, amount - debt - fees)) revert Vault__Repay_Failed();
+            token.safeTransfer(borrower, amount - debt - fees);
         } else {
             // Bad liquidation: rewards the liquidator with 5% of the amountIn
             // amount is already adjusted in BaseStrategy
             if (amount < debt) subtractInsuranceReserve(self, debt - amount);
-            if (!token.transfer(borrower, amount / 19)) revert Vault__Repay_Failed();
+            token.safeTransfer(borrower, amount / 19);
         }
     }
 

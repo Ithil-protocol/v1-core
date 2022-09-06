@@ -28,14 +28,11 @@ jobs:
 
       - name: Run yarn compile
         run: yarn compile
-        env:
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
 
       - name: Run integration tests
         env:
-          MAINNET_ALCHEMY_API_KEY: ${{ secrets.MAINNET_ALCHEMY_API_KEY }}
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
           FORK_URL: ${{ secrets.FORK_URL }}
           REPORT_GAS: false
           FORKING: true
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         run: yarn test

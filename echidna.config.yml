@@ -1,9 +1,7 @@
-#format can be "text" or "json" for different output (human or machine readable)
-format: 'text'
-#checkAsserts checks assertions
-checkAsserts: true
-#coverage controls coverage guided testing
-coverage: false
+# #format can be "text" or "json" for different output (human or machine readable)
+# format: 'text'
+# #coverage controls coverage guided testing
+# coverage: false
 # #psender is the sender for property transactions; by default intentionally
 # #the same as contract deployer
 # psender: "0x00a329c0648769a73afac7f9381e08fb43dbea70"
@@ -16,13 +14,13 @@ coverage: false
 # #maxGasprice is the maximum gas price
 # maxGasprice: 100000000000
 # #testLimit is the number of test sequences to run
-# testLimit: 50000
+testLimit: 100000
 # #stopOnFail makes echidna terminate as soon as any property fails and has been shrunk
 # stopOnFail: false
 # #estimateGas makes echidna perform analysis of maximum gas costs for functions (experimental)
 # estimateGas: false
 # #seqLen defines how many transactions are in a test sequence
-# seqLen: 100
+seqLen: 100
 # #shrinkLimit determines how much effort is spent shrinking failing sequences
 # shrinkLimit: 5000
 # #contractAddr is the address of the contract itself
@@ -52,7 +50,7 @@ coverage: false
 # #timeout controls test timeout settings
 # timeout: null
 # #seed not defined by default, is the random seed
-# #seed: 0
+# seed: 0
 # #dictFreq controls how often to use echidna's internal dictionary vs random
 # #values
 # dictFreq: 0.40

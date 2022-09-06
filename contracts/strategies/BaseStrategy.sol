@@ -4,11 +4,13 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
 import { IVault } from "../interfaces/IVault.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { GeneralMath } from "../libraries/GeneralMath.sol";
 import { PositionHelper } from "../libraries/PositionHelper.sol";
+import { SVGImage } from "../libraries/SVGImage.sol";
 
 /// @title    BaseStrategy contract
 /// @author   Ithil
@@ -229,7 +231,10 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     }
 
     function computePairRiskFactor(address token0, address token1) public view override returns (uint256) {
-        return (riskFactors[token0] + riskFactors[token1]) / 2;
+        uint256 risk0 = riskFactors[token0];
+        uint256 risk1 = riskFactors[token1];
+        if (risk0 == 0 || risk1 == 0) revert Strategy__Unsupported_Token(token0, token1);
+        return (risk0 + risk1) / 2;
     }
 
     function computeLiquidationScore(Position memory position) public view returns (int256 score, uint256 dueFees) {
@@ -245,13 +250,13 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
         if (collateralInOwedToken) {
             (expectedTokens, ) = quote(position.heldToken, position.owedToken, position.allowance);
-            profitAndLoss = int256(expectedTokens) - int256(position.principal + dueFees);
+            profitAndLoss = SafeCast.toInt256(expectedTokens) - SafeCast.toInt256(position.principal + dueFees);
         } else {
             (expectedTokens, ) = quote(position.owedToken, position.heldToken, position.principal + dueFees);
-            profitAndLoss = int256(position.allowance) - int256(expectedTokens);
+            profitAndLoss = SafeCast.toInt256(position.allowance) - SafeCast.toInt256(expectedTokens);
         }
 
-        score = int256(position.collateral * pairRiskFactor) - profitAndLoss * int24(VaultMath.RESOLUTION);
+        score = SafeCast.toInt256(position.collateral * pairRiskFactor) - profitAndLoss * int24(VaultMath.RESOLUTION);
     }
 
     function forcefullyClose(
@@ -391,6 +396,19 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     // slither-disable-next-line external-function
     function tokenURI(uint256 tokenId) public view override(ERC721) returns (string memory) {
         assert(_exists(tokenId));
-        return ""; /// @todo generate SVG on-chain
+
+        Position storage position = positions[tokenId];
+        (int256 score, ) = computeLiquidationScore(position);
+
+        return
+            SVGImage.generateMetadata(
+                name(),
+                symbol(),
+                tokenId,
+                position.collateralToken,
+                position.collateral,
+                position.createdAt,
+                score
+            );
     }
 }

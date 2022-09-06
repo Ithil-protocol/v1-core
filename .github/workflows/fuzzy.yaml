@@ -12,7 +12,8 @@ jobs:
       matrix:
         node-version: [lts/*]
         testName:
-          - VaultMathEchidnaTest
+          - VaultStakingTest
+          - VaultLendingTest
 
     steps:
       - uses: actions/checkout@v2
@@ -28,8 +29,6 @@ jobs:
 
       - name: Run yarn compile
         run: yarn compile
-        env:
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
 
       - name: Set up Python 3.8
         uses: actions/setup-python@v2

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
 
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IKyberNetworkProxy } from "../interfaces/external/IKyberNetworkProxy.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 
 /// @dev Used for testing, unaudited
-contract MockKyberNetworkProxy is IKyberNetworkProxy {
+contract MockKyberNetworkProxy is IKyberNetworkProxy, Ownable {
     using SafeERC20 for IERC20;
 
     mapping(IERC20 => uint256) internal rates;
@@ -63,13 +64,13 @@ contract MockKyberNetworkProxy is IKyberNetworkProxy {
         return (res, res);
     }
 
-    function setRate(IERC20 token, uint256 rate) external {
+    function setRate(IERC20 token, uint256 rate) external onlyOwner {
         emit PriceWasUpdated(address(token), rates[token], rate);
 
         rates[token] = rate;
     }
 
-    function setSlippage(IERC20 token, uint256 slippage) external {
+    function setSlippage(IERC20 token, uint256 slippage) external onlyOwner {
         emit SlippageWasUpdated(address(token), slippages[token], slippage);
 
         slippages[token] = slippage;

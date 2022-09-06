@@ -79,6 +79,11 @@ describe("Yearn Strategy integration test", function () {
     await vault.whitelistToken(marginToken.address, 10, 10, 1000);
     await vault.whitelistToken(tokens.WETH.address, 10, 10, 1);
 
+    await strategy.setRiskFactor(marginToken.address, 3000);
+    await strategy.setRiskFactor(investmentToken.address, 4000);
+    await strategy.setRiskFactor(yvaultDAI, 3000);
+    await strategy.setRiskFactor(yvaultWETH, 4000);
+
     await getTokens(staker.address, tokens.DAI.address, tokens.DAI.whale, marginTokenLiquidity);
     await getTokens(trader1.address, tokens.DAI.address, tokens.DAI.whale, marginTokenLiquidity);
     await getTokens(staker.address, tokens.WETH.address, tokens.WETH.whale, investmentTokenLiquidity);

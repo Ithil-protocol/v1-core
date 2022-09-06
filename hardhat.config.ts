@@ -12,7 +12,6 @@ import { resolve } from "path";
 
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
-import { NetworkUserConfig } from "hardhat/types";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
@@ -40,19 +39,9 @@ const config: HardhatUserConfig = {
       chainId: chainIds.hardhat,
       forking: {
         enabled: process.env.FORKING ? true : false,
-        url: "https://eth-mainnet.g.alchemy.com/v2/" + process.env.MAINNET_ALCHEMY_API_KEY,
+        url: "https://eth-mainnet.g.alchemy.com/v2/" + process.env.ALCHEMY_API_KEY,
         blockNumber: 14967494,
       },
-    },
-    mainnet: {
-      chainId: chainIds.mainnet,
-      url: "https://eth-mainnet.g.alchemy.com/v2/" + process.env.MAINNET_ALCHEMY_API_KEY,
-      accounts: [`${process.env.PRIVATE_KEY}`],
-    },
-    goerli: {
-      chainId: chainIds.goerli,
-      url: "https://eth-goerli.g.alchemy.com/v2/" + process.env.TESTNET_ALCHEMY_API_KEY,
-      accounts: [`${process.env.PRIVATE_KEY}`],
     },
   },
   paths: {

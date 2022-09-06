@@ -160,16 +160,12 @@ describe("Margin Trading Strategy unit tests", function () {
     order.maxSpent = marginTokenMargin;
 
     const tBalanceBefore = await marginToken.balanceOf(trader1.address);
-    console.log("tBalanceBefore", ethers.utils.formatUnits(tBalanceBefore, 0));
-
     await strategy.connect(trader1).openPosition(order);
     const position = await strategy.positions(positionId);
-    console.log("Position fees", ethers.utils.formatUnits(position.fees, 0));
     const [maxOrMin] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);
     await strategy.connect(trader1).closePosition(positionId, maxOrMin);
     positionId++;
     const tBalanceAfter = await marginToken.balanceOf(trader1.address);
-    console.log("tBalanceAfter", ethers.utils.formatUnits(tBalanceAfter, 0));
   });
 
   it("Open a sub-1-leverage position and close immediately", async function () {

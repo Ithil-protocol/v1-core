@@ -193,29 +193,11 @@ describe("Lending integration tests", function () {
       await vault.connect(investor2).unboost(WETH.address, amountToBoost);
     });
 
-    it("Vault: whitelist OUSD", async function () {
-      const OUSD = "0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86";
-      const ABI =
-        '[{"inputs": [],"name": "rebaseOptIn","outputs": [],"stateMutability": "nonpayable","type": "function"}]';
-      const iface = new ethers.utils.Interface(ABI);
-      const data = iface.encodeFunctionData("rebaseOptIn");
-      await vault.whitelistTokenAndExec(OUSD, baseFee, fixedFee, ethers.utils.parseEther("100000"), data);
-
-      const state = await vault.vaults(OUSD);
-      vaultState = state;
-      matchState(
-        vaultState,
-        true,
-        false,
-        baseFee,
-        fixedFee,
-        BigNumber.from(0),
-        expandToNDecimals(100000, 18),
-        BigNumber.from(0),
-        BigNumber.from(0),
-      );
+    it("Vaul: enable and disable OUSD feature", async function () {
+      await vault.toggleOusdRebase(true);
+      await vault.toggleOusdRebase(false);
     });
-  });
 
-  //TODO: other tests with investor1 and investor2 interlacing
+    //TODO: other tests with investor1 and investor2 interlacing
+  });
 });

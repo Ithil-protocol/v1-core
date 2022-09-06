@@ -53,6 +53,7 @@ interface MockYearnStrategyFixture {
   trader2: SignerWithAddress;
   liquidator: SignerWithAddress;
   vault: Vault;
+  mockYearnRegistry: MockYearnRegistry;
   liquidatorContract: Liquidator;
   createStrategy(): Promise<YearnStrategy>;
 }
@@ -148,8 +149,6 @@ export const mockYearnFixture: Fixture<MockYearnStrategyFixture> =
 
     const yearnArtifact: Artifact = await artifacts.readArtifact("MockYearnRegistry");
     const mockYearnRegistry = <MockYearnRegistry>await deployContract(admin, yearnArtifact, []);
-    await mockYearnRegistry.newVault(mockWETH.address);
-    await mockYearnRegistry.newVault(mockToken.address);
 
     return {
       mockWETH,
@@ -158,6 +157,7 @@ export const mockYearnFixture: Fixture<MockYearnStrategyFixture> =
       trader2,
       liquidator,
       vault,
+      mockYearnRegistry,
       liquidatorContract,
       createStrategy: async () => {
         const mtsArtifact: Artifact = await artifacts.readArtifact("YearnStrategy");
@@ -165,7 +165,6 @@ export const mockYearnFixture: Fixture<MockYearnStrategyFixture> =
           await deployContract(admin, mtsArtifact, [
             vault.address,
             liquidatorContract.address,
-            mockYearnRegistry.address,
             mockYearnRegistry.address,
           ])
         );
