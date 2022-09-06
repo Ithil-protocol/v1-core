@@ -124,6 +124,5 @@ describe("Yearn strategy unit tests", function () {
     await strategy.connect(trader1).openPosition(order);
 
     const allowance = (await strategy.positions(1)).allowance;
-    console.log("Allowance", ethers.utils.formatUnits(allowance, 0));
   });
 });

@@ -94,7 +94,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
             vaultState.netLoans -
             vaultState.insuranceReserveBalance -
             vaultState.boostedAmount -
-            VaultState.calculateLockedProfit(vaultState);
+            VaultMath.calculateLockedProfit(vaultState.currentProfits, block.timestamp, vaultState.latestRepay);
     }
 
     function claimable(address token) external view override returns (uint256) {

@@ -14,6 +14,8 @@ library VaultMath {
     uint24 internal constant TIME_FEE_PERIOD = 86400;
     uint24 internal constant MAX_RATE = 500;
 
+    uint256 internal constant DEGRADATION_COEFFICIENT = 21600; // six hours
+
     /// @notice Computes the maximum amount of money an investor can withdraw from the pool
     /// @dev Floor(x+y) >= Floor(x) + Floor(y), therefore the sum of all investors'
     /// withdrawals cannot exceed total liquidity
@@ -63,5 +65,13 @@ library VaultMath {
         interestRate = (netLoans + uncovered) * riskFactor;
         interestRate /= (netLoans + freeLiquidity);
         interestRate += baseFee;
+    }
+
+    function calculateLockedProfit(
+        uint256 profits,
+        uint256 time,
+        uint256 latestRepay
+    ) internal pure returns (uint256) {
+        return profits.positiveSub(((time - latestRepay) * profits) / DEGRADATION_COEFFICIENT);
     }
 }
