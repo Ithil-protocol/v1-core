@@ -13,14 +13,14 @@ contract TestStrategy is BaseStrategy {
         BaseStrategy(_vault, _liquidator, "TestStrategy", "ITHIL-TS-POS")
     {}
 
-    function _openPosition(Order calldata order) internal override returns (uint256 amountIn) {
+    function _openPosition(Order calldata order) internal override returns (uint256) {
         return order.maxSpent;
     }
 
-    function _closePosition(Position memory position, uint256 expectedCost)
+    function _closePosition(Position memory position, uint256 /*expectedCost*/)
         internal
         override
-        returns (uint256 amountIn, uint256 amountOut)
+        returns (uint256, uint256)
     {
         IERC20(position.owedToken).safeTransfer(address(vault), position.allowance);
 
@@ -28,8 +28,8 @@ contract TestStrategy is BaseStrategy {
     }
 
     function quote(
-        address src,
-        address dst,
+        address /*src*/,
+        address /*dst*/,
         uint256 amount
     ) public view override returns (uint256, uint256) {
         return (amount, amount);
@@ -40,8 +40,10 @@ contract TestStrategy is BaseStrategy {
         uint256 amount,
         uint256 riskFactor,
         address borrower
-    ) external returns (uint256 baseInterestRate, uint256 fees) {
-        (baseInterestRate, fees) = vault.borrow(token, amount, riskFactor, borrower);
+    ) external returns (uint256, uint256) {
+        (uint256 baseInterestRate, uint256 fees) = vault.borrow(token, amount, riskFactor, borrower);
+
+        return (baseInterestRate, fees);
     }
 
     function arbitraryRepay(

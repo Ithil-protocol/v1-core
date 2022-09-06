@@ -7,16 +7,17 @@ import { IWrappedToken } from "../interfaces/IWrappedToken.sol";
 /// @title    WrappedTokenHelper library
 /// @author   Ithil
 /// @notice   A library to collect functions related to actions with wrapped token
-/// @dev      To be replaced by EIP4626 when the standard is mature enough
 library WrappedTokenHelper {
     function mintWrapped(
         IWrappedToken wToken,
         uint256 amount,
         address user,
         uint256 totalWealth
-    ) internal returns (uint256 toMint) {
-        toMint = VaultMath.shareValue(amount, wToken.totalSupply(), totalWealth);
+    ) internal returns (uint256) {
+        uint256 toMint = VaultMath.shareValue(amount, wToken.totalSupply(), totalWealth);
         wToken.mint(user, toMint);
+
+        return toMint;
     }
 
     function burnWrapped(
@@ -24,10 +25,12 @@ library WrappedTokenHelper {
         uint256 amount,
         uint256 totalWealth,
         address user
-    ) internal returns (uint256 toBurn) {
+    ) internal returns (uint256) {
         uint256 totalClaims = wToken.totalSupply();
 
-        toBurn = VaultMath.shareValue(amount, totalClaims, totalWealth);
+        uint256 toBurn = VaultMath.shareValue(amount, totalClaims, totalWealth);
         wToken.burn(user, toBurn);
+
+        return toBurn;
     }
 }

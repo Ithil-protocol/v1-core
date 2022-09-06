@@ -94,12 +94,13 @@ interface IVault {
     /// @param riskFactor the riskiness of this loan
     /// @param borrower the ultimate requester of the loan
     /// @return interestRate the interest rate calculated for the loan
+    /// @return fees the fees calculated for the loan
     function borrow(
         address token,
         uint256 amount,
         uint256 riskFactor,
         address borrower
-    ) external returns (uint256 interestRate, uint256 fees);
+    ) external returns (uint256, uint256);
 
     /// @notice repays a loan
     /// @param token the token of the loan

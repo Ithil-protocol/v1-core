@@ -23,25 +23,28 @@ contract MarginTradingStrategy is BaseStrategy {
         kyberProxy = IKyberNetworkProxy(_kyber);
     }
 
-    function _openPosition(Order calldata order) internal override returns (uint256 amountIn) {
+    function _openPosition(Order calldata order) internal override returns (uint256) {
         vault.checkWhitelisted(order.obtainedToken);
 
-        (amountIn, ) = _swap(order.spentToken, order.obtainedToken, order.maxSpent, order.minObtained, address(this));
+        (uint256 amountIn, ) = _swap(order.spentToken, order.obtainedToken, order.maxSpent, order.minObtained, address(this));
+        return amountIn;
     }
 
     function _closePosition(Position memory position, uint256 maxOrMin)
         internal
         override
-        returns (uint256 amountIn, uint256 amountOut)
+        returns (uint256, uint256)
     {
         bool spendAll = position.collateralToken != position.heldToken;
-        (amountIn, amountOut) = _swap(
+        (uint256 amountIn, uint256 amountOut) = _swap(
             position.heldToken,
             position.owedToken,
             spendAll ? position.allowance : maxOrMin,
             spendAll ? maxOrMin : position.principal + position.fees,
             address(vault)
         );
+
+        return (amountIn, amountOut);
     }
 
     function quote(
@@ -61,7 +64,7 @@ contract MarginTradingStrategy is BaseStrategy {
         uint256 maxSourceAmount,
         uint256 minDestinationAmount,
         address recipient
-    ) internal returns (uint256 amountIn, uint256 amountOut) {
+    ) internal returns (uint256, uint256) {
         IERC20 tokenToSell = IERC20(srcToken);
         IERC20 tokenToBuy = IERC20(dstToken);
 
@@ -80,7 +83,9 @@ contract MarginTradingStrategy is BaseStrategy {
             minDestinationAmount / maxSourceAmount,
             payable(address(this))
         );
-        amountIn = tokenToBuy.balanceOf(recipient) - initialDstBalance;
-        amountOut = initialSrcBalance - tokenToSell.balanceOf(address(this));
+        uint256 amountIn = tokenToBuy.balanceOf(recipient) - initialDstBalance;
+        uint256 amountOut = initialSrcBalance - tokenToSell.balanceOf(address(this));
+
+        return (amountIn, amountOut);
     }
 }

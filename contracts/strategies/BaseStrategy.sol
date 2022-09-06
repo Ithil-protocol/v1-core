@@ -237,14 +237,13 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         return (risk0 + risk1) / 2;
     }
 
-    function computeLiquidationScore(Position memory position) public view returns (int256 score, uint256 dueFees) {
+    function computeLiquidationScore(Position memory position) public view returns (int256, uint256) {
         bool collateralInOwedToken = position.collateralToken != position.heldToken;
         uint256 pairRiskFactor = computePairRiskFactor(position.heldToken, position.owedToken);
         uint256 expectedTokens;
         int256 profitAndLoss;
 
-        dueFees =
-            position.fees +
+        uint256 dueFees = position.fees +
             (position.interestRate * (block.timestamp - position.createdAt) * position.principal) /
             (uint32(VaultMath.TIME_FEE_PERIOD) * VaultMath.RESOLUTION);
 
@@ -256,7 +255,11 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             profitAndLoss = SafeCast.toInt256(position.allowance) - SafeCast.toInt256(expectedTokens);
         }
 
-        score = SafeCast.toInt256(position.collateral * pairRiskFactor) - profitAndLoss * int24(VaultMath.RESOLUTION);
+        int256 score = SafeCast.toInt256(position.collateral * pairRiskFactor) -
+            profitAndLoss *
+            int24(VaultMath.RESOLUTION);
+
+        return (score, dueFees);
     }
 
     function forcefullyClose(
@@ -272,9 +275,14 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             _burn(positionId);
             uint256 maxOrMin = 0;
             bool collateralInHeldTokens = position.collateralToken != position.owedToken;
-            if (collateralInHeldTokens) maxOrMin = position.allowance;
-            else (maxOrMin, ) = quote(position.heldToken, position.owedToken, position.allowance);
-            (uint256 amountIn, uint256 amountOut) = _closePosition(position, maxOrMin);
+            if (collateralInHeldTokens) {
+                maxOrMin = position.allowance;
+            } else {
+                (maxOrMin, ) = quote(position.heldToken, position.owedToken, position.allowance);
+            }
+
+            (uint256 amountIn, ) = _closePosition(position, maxOrMin);
+
             // Computation of reward is done by adding to the dueFees
             dueFees +=
                 ((amountIn.positiveSub(position.principal + dueFees)) * (VaultMath.RESOLUTION - reward)) /
@@ -301,7 +309,9 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             );
 
             emit PositionWasLiquidated(positionId);
-        } else revert Strategy__Position_Not_Liquidable(positionId, score);
+        } else {
+            revert Strategy__Position_Not_Liquidable(positionId, score);
+        }
     }
 
     function transferAllowance(
@@ -322,14 +332,16 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             // Apply discount based on reward (max 5%)
             // In this case there is no distinction between good or bad liquidation
             fairPrice -= (fairPrice * reward) / (VaultMath.RESOLUTION * 20);
-            if (price < fairPrice) revert Strategy__Insufficient_Amount_Out(price, fairPrice);
-            else {
+            if (price < fairPrice) {
+                revert Strategy__Insufficient_Amount_Out(price, fairPrice);
+            } else {
                 IERC20(position.owedToken).safeTransferFrom(liquidatorUser, address(vault), price);
                 IERC20(position.heldToken).safeTransfer(liquidatorUser, position.allowance);
                 // The following is necessary to avoid residual transfers during the repay
                 // It means that everything "extra" from principal is fees
                 dueFees = price.positiveSub(position.principal);
             }
+
             vault.repay(
                 position.owedToken,
                 price,
@@ -341,7 +353,9 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             _burn(positionId);
 
             emit PositionWasLiquidated(positionId);
-        } else revert Strategy__Position_Not_Liquidable(positionId, score);
+        } else {
+            revert Strategy__Position_Not_Liquidable(positionId, score);
+        }
     }
 
     function modifyCollateralAndOwner(
@@ -358,7 +372,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             position.fees += (dueFees * (2 * VaultMath.RESOLUTION - reward)) / (2 * VaultMath.RESOLUTION);
             position.createdAt = block.timestamp;
             bool collateralInOwedToken = position.collateralToken != position.heldToken;
-            if (collateralInOwedToken)
+            if (collateralInOwedToken) {
                 vault.repay(
                     position.owedToken,
                     newCollateral,
@@ -367,6 +381,8 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
                     riskFactors[position.heldToken],
                     liquidatorUser
                 );
+            }
+
             position.topUpCollateral(
                 liquidatorUser,
                 collateralInOwedToken ? address(vault) : address(this),
@@ -375,7 +391,9 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             );
             (int256 newScore, ) = computeLiquidationScore(position);
             if (newScore > 0) revert Strategy__Insufficient_Margin_Provided(newScore);
-        } else revert Strategy__Position_Not_Liquidable(positionId, score);
+        } else {
+            revert Strategy__Position_Not_Liquidable(positionId, score);
+        }
     }
 
     // Abstract strategy
@@ -385,7 +403,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     function _closePosition(Position memory position, uint256 expectedCost)
         internal
         virtual
-        returns (uint256 amountIn, uint256 amountOut);
+        returns (uint256, uint256);
 
     function quote(
         address src,

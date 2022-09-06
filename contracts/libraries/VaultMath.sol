@@ -21,11 +21,11 @@ library VaultMath {
         uint256 claimingPower,
         uint256 totalClaimingPower,
         uint256 totalBalance
-    ) internal pure returns (uint256 maxWithdraw) {
+    ) internal pure returns (uint256) {
         if (claimingPower <= 0) {
-            maxWithdraw = 0;
+            return 0;
         } else {
-            maxWithdraw = (claimingPower * totalBalance) / totalClaimingPower;
+            return (claimingPower * totalBalance) / totalClaimingPower;
         }
     }
 
@@ -38,30 +38,28 @@ library VaultMath {
         return (totalBalance != 0 && totalSupply != 0) ? (totalSupply * amount) / totalBalance : amount;
     }
 
+    /// @notice Computes the due time fees of a certain position
     function computeTimeFees(
         uint256 principal,
         uint256 interestRate,
         uint256 time
-    ) internal pure returns (uint256 dueFees) {
+    ) internal pure returns (uint256) {
         return (principal * interestRate * time) / (uint32(TIME_FEE_PERIOD) * RESOLUTION);
     }
 
     /// @notice Computes the interest rate to apply to a position at its opening
-    /// @param netLoans the net loans of the vault
-    /// @param freeLiquidity the free liquidity of the vault
-    /// @param insuranceReserveBalance the insurance reserve balance
-    /// @param riskFactor the riskiness of the investment
-    /// @param baseFee the base fee of the investment
     function computeInterestRateNoLeverage(
         uint256 netLoans,
         uint256 freeLiquidity,
         uint256 insuranceReserveBalance,
         uint256 riskFactor,
         uint256 baseFee
-    ) internal pure returns (uint256 interestRate) {
+    ) internal pure returns (uint256) {
         uint256 uncovered = netLoans.positiveSub(insuranceReserveBalance);
-        interestRate = (netLoans + uncovered) * riskFactor;
+        uint256 interestRate = (netLoans + uncovered) * riskFactor;
         interestRate /= (netLoans + freeLiquidity);
         interestRate += baseFee;
+
+        return interestRate;
     }
 }
