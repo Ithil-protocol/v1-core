@@ -88,4 +88,8 @@ contract MarginTradingStrategy is BaseStrategy {
 
         return (amountIn, amountOut);
     }
+
+    function exposure(address token) public view override returns (uint256) {
+        return IERC20(token).balanceOf(address(this));
+    }
 }

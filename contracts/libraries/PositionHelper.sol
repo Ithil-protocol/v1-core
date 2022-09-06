@@ -17,7 +17,7 @@ library PositionHelper {
         uint256 amount,
         bool collateralIsOwedToken
     ) internal {
-        IERC20(self.collateralToken).safeTransferFrom(from, to, amount);
         collateralIsOwedToken ? self.principal -= amount : self.allowance += amount;
+        IERC20(self.collateralToken).safeTransferFrom(from, to, amount);
     }
 }

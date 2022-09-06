@@ -161,6 +161,7 @@ interface IStrategy {
     error Strategy__Insufficient_Margin_Provided(int256 newScore);
     error Strategy__Not_Enough_Liquidity(uint256 balance, uint256 amount);
     error Strategy__Unsupported_Token(address token0, address token1);
+    error Strategy__Too_High_Risk(uint256 riskFactor);
     error Strategy__Locked();
     error Strategy__Only_Guardian();
     error Strategy__Incorrect_Obtained_Token();

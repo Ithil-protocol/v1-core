@@ -14,8 +14,6 @@ library VaultState {
 
     error Vault__Insufficient_Free_Liquidity(address token, uint256 requested, uint256 freeLiquidity);
 
-    uint256 internal constant DEGRADATION_COEFFICIENT = 21600; // six hours
-
     /// @notice store data about whitelisted tokens
     /// @param supported Easily check if a token is supported or not (null VaultData struct)
     /// @param locked Whether the token is locked - can only be withdrawn
@@ -70,12 +68,15 @@ library VaultState {
         self.netLoans += amount;
         self.optimalRatio = (totalRisk + amount * riskFactor) / self.netLoans;
 
+        // If the following fails drainage has occurred so we want failure
         uint256 freeLiquidity = IERC20(token).balanceOf(address(this)) - self.insuranceReserveBalance;
 
         if (amount > freeLiquidity) revert Vault__Insufficient_Free_Liquidity(address(token), amount, freeLiquidity);
 
         token.safeTransfer(msg.sender, amount);
-
+        
+        // We have transferred an amount <= freeLiquidity, therefore we now have
+        // IERC20(token).balanceOf(address(this)) >= self.insuranceReserveBalance
         return freeLiquidity;
     }
 
@@ -101,21 +102,23 @@ library VaultState {
         subtractLoan(self, debt);
         self.optimalRatio = self.netLoans != 0 ? totalRisk.positiveSub(riskFactor * debt) / self.netLoans : 0;
         if (amount >= debt + fees) {
+            // At this point amount has been transferred here
+            // Insurance reserve increases by a portion of fees
             uint256 insurancePortion = addInsuranceReserve(self, token.balanceOf(address(this)), fees);
-            self.currentProfits = calculateLockedProfit(self) + fees - insurancePortion;
+            self.currentProfits =
+                VaultMath.calculateLockedProfit(self.currentProfits, block.timestamp, self.latestRepay) +
+                fees -
+                insurancePortion;
             self.latestRepay = block.timestamp;
 
             token.safeTransfer(borrower, amount - debt - fees);
+            // Since fees >= insurancePortion, we still have
+            // token.balanceOf(address(this)) >= self.insuranceReserveBalance;
         } else {
             // Bad liquidation: rewards the liquidator with 5% of the amountIn
             // amount is already adjusted in BaseStrategy
             if (amount < debt) subtractInsuranceReserve(self, debt - amount);
             token.safeTransfer(borrower, amount / 19);
         }
-    }
-
-    function calculateLockedProfit(VaultState.VaultData memory self) internal view returns (uint256) {
-        uint256 profits = self.currentProfits;
-        return profits.positiveSub(((block.timestamp - self.latestRepay) * profits) / DEGRADATION_COEFFICIENT);
     }
 }
