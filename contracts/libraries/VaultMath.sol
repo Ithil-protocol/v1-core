@@ -43,7 +43,7 @@ library VaultMath {
         uint256 interestRate,
         uint256 time
     ) internal pure returns (uint256 dueFees) {
-        return (principal * interestRate * time) / (uint32(TIME_FEE_PERIOD) * RESOLUTION);
+        return (principal * interestRate * (time + 1)).ceilingDiv(uint32(TIME_FEE_PERIOD) * RESOLUTION);
     }
 
     /// @notice Computes the interest rate to apply to a position at its opening
