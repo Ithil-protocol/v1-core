@@ -36,12 +36,13 @@ library BalancerHelper {
         uint256[] memory maxAmountsIn = new uint256[](pool.tokens.length);
         uint8 tokenIndex = getTokenIndex(pool, token);
         maxAmountsIn[tokenIndex] = maxSpent;
-        return IBalancerVault.JoinPoolRequest({
-            assets: pool.tokens,
-            maxAmountsIn: maxAmountsIn,
-            userData: abi.encode(IBalancerVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, maxAmountsIn, minObtained),
-            fromInternalBalance: false
-        });
+        return
+            IBalancerVault.JoinPoolRequest({
+                assets: pool.tokens,
+                maxAmountsIn: maxAmountsIn,
+                userData: abi.encode(IBalancerVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, maxAmountsIn, minObtained),
+                fromInternalBalance: false
+            });
     }
 
     function exitPoolRequest(
@@ -54,11 +55,16 @@ library BalancerHelper {
         uint8 tokenIndex = getTokenIndex(pool, token);
         minAmountsOut[tokenIndex] = maxSpent;
 
-        return IBalancerVault.ExitPoolRequest({
-            assets: pool.tokens,
-            minAmountsOut: minAmountsOut,
-            userData: abi.encodePacked(IBalancerVault.ExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT, minObtained, tokenIndex),
-            toInternalBalance: false
-        });
+        return
+            IBalancerVault.ExitPoolRequest({
+                assets: pool.tokens,
+                minAmountsOut: minAmountsOut,
+                userData: abi.encodePacked(
+                    IBalancerVault.ExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT,
+                    minObtained,
+                    tokenIndex
+                ),
+                toInternalBalance: false
+            });
     }
 }
