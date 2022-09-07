@@ -28,7 +28,7 @@ contract EulerStrategy is BaseStrategy {
         euler = _euler;
     }
 
-    function _openPosition(Order calldata order) internal override returns (uint256 amountIn) {
+    function _openPosition(Order calldata order) internal override returns (uint256) {
         address eToken = markets.underlyingToEToken(order.spentToken);
         if (eToken == address(0)) revert EulerStrategy__Inexistent_Market(order.spentToken);
         if (eToken != order.obtainedToken) revert Strategy__Incorrect_Obtained_Token();
@@ -37,23 +37,23 @@ contract EulerStrategy is BaseStrategy {
 
         IEulerEToken eTkn = IEulerEToken(eToken);
         // must be called before, the deposit affects the exchange rate
-        amountIn = eTkn.convertUnderlyingToBalance(order.maxSpent);
+        uint256 amountIn = eTkn.convertUnderlyingToBalance(order.maxSpent);
         eTkn.deposit(0, order.maxSpent);
+
+        return amountIn;
     }
 
-    function _closePosition(Position memory position, uint256 maxOrMin)
-        internal
-        override
-        returns (uint256 amountIn, uint256 amountOut)
-    {
+    function _closePosition(Position memory position, uint256 maxOrMin) internal override returns (uint256, uint256) {
         IEulerEToken eTkn = IEulerEToken(position.heldToken);
-        amountOut = position.allowance;
-        amountIn = eTkn.convertBalanceToUnderlying(position.allowance);
+        uint256 amountOut = position.allowance;
+        uint256 amountIn = eTkn.convertBalanceToUnderlying(position.allowance);
         // We only support underlying margin, therefore maxOrMin is always a min
         if (amountIn < maxOrMin) revert Strategy__Insufficient_Amount_Out(amountIn, maxOrMin);
         eTkn.withdraw(0, amountIn);
 
         IERC20(position.owedToken).safeTransfer(address(vault), amountIn);
+
+        return (amountIn, amountOut);
     }
 
     function quote(
@@ -69,6 +69,7 @@ contract EulerStrategy is BaseStrategy {
             eToken = markets.underlyingToEToken(dst);
             obtained = IEulerEToken(eToken).convertBalanceToUnderlying(amount);
         }
+
         return (obtained, obtained);
     }
 

@@ -16,8 +16,6 @@ contract Liquidator is Ownable {
     using GeneralMath for uint256;
 
     IERC20 public rewardToken;
-    // Token may be released in another moment or can change
-    // Double mapping needed
     mapping(address => mapping(address => uint256)) public stakes;
     // maximumStake is always denominated in rewardToken
     uint256 public maximumStake;
@@ -38,7 +36,7 @@ contract Liquidator is Ownable {
         rewardToken = IERC20(token);
     }
 
-    // Only rewardToken can be staked
+    // The rewardToken only can be staked
     function stake(uint256 amount) external {
         uint256 allowance = rewardToken.allowance(msg.sender, address(this));
         if (rewardToken.balanceOf(msg.sender) < amount) revert Liquidator__Not_Enough_Ithil();
@@ -84,6 +82,8 @@ contract Liquidator is Ownable {
             uint256 stakePercentage = (stakes[address(rewardToken)][msg.sender] * VaultMath.RESOLUTION) / maximumStake;
             if (stakePercentage > VaultMath.RESOLUTION) return VaultMath.RESOLUTION;
             else return stakePercentage;
-        } else return 0;
+        } else {
+            return 0;
+        }
     }
 }

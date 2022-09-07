@@ -231,10 +231,12 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 amount,
         uint256 riskFactor,
         address borrower
-    ) external override unlocked(token) onlyStrategy returns (uint256 baseInterestRate, uint256 fees) {
+    ) external override unlocked(token) onlyStrategy returns (uint256, uint256) {
         checkWhitelisted(token);
 
         VaultState.VaultData storage vaultData = vaults[token];
+        uint256 baseInterestRate = 0;
+        uint256 fees = vaultData.fixedFee;
         if (amount > 0) {
             uint256 freeLiquidity = vaultData.takeLoan(IERC20(token), amount, riskFactor);
 
@@ -245,10 +247,11 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
                 riskFactor,
                 vaultData.baseFee
             );
-        }
-        fees = vaultData.fixedFee;
 
-        emit LoanTaken(borrower, token, amount, baseInterestRate);
+            emit LoanTaken(borrower, token, amount, baseInterestRate);
+        }
+
+        return (baseInterestRate, fees);
     }
 
     function repay(

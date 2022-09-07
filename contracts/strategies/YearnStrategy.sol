@@ -26,20 +26,18 @@ contract YearnStrategy is BaseStrategy {
         registry = IYearnRegistry(_registry);
     }
 
-    function _openPosition(Order calldata order) internal override returns (uint256 amountIn) {
+    function _openPosition(Order calldata order) internal override returns (uint256) {
         address yvault = registry.latestVault(order.spentToken);
         if (yvault != order.obtainedToken) revert Strategy__Incorrect_Obtained_Token();
 
         super._maxApprove(IERC20(order.spentToken), yvault);
 
-        amountIn = IYearnVault(yvault).deposit(order.maxSpent, address(this));
+        uint256 amountIn = IYearnVault(yvault).deposit(order.maxSpent, address(this));
+
+        return amountIn;
     }
 
-    function _closePosition(Position memory position, uint256 maxOrMin)
-        internal
-        override
-        returns (uint256 amountIn, uint256 amountOut)
-    {
+    function _closePosition(Position memory position, uint256 maxOrMin) internal override returns (uint256, uint256) {
         // We only support native token margin (to avoid whitelisting nightmares)
         // In particular, maxOrMin is always a "min"
         IYearnVault yvault = IYearnVault(position.heldToken);
@@ -48,8 +46,10 @@ contract YearnStrategy is BaseStrategy {
             (10**IERC20Metadata(position.owedToken).decimals());
         uint256 maxLoss = (expectedObtained.positiveSub(maxOrMin) * 10000) / expectedObtained;
 
-        amountIn = yvault.withdraw(position.allowance, address(vault), maxLoss);
-        amountOut = position.allowance;
+        uint256 amountIn = yvault.withdraw(position.allowance, address(vault), maxLoss);
+        uint256 amountOut = position.allowance;
+
+        return (amountIn, amountOut);
     }
 
     function quote(
