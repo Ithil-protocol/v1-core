@@ -146,7 +146,7 @@ describe("MarginTradingStrategy integration test", function () {
   it("Decent slippage should close successfully", async function () {
     // 1% slippage
     const minObtained = quoted.mul(99).div(100);
-    const [, dueFees] = await strategy.computeLiquidationScore(await strategy.positions(1));
+    const [, dueFees] = await liquidatorContract.computeLiquidationScore(strategy.address, await strategy.positions(1));
     await strategy.connect(trader1).closePosition(1, minObtained);
 
     // vault should gain
@@ -182,7 +182,7 @@ describe("MarginTradingStrategy integration test", function () {
   it("Close short position", async function () {
     const position = await strategy.positions(2);
     const principal = position.principal;
-    const [, dueFees] = await strategy.computeLiquidationScore(position);
+    const [, dueFees] = await liquidatorContract.computeLiquidationScore(strategy.address, position);
     [quoted] = await strategy.quote(investmentToken.address, marginToken.address, principal.add(dueFees));
 
     // max spent too high should revert
