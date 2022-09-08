@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
 
+import { IVault } from "../interfaces/IVault.sol";
+
 /// @title    Interface of the parent Strategy contract
 /// @author   Ithil
 interface IStrategy {
@@ -50,8 +52,8 @@ interface IStrategy {
     /// @param positionId the id of the position
     function getPosition(uint256 positionId) external view returns (Position memory);
 
-    /// @notice obtain the vault address
-    function getVault() external view returns (address);
+    /// @notice obtain the vault
+    function vault() external view returns (IVault);
 
     /// @notice open a position by borrowing from the vault and executing external contract calls
     /// @param order the structure with the order parameters

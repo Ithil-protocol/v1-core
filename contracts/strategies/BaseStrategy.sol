@@ -20,7 +20,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     using GeneralMath for uint256;
 
     address public immutable liquidator;
-    IVault internal immutable vault;
+    IVault public immutable override vault;
     mapping(uint256 => Position) public positions;
     uint256 public id;
     bool public locked;
@@ -96,10 +96,6 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
     function getPosition(uint256 positionId) external view override returns (Position memory) {
         return positions[positionId];
-    }
-
-    function getVault() external view override returns (address) {
-        return address(vault);
     }
 
     function computePairRiskFactor(address token0, address token1) public view override returns (uint256) {
@@ -301,15 +297,13 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
     function exposure(address token) public view virtual returns (uint256);
 
-    // Liquidator functions
-
     // slither-disable-next-line external-function
     function tokenURI(uint256 tokenId) public view override(ERC721) returns (string memory) {
         assert(_exists(tokenId));
 
         Position storage position = positions[tokenId];
         (bool success, bytes memory data) = liquidator.staticcall(
-            abi.encodeWithSignature("liqScoreByAddressAndId(address,uint256)", address(this), tokenId)
+            abi.encodeWithSignature("liquidationScore(address,uint256)", address(this), tokenId)
         );
         require(success, "tokenURI: static call error");
 

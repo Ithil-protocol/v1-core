@@ -9,8 +9,6 @@ import { IStrategy } from "../interfaces/IStrategy.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { GeneralMath } from "../libraries/GeneralMath.sol";
 
-import "hardhat/console.sol";
-
 /// @title    Liquidator contract
 /// @author   Ithil
 /// @notice   Base liquidation contract, can forcefully close base strategy's positions
@@ -56,29 +54,26 @@ contract Liquidator is Ownable {
         IERC20(token).safeTransfer(msg.sender, amount);
     }
 
-    function liquidateSingle(address _strategy, uint256 positionId) external {
+    function liquidateSingle(IStrategy strategy, uint256 positionId) external {
         uint256 reward = rewardPercentage();
-        IStrategy strategy = IStrategy(_strategy);
         _forcefullyClose(strategy, positionId, msg.sender, reward);
     }
 
     function marginCall(
-        address _strategy,
+        IStrategy strategy,
         uint256 positionId,
         uint256 extraMargin
     ) external {
         uint256 reward = rewardPercentage();
-        IStrategy strategy = IStrategy(_strategy);
         _modifyCollateralAndOwner(strategy, positionId, extraMargin, msg.sender, reward);
     }
 
     function purchaseAssets(
-        address _strategy,
+        IStrategy strategy,
         uint256 positionId,
         uint256 price
     ) external {
         uint256 reward = rewardPercentage();
-        IStrategy strategy = IStrategy(_strategy);
         _transferAllowance(strategy, positionId, price, msg.sender, reward);
     }
 
@@ -95,18 +90,18 @@ contract Liquidator is Ownable {
 
     // Liquidator
 
-    function liqScoreByAddressAndId(address _strategy, uint256 _positionId) public view returns (int256) {
-        IStrategy.Position memory position = IStrategy(_strategy).getPosition(_positionId);
-        (int256 score, ) = computeLiquidationScore(_strategy, position);
+    function liquidationScore(address _strategy, uint256 _positionId) external view returns (int256) {
+        IStrategy strategy = IStrategy(_strategy);
+        IStrategy.Position memory position = strategy.getPosition(_positionId);
+        (int256 score, ) = computeLiquidationScore(strategy, position);
         return score;
     }
 
-    function computeLiquidationScore(address _strategy, IStrategy.Position memory position)
+    function computeLiquidationScore(IStrategy strategy, IStrategy.Position memory position)
         public
         view
         returns (int256, uint256)
     {
-        IStrategy strategy = IStrategy(_strategy);
         bool collateralInOwedToken = position.collateralToken != position.heldToken;
         uint256 expectedTokens;
         int256 profitAndLoss;
@@ -142,7 +137,7 @@ contract Liquidator is Ownable {
     ) internal {
         IStrategy.Position memory position = strategy.getPosition(positionId);
 
-        (int256 score, uint256 dueFees) = computeLiquidationScore(address(strategy), position);
+        (int256 score, uint256 dueFees) = computeLiquidationScore(strategy, position);
         if (score > 0) {
             strategy.deleteAndBurn(positionId);
             uint256 maxOrMin = 0;
@@ -198,7 +193,7 @@ contract Liquidator is Ownable {
         uint256 reward
     ) internal {
         IStrategy.Position memory position = strategy.getPosition(positionId);
-        (int256 score, uint256 dueFees) = computeLiquidationScore(address(strategy), position);
+        (int256 score, uint256 dueFees) = computeLiquidationScore(strategy, position);
         if (score > 0) {
             strategy.deleteAndBurn(positionId);
             uint256 fairPrice = 0;
@@ -213,7 +208,7 @@ contract Liquidator is Ownable {
                 revert Liquidator__Below_Fair_Price(price, fairPrice);
             } else {
                 strategy.approveAllowance(position);
-                IERC20(position.owedToken).safeTransferFrom(liquidatorUser, address(strategy.getVault()), price);
+                IERC20(position.owedToken).safeTransferFrom(liquidatorUser, address(strategy.vault()), price);
                 IERC20(position.heldToken).safeTransferFrom(address(strategy), liquidatorUser, position.allowance);
                 // The following is necessary to avoid residual transfers during the repay
                 // It means that everything "extra" from principal is fees
@@ -247,7 +242,7 @@ contract Liquidator is Ownable {
         uint256 reward
     ) internal {
         IStrategy.Position memory position = strategy.getPosition(positionId);
-        (int256 score, uint256 dueFees) = computeLiquidationScore(address(strategy), position);
+        (int256 score, uint256 dueFees) = computeLiquidationScore(strategy, position);
         if (score > 0) {
             strategy.transferNFT(positionId, liquidatorUser);
             // reduce due fees based on reward (max 50%)
@@ -265,7 +260,7 @@ contract Liquidator is Ownable {
                 );
             }
             strategy.editPosition(positionId, newCollateral);
-            (int256 newScore, ) = computeLiquidationScore(address(strategy), strategy.getPosition(positionId));
+            (int256 newScore, ) = computeLiquidationScore(strategy, strategy.getPosition(positionId));
             if (newScore > 0) revert Liquidator__Insufficient_Margin_Provided(newScore);
         } else {
             revert Liquidator__Position_Not_Liquidable(positionId, score);
