@@ -11,8 +11,8 @@ library WrappedTokenHelper {
     function mintWrapped(
         IWrappedToken wToken,
         uint256 amount,
-        address user,
-        uint256 totalWealth
+        uint256 totalWealth,
+        address user
     ) internal returns (uint256) {
         uint256 toMint = VaultMath.shareValue(amount, wToken.totalSupply(), totalWealth);
         wToken.mint(user, toMint);
