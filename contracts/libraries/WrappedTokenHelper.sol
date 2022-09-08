@@ -26,9 +26,7 @@ library WrappedTokenHelper {
         uint256 totalWealth,
         address user
     ) internal returns (uint256) {
-        uint256 totalClaims = wToken.totalSupply();
-
-        uint256 toBurn = VaultMath.shareValue(amount, totalClaims, totalWealth);
+        uint256 toBurn = VaultMath.shareValue(amount, wToken.totalSupply(), totalWealth);
         wToken.burn(user, toBurn);
 
         return toBurn;
