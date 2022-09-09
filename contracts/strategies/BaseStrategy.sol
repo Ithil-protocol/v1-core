@@ -306,7 +306,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         );
         assert(success);
         int256 score = abi.decode(data, (int256));
-        
+
         Position memory position = positions[tokenId];
 
         return
