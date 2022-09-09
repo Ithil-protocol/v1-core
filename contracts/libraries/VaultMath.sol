@@ -16,23 +16,23 @@ library VaultMath {
 
     uint256 internal constant DEGRADATION_COEFFICIENT = 21600; // six hours
 
-    /// @notice Computes the maximum amount of money an investor can withdraw from the pool
-    /// @dev Floor(x+y) >= Floor(x) + Floor(y), therefore the sum of all investors'
-    /// withdrawals cannot exceed total liquidity
-    function maximumWithdrawal(
-        uint256 claimingPower,
-        uint256 totalClaimingPower,
+    /// @notice Computes the amount of native tokens to exchange for wrapped
+    /// @param amount the number of native tokens to stake
+    /// @param totalSupply the total supply of wrapped tokens
+    /// @param totalBalance the net balance of the vault in native tokens
+    function nativesPerShares(
+        uint256 amount,
+        uint256 totalSupply,
         uint256 totalBalance
     ) internal pure returns (uint256) {
-        if (claimingPower <= 0) {
-            return 0;
-        } else {
-            return (claimingPower * totalBalance) / totalClaimingPower;
-        }
+        return (totalSupply != 0) ? (totalBalance * amount) / totalSupply : amount;
     }
 
-    /// @notice Computes the amount of wrapped token to burn from a staker
-    function shareValue(
+    /// @notice Computes the amount of wrapped tokens to exchange for natives
+    /// @param amount the amount of wrapped tokens
+    /// @param totalSupply the total supply of wrapped tokens
+    /// @param totalBalance the net balance of the vault in native tokens
+    function sharesPerNatives(
         uint256 amount,
         uint256 totalSupply,
         uint256 totalBalance

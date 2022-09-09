@@ -8,27 +8,26 @@ import { IWrappedToken } from "../interfaces/IWrappedToken.sol";
 /// @author   Ithil
 /// @notice   A library to collect functions related to actions with wrapped token
 library WrappedTokenHelper {
+
+    /// @notice mint wrapped tokens
+    /// @param amount the amount of wrapped tokens to mint
+    /// @param user the user to transfer wrapped tokens to
     function mintWrapped(
         IWrappedToken wToken,
         uint256 amount,
-        uint256 totalWealth,
         address user
-    ) internal returns (uint256) {
-        uint256 toMint = VaultMath.shareValue(amount, wToken.totalSupply(), totalWealth);
-        wToken.mint(user, toMint);
-
-        return toMint;
+    ) internal {
+        wToken.mint(user, amount);
     }
 
+    /// @notice burns wrapped tokens from the user
+    /// @param amount the amount of wrapped tokens to burn
+    /// @param user the user to transfer wrapped tokens to
     function burnWrapped(
         IWrappedToken wToken,
         uint256 amount,
-        uint256 totalWealth,
         address user
-    ) internal returns (uint256) {
-        uint256 toBurn = VaultMath.shareValue(amount, wToken.totalSupply(), totalWealth);
-        wToken.burn(user, toBurn);
-
-        return toBurn;
+    ) internal {
+        wToken.burn(user, amount);
     }
 }

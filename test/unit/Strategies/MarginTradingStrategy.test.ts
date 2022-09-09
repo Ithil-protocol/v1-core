@@ -7,7 +7,7 @@ import { MockWETH } from "../../../src/types/MockWETH";
 import { MarginTradingStrategy } from "../../../src/types/MarginTradingStrategy";
 import { Liquidator } from "../../../src/types/Liquidator";
 import { MockToken } from "../../../src/types/MockToken";
-import { expandToNDecimals } from "../../common/utils";
+import { expandToNDecimals, equalWithTolerance } from "../../common/utils";
 import { BigNumber, Wallet } from "ethers";
 import { marginTokenLiquidity, investmentTokenLiquidity, marginTokenMargin, leverage } from "../../common/params";
 
@@ -361,8 +361,7 @@ describe("Margin Trading Strategy unit tests", function () {
     // now staker can unstake everything missing
     await vault.connect(investor1).unstake(marginToken.address, currentProfits.sub(currentProfits.div(21600)));
     // check investor balance
-    expect(await marginToken.balanceOf(investor1.address)).to.equal(
-      initialInvestorBalance.add(marginTokenLiquidity).add(currentProfits),
-    );
+    equalWithTolerance(await marginToken.balanceOf(investor1.address), initialInvestorBalance.add(marginTokenLiquidity).add(currentProfits), 6);
+    
   });
 });

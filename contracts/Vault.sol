@@ -101,7 +101,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         checkWhitelisted(token);
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
 
-        return VaultMath.maximumWithdrawal(wToken.balanceOf(msg.sender), wToken.totalSupply(), balance(token));
+        return VaultMath.nativesPerShares(wToken.balanceOf(msg.sender), wToken.totalSupply(), balance(token));
     }
 
     function toggleLock(bool locked, address token) external override onlyGuardian {
@@ -152,11 +152,12 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
         checkWhitelisted(token);
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
-        uint256 totalWealth = balance(token);
 
+        uint256 toMint = VaultMath.sharesPerNatives(amount, wToken.totalSupply(), balance(token));
+        if(toMint == 0) revert Vault__Null_Amount();
+        // Transfer must be after calculation because alters balance
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-
-        uint256 toMint = wToken.mintWrapped(amount, totalWealth, msg.sender);
+        wToken.mint(msg.sender, toMint);
 
         emit Deposit(msg.sender, token, amount, toMint);
     }
@@ -187,11 +188,11 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (msg.value != amount) revert Vault__Insufficient_ETH(msg.value, amount);
 
         IWrappedToken wToken = IWrappedToken(vaults[weth].wrappedToken);
-        uint256 totalWealth = balance(weth);
+        uint256 toMint = VaultMath.sharesPerNatives(amount, wToken.totalSupply(), balance(weth));
+        if(toMint == 0) revert Vault__Null_Amount();
 
         IWETH(weth).deposit{ value: amount }();
-
-        uint256 toMint = wToken.mintWrapped(amount, totalWealth, msg.sender);
+        wToken.mint(msg.sender, toMint);
 
         emit Deposit(msg.sender, weth, amount, toMint);
     }
@@ -200,30 +201,34 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         checkWhitelisted(token);
 
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
-        uint256 maxWithdrawal = VaultMath.maximumWithdrawal(
-            wToken.balanceOf(msg.sender),
-            wToken.totalSupply(),
-            balance(token)
-        );
-        if (maxWithdrawal < amount) revert Vault__Max_Withdrawal(msg.sender, token, amount, maxWithdrawal);
-        uint256 toBurn = wToken.burnWrapped(amount, balance(token), msg.sender);
+        uint256 totalSupply = wToken.totalSupply();
+        uint256 totalBalance = balance(token);
+        uint256 toBurn = VaultMath.sharesPerNatives(amount, totalSupply, totalBalance);
+        uint256 toWithdraw = VaultMath.nativesPerShares(toBurn, totalSupply, totalBalance);
+        if(toBurn == 0 || toWithdraw == 0) revert Vault__Null_Amount();
 
-        IERC20(token).safeTransfer(msg.sender, amount);
-        emit Withdrawal(msg.sender, token, amount, toBurn);
+        wToken.burn(msg.sender, toBurn);
+        IERC20(token).safeTransfer(msg.sender, toWithdraw);
+
+        emit Withdrawal(msg.sender, token, toWithdraw, toBurn);
     }
 
     function unstakeETH(uint256 amount) external override isValidAmount(amount) {
         checkWhitelisted(weth);
 
         IWrappedToken wToken = IWrappedToken(vaults[weth].wrappedToken);
-        uint256 toBurn = wToken.burnWrapped(amount, balance(weth), msg.sender);
-        IWETH(weth).withdraw(amount);
+        uint256 totalSupply = wToken.totalSupply();
+        uint256 totalBalance = balance(weth);
+        uint256 toBurn = VaultMath.sharesPerNatives(amount, totalSupply, totalBalance);
+        uint256 toWithdraw = VaultMath.nativesPerShares(toBurn, totalSupply, totalBalance);
+
+        IWETH(weth).withdraw(toWithdraw);
 
         // slither-disable-next-line reentrancy-events,arbitrary-send
-        (bool success, bytes memory data) = payable(msg.sender).call{ value: amount }("");
+        (bool success, bytes memory data) = payable(msg.sender).call{ value: toWithdraw }("");
         if (!success) revert Vault__ETH_Unstake_Failed(data);
 
-        emit Withdrawal(msg.sender, weth, amount, toBurn);
+        emit Withdrawal(msg.sender, weth, toWithdraw, toBurn);
     }
 
     function borrow(

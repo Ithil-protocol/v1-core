@@ -171,7 +171,7 @@ describe("Lending integration tests", function () {
       expect(await vault.boosters(investor2.address, WETH.address)).to.equal(0);
     });
 
-    it("Vaul: booster tries to remove fees", async function () {
+    it("Vault: booster tries to remove fees", async function () {
       const amountToBoost = BigNumber.from(10);
       const amountToStake = BigNumber.from(10);
       const feeAmount = BigNumber.from(2);
@@ -193,7 +193,7 @@ describe("Lending integration tests", function () {
       await vault.connect(investor2).unboost(WETH.address, amountToBoost);
     });
 
-    it("Vaul: enable and disable OUSD feature", async function () {
+    it("Vault: enable and disable OUSD feature", async function () {
       await vault.toggleOusdRebase(true);
       await vault.toggleOusdRebase(false);
     });
