@@ -99,4 +99,6 @@ interface IBalancerPool is IERC20 {
         address recipient,
         IBalancerVault.ExitPoolRequest memory request
     ) external returns (uint256 bptIn, uint256[] memory amountsOut);
+
+    function getRate() external view returns (uint256);
 }

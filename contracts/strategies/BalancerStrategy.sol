@@ -6,6 +6,13 @@ import { IBalancerVault } from "../interfaces/external/IBalancerVault.sol";
 import { IBalancerPool } from "../interfaces/external/IBalancerPool.sol";
 import { BalancerHelper } from "../libraries/BalancerHelper.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
+import "hardhat/console.sol";
+
+
+interface IERC20s is IERC20 {
+    function name() external view returns (string memory);
+    function decimals() external view returns (uint256);
+}
 
 /// @title    BalancerStrategy contract
 /// @author   Ithil
@@ -33,7 +40,7 @@ contract BalancerStrategy is BaseStrategy {
         BalancerHelper.PoolData memory pool = pools[order.obtainedToken];
         if (pool.poolAddress == address(0)) revert BalancerStrategy__Inexistent_Pool(order.spentToken);
 
-        IERC20 lpToken = IERC20(pool.poolAddress);
+        IERC20s lpToken = IERC20s(pool.poolAddress);
         uint256 initialBalance = lpToken.balanceOf(address(this));
 
         IBalancerVault.JoinPoolRequest memory request = BalancerHelper.joinPoolRequest(
@@ -56,7 +63,7 @@ contract BalancerStrategy is BaseStrategy {
 
         IBalancerVault.ExitPoolRequest memory request = BalancerHelper.exitPoolRequest(
             pool,
-            position.heldToken,
+            position.owedToken,
             position.allowance,
             maxOrMin
         );
@@ -70,22 +77,19 @@ contract BalancerStrategy is BaseStrategy {
     ) public view override returns (uint256, uint256) {
         if (pools[src].poolAddress != address(0)) {
             // exiting
-            BalancerHelper.PoolData memory pool = pools[src];
-            IBalancerVault.ExitPoolRequest memory request = BalancerHelper.exitPoolRequest(pool, dst, amount, 0);
-
-            //IBalancerPool(pool.poolAddress).queryExit(pool.id, address(this), address(this), request);
         } else {
             // joining
-            BalancerHelper.PoolData memory pool = pools[dst];
-            IBalancerVault.JoinPoolRequest memory request = BalancerHelper.joinPoolRequest(pool, src, amount, 0);
-
-            //IBalancerPool(pool.poolAddress).queryJoin(pool.id, address(this), address(this), request);
         }
+    }
+
+    function exposure(address token) public view override returns (uint256) {
+        return IERC20(token).balanceOf(address(this));
     }
 
     function addPool(address poolAddress) external onlyOwner {
         IBalancerPool balancerPool = IBalancerPool(poolAddress);
         bytes32 poolID = balancerPool.getPoolId();
+
         (address[] memory poolTokens, , ) = balancerVault.getPoolTokens(poolID);
         pools[poolAddress] = BalancerHelper.PoolData(poolID, poolAddress, poolTokens, uint8(poolTokens.length));
 
@@ -96,9 +100,46 @@ contract BalancerStrategy is BaseStrategy {
         emit BalancerPoolWasAdded(poolAddress);
     }
 
+    /*
     function removePool(address poolAddress) external onlyOwner {
         delete pools[poolAddress];
 
         emit BalancerPoolWasRemoved(poolAddress);
     }
+    */
+
+    /**
+     * @dev Tells the exchange rate for a BPT expressed in the strategy token. Since here we are working with stable
+     *      pools, it can be simply computed using the pool rate.
+     */
+     /*
+    function getTokenPerBptPrice() public view override returns (uint256) {
+        uint256 rate = IBalancerPool(address(_pool)).getRate();
+        return rate / _tokenScale;
+    }
+    */
+
+    /**
+     * @dev Tells the expected min amount for a swap using the price oracle or the pool itself for joins and exits
+     * @param tokenIn Token to be sent
+     * @param tokenOut Token to received
+     * @param amountIn Amount of tokenIn being swapped
+     * @param slippage Slippage to be used to compute the min amount out
+     */
+    /*
+    function _getMinAmountOut(IERC20 tokenIn, IERC20 tokenOut, uint256 amountIn, uint256 slippage)
+        internal
+        view
+        returns (uint256 minAmountOut)
+    {
+        uint256 price;
+        if (tokenIn == _token && tokenOut == _pool) {
+            price = FixedPoint.ONE.divUp(getTokenPerBptPrice());
+        } else if (tokenIn == _pool && tokenOut == _token) {
+            price = getTokenPerBptPrice();
+        }
+
+        minAmountOut = amountIn.mulUp(price).mulUp(FixedPoint.ONE - slippage);
+    }
+    */
 }
