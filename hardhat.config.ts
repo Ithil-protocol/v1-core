@@ -4,6 +4,7 @@ import "@tenderly/hardhat-tenderly";
 import "@typechain/hardhat";
 import "hardhat-abi-exporter";
 import "hardhat-gas-reporter";
+import "hardhat-contract-sizer";
 import "hardhat-spdx-license-identifier";
 import "solidity-coverage";
 
@@ -57,7 +58,7 @@ const config: HardhatUserConfig = {
       // https://hardhat.org/hardhat-network/#solidity-optimizer-support
       optimizer: {
         enabled: true,
-        runs: 800,
+        runs: 100,
       },
     },
   },
@@ -75,6 +76,21 @@ const config: HardhatUserConfig = {
   },
   mocha: {
     timeout: 60000,
+  },
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: false,
+    strict: false,
+    only: [
+      "Vault",
+      "BaseStrategy",
+      "Liquidator",
+      "MarginTradingStrategy",
+      "TestStrategy",
+      "YearnStrategy",
+      "EulerStrategy",
+    ],
   },
 };
 

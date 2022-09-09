@@ -156,7 +156,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
-        uint256 toMint = wToken.mintWrapped(amount, msg.sender, totalWealth);
+        uint256 toMint = wToken.mintWrapped(amount, totalWealth, msg.sender);
 
         emit Deposit(msg.sender, token, amount, toMint);
     }
@@ -191,7 +191,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         IWETH(weth).deposit{ value: amount }();
 
-        uint256 toMint = wToken.mintWrapped(amount, msg.sender, totalWealth);
+        uint256 toMint = wToken.mintWrapped(amount, totalWealth, msg.sender);
 
         emit Deposit(msg.sender, weth, amount, toMint);
     }

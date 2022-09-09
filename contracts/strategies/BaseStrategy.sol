@@ -4,7 +4,6 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
 import { IVault } from "../interfaces/IVault.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
@@ -21,7 +20,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     using GeneralMath for uint256;
 
     address public immutable liquidator;
-    IVault public immutable vault;
+    IVault public immutable override vault;
     mapping(uint256 => Position) public positions;
     uint256 public id;
     bool public locked;
@@ -50,7 +49,8 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     }
 
     modifier isPositionEditable(uint256 positionId) {
-        if (ownerOf(positionId) != msg.sender) revert Strategy__Restricted_Access(ownerOf(positionId), msg.sender);
+        if (msg.sender != ownerOf(positionId) && msg.sender != liquidator)
+            revert Strategy__Restricted_Access(ownerOf(positionId), msg.sender);
 
         // flashloan protection
         if (positions[positionId].createdAt == block.timestamp) revert Strategy__Action_Throttled();
@@ -65,6 +65,11 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
     modifier onlyGuardian() {
         if (msg.sender != guardian && msg.sender != owner()) revert Strategy__Only_Guardian();
+        _;
+    }
+
+    modifier onlyLiquidator() {
+        if (msg.sender != liquidator) revert Strategy__Only_Liquidator(msg.sender, liquidator);
         _;
     }
 
@@ -93,9 +98,18 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         return positions[positionId];
     }
 
+    function computePairRiskFactor(address token0, address token1) public view override returns (uint256) {
+        uint256 risk0 = riskFactors[token0];
+        uint256 risk1 = riskFactors[token1];
+        if (risk0 == 0 || risk1 == 0) revert Strategy__Unsupported_Token(token0, token1);
+        return (risk0 + risk1) / 2;
+    }
+
     function openPosition(Order calldata order) external override validOrder(order) unlocked returns (uint256) {
         uint256 initialExposure = exposure(order.obtainedToken);
-        (uint256 interestRate, uint256 fees, uint256 toBorrow, address collateralToken) = _borrow(order);
+        (uint256 interestRate, uint256 fees, uint256 riskFactor, uint256 toBorrow, address collateralToken) = _borrow(
+            order
+        );
 
         uint256 amountIn = _openPosition(order);
 
@@ -118,6 +132,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             principal: toBorrow,
             allowance: amountIn,
             interestRate: interestRate,
+            riskFactor: riskFactor,
             fees: (fees * order.maxSpent) / VaultMath.RESOLUTION,
             createdAt: block.timestamp
         });
@@ -183,7 +198,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         Position storage position = positions[positionId];
 
         position.topUpCollateral(
-            msg.sender,
+            ownerOf(positionId),
             position.collateralToken == position.owedToken ? address(vault) : address(this),
             topUp,
             position.collateralToken == position.owedToken
@@ -206,11 +221,12 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         returns (
             uint256 interestRate,
             uint256 fees,
+            uint256 riskFactor,
             uint256 toBorrow,
             address collateralToken
         )
     {
-        uint256 riskFactor = computePairRiskFactor(order.spentToken, order.obtainedToken);
+        riskFactor = computePairRiskFactor(order.spentToken, order.obtainedToken);
 
         if (order.collateralIsSpentToken) {
             collateralToken = order.spentToken;
@@ -228,184 +244,50 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         (interestRate, fees) = vault.borrow(order.spentToken, toBorrow, riskFactor, msg.sender);
     }
 
-    // Liquidator
+    // Only liquidator
 
-    modifier onlyLiquidator() {
-        if (msg.sender != liquidator) revert Strategy__Only_Liquidator(msg.sender, liquidator);
-        _;
+    function deleteAndBurn(uint256 positionId) external override onlyLiquidator {
+        delete positions[positionId];
+        _burn(positionId);
+        emit PositionWasLiquidated(positionId);
     }
 
-    function computePairRiskFactor(address token0, address token1) public view override returns (uint256) {
-        uint256 risk0 = riskFactors[token0];
-        uint256 risk1 = riskFactors[token1];
-        if (risk0 == 0 || risk1 == 0) revert Strategy__Unsupported_Token(token0, token1);
-        return (risk0 + risk1) / 2;
+    function approveAllowance(Position memory position) external override onlyLiquidator {
+        _maxApprove(IERC20(position.heldToken), liquidator);
     }
 
-    function computeLiquidationScore(Position memory position) public view returns (int256, uint256) {
-        bool collateralInOwedToken = position.collateralToken != position.heldToken;
-        uint256 pairRiskFactor = computePairRiskFactor(position.heldToken, position.owedToken);
-        uint256 expectedTokens;
-        int256 profitAndLoss;
-
-        uint256 dueFees = position.fees +
-            (position.interestRate * (block.timestamp - position.createdAt) * position.principal) /
-            (uint32(VaultMath.TIME_FEE_PERIOD) * VaultMath.RESOLUTION);
-
-        if (collateralInOwedToken) {
-            (expectedTokens, ) = quote(position.heldToken, position.owedToken, position.allowance);
-            profitAndLoss = SafeCast.toInt256(expectedTokens) - SafeCast.toInt256(position.principal + dueFees);
-        } else {
-            (expectedTokens, ) = quote(position.owedToken, position.heldToken, position.principal + dueFees);
-            profitAndLoss = SafeCast.toInt256(position.allowance) - SafeCast.toInt256(expectedTokens);
-        }
-
-        int256 score = SafeCast.toInt256(position.collateral * pairRiskFactor) -
-            profitAndLoss *
-            int24(VaultMath.RESOLUTION);
-
-        return (score, dueFees);
+    function directClosure(Position memory position, uint256 maxOrMin)
+        external
+        override
+        onlyLiquidator
+        returns (uint256)
+    {
+        (uint256 amountIn, ) = _closePosition(position, maxOrMin);
+        return amountIn;
     }
 
-    function forcefullyClose(
-        uint256 positionId,
-        address liquidatorUser,
-        uint256 reward
+    function directRepay(
+        address token,
+        uint256 amount,
+        uint256 debt,
+        uint256 fees,
+        uint256 riskFactor,
+        address borrower
     ) external override onlyLiquidator {
-        Position memory position = positions[positionId];
-
-        (int256 score, uint256 dueFees) = computeLiquidationScore(position);
-        if (score > 0) {
-            delete positions[positionId];
-            _burn(positionId);
-            uint256 maxOrMin = 0;
-            bool collateralInHeldTokens = position.collateralToken != position.owedToken;
-            if (collateralInHeldTokens) {
-                maxOrMin = position.allowance;
-            } else {
-                (maxOrMin, ) = quote(position.heldToken, position.owedToken, position.allowance);
-            }
-
-            (uint256 amountIn, ) = _closePosition(position, maxOrMin);
-
-            // Computation of reward is done by adding to the dueFees
-            dueFees +=
-                ((amountIn.positiveSub(position.principal + dueFees)) * (VaultMath.RESOLUTION - reward)) /
-                VaultMath.RESOLUTION;
-
-            // In a bad liquidation event, 5% of the paid amount is transferred
-            // Linearly scales with reward (with 0 reward corresponding to 0 transfer)
-            // A direct transfer is needed since repay does not transfer anything
-            // The check is done *after* the repay because surely the vault has the balance
-
-            // If position.principal + dueFees < amountIn < 20 * (position.principal + dueFees) / 19
-            // then amountIn / 20 > amountIn - principal - dueFees and the liquidator may be better off
-            // not liquidating the position and instead wait for it to become bad liquidation
-            if (amountIn < (20 * (position.principal + dueFees)) / 19)
-                amountIn -= (amountIn * reward) / (20 * VaultMath.RESOLUTION);
-
-            vault.repay(
-                position.owedToken,
-                amountIn,
-                position.principal,
-                dueFees,
-                riskFactors[position.heldToken],
-                liquidatorUser
-            );
-
-            emit PositionWasLiquidated(positionId);
-        } else {
-            revert Strategy__Position_Not_Liquidable(positionId, score);
-        }
+        vault.repay(token, amount, debt, fees, riskFactor, borrower);
     }
 
-    function transferAllowance(
-        uint256 positionId,
-        uint256 price,
-        address liquidatorUser,
-        uint256 reward
-    ) external override onlyLiquidator {
-        Position memory position = positions[positionId];
-        (int256 score, uint256 dueFees) = computeLiquidationScore(position);
-        if (score > 0) {
-            delete positions[positionId];
-            uint256 fairPrice = 0;
-            // This is the market price of the position's allowance in owedTokens
-            // No need to distinguish between collateral in held tokens or not
-            (fairPrice, ) = quote(position.heldToken, position.owedToken, position.allowance);
-            fairPrice += dueFees;
-            // Apply discount based on reward (max 5%)
-            // In this case there is no distinction between good or bad liquidation
-            fairPrice -= (fairPrice * reward) / (VaultMath.RESOLUTION * 20);
-            if (price < fairPrice) {
-                revert Strategy__Insufficient_Amount_Out(price, fairPrice);
-            } else {
-                IERC20(position.owedToken).safeTransferFrom(liquidatorUser, address(vault), price);
-                IERC20(position.heldToken).safeTransfer(liquidatorUser, position.allowance);
-                // The following is necessary to avoid residual transfers during the repay
-                // It means that everything "extra" from principal is fees
-                dueFees = price.positiveSub(position.principal);
-            }
-
-            vault.repay(
-                position.owedToken,
-                price,
-                position.principal,
-                dueFees,
-                riskFactors[position.heldToken],
-                liquidatorUser
-            );
-            _burn(positionId);
-
-            emit PositionWasLiquidated(positionId);
-        } else {
-            revert Strategy__Position_Not_Liquidable(positionId, score);
-        }
-    }
-
-    function modifyCollateralAndOwner(
-        uint256 positionId,
-        uint256 newCollateral,
-        address liquidatorUser,
-        uint256 reward
-    ) external override onlyLiquidator {
-        Position storage position = positions[positionId];
-        (int256 score, uint256 dueFees) = computeLiquidationScore(position);
-        if (score > 0) {
-            _transfer(ownerOf(positionId), liquidatorUser, positionId);
-            // reduce due fees based on reward (max 50%)
-            position.fees += (dueFees * (2 * VaultMath.RESOLUTION - reward)) / (2 * VaultMath.RESOLUTION);
-            position.createdAt = block.timestamp;
-            bool collateralInOwedToken = position.collateralToken != position.heldToken;
-            if (collateralInOwedToken) {
-                vault.repay(
-                    position.owedToken,
-                    newCollateral,
-                    newCollateral,
-                    0,
-                    riskFactors[position.heldToken],
-                    liquidatorUser
-                );
-            }
-
-            position.topUpCollateral(
-                liquidatorUser,
-                collateralInOwedToken ? address(vault) : address(this),
-                newCollateral,
-                collateralInOwedToken
-            );
-            (int256 newScore, ) = computeLiquidationScore(position);
-            if (newScore > 0) revert Strategy__Insufficient_Margin_Provided(newScore);
-        } else {
-            revert Strategy__Position_Not_Liquidable(positionId, score);
-        }
+    function transferNFT(uint256 positionId, address newOwner) external override onlyLiquidator {
+        address oldOwner = ownerOf(positionId);
+        _transfer(oldOwner, newOwner, positionId);
+        emit PositionChangedOwner(positionId, oldOwner, newOwner);
     }
 
     // Abstract strategy
 
     function _openPosition(Order calldata order) internal virtual returns (uint256);
 
-    function _closePosition(Position memory position, uint256 expectedCost) internal virtual returns (uint256, uint256);
+    function _closePosition(Position memory position, uint256 maxOrMin) internal virtual returns (uint256, uint256);
 
     function quote(
         address src,
@@ -419,8 +301,13 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     function tokenURI(uint256 tokenId) public view override(ERC721) returns (string memory) {
         assert(_exists(tokenId));
 
-        Position storage position = positions[tokenId];
-        (int256 score, ) = computeLiquidationScore(position);
+        (bool success, bytes memory data) = liquidator.staticcall(
+            abi.encodeWithSignature("computeLiquidationScore(address,uint256)", address(this), tokenId)
+        );
+        assert(success);
+        int256 score = abi.decode(data, (int256));
+
+        Position memory position = positions[tokenId];
 
         return
             SVGImage.generateMetadata(

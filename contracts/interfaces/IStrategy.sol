@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
 
+import { IVault } from "../interfaces/IVault.sol";
+
 /// @title    Interface of the parent Strategy contract
 /// @author   Ithil
 interface IStrategy {
@@ -42,12 +44,16 @@ interface IStrategy {
         uint256 allowance;
         uint256 interestRate;
         uint256 fees;
+        uint256 riskFactor;
         uint256 createdAt;
     }
 
     /// @notice obtain the position at particular id
     /// @param positionId the id of the position
     function getPosition(uint256 positionId) external view returns (Position memory);
+
+    /// @notice obtain the vault
+    function vault() external view returns (IVault);
 
     /// @notice open a position by borrowing from the vault and executing external contract calls
     /// @param order the structure with the order parameters
@@ -75,46 +81,27 @@ interface IStrategy {
         uint256 amount
     ) external view returns (uint256, uint256);
 
-    /// @notice liquidation method: forcefully close a position and repays the vault and the liquidator
-    /// @param positionId the id of the position to be closed
-    /// @param liquidatorUser the address of the user performing the liquidation
-    /// @param reward the liquidator's reward ratio
-    function forcefullyClose(
-        uint256 positionId,
-        address liquidatorUser,
-        uint256 reward
-    ) external;
-
-    /// @notice liquidation method: transfers the allowance to the liquidator after
-    ///         the liquidator repays the debt with the vault
-    /// @param positionId the id of the position to be closed
-    /// @param price the amount transferred to the vault by the liquidator
-    /// @param liquidatorUser the address of the user performing the liquidation
-    /// @param reward the liquidator's reward ratio
-    function transferAllowance(
-        uint256 positionId,
-        uint256 price,
-        address liquidatorUser,
-        uint256 reward
-    ) external;
-
-    /// @notice liquidation method: tops up the collateral of a position and transfers its ownership
-    ///         to the liquidator
-    /// @param positionId the id of the position to be transferred
-    /// @param newCollateral the amount extra collateral transferred to the vault by the liquidator
-    /// @param liquidatorUser the address of the user performing the liquidation
-    /// @param reward the liquidator's reward ratio
-    function modifyCollateralAndOwner(
-        uint256 positionId,
-        uint256 newCollateral,
-        address liquidatorUser,
-        uint256 reward
-    ) external;
-
     /// @notice computes the risk factor of the token pair, from the individual risk factors
     /// @param token0 first token of the pair
     /// @param token1 second token of the pair
     function computePairRiskFactor(address token0, address token1) external view returns (uint256);
+
+    function deleteAndBurn(uint256 positionId) external;
+
+    function approveAllowance(Position memory position) external;
+
+    function directClosure(Position memory position, uint256 maxOrMin) external returns (uint256);
+
+    function directRepay(
+        address token,
+        uint256 amount,
+        uint256 debt,
+        uint256 fees,
+        uint256 riskFactor,
+        address borrower
+    ) external;
+
+    function transferNFT(uint256 positionId, address newOwner) external;
 
     /// ==== EVENTS ==== ///
 
@@ -135,6 +122,9 @@ interface IStrategy {
 
     /// @notice Emitted when a position is closed
     event PositionWasClosed(uint256 indexed id, uint256 amountIn, uint256 amountOut, uint256 fees);
+
+    /// @notice Emitted when the owner of a position is changed
+    event PositionChangedOwner(uint256 indexed id, address oldOwner, address newOwner);
 
     /// @notice Emitted when a position is liquidated
     event PositionWasLiquidated(uint256 indexed id);
