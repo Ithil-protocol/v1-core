@@ -49,6 +49,7 @@
     "fs-extra": "^10.0.0",
     "hardhat": "^2.8.3",
     "hardhat-abi-exporter": "^2.8.0",
+    "hardhat-contract-sizer": "^2.6.1",
     "hardhat-gas-reporter": "^1.0.7",
     "hardhat-spdx-license-identifier": "^2.0.3",
     "lint-staged": "^12.3.3",
@@ -86,6 +87,7 @@
     "prettier": "prettier --config ./.prettierrc.yaml --write \"**/*.{js,json,md,sol,ts}\"",
     "prettier:check": "prettier --check --config ./.prettierrc.yaml \"**/*.{js,json,md,sol,ts}\"",
     "publish": "hardhat publish",
+    "size": "hardhat size-contracts",
     "test": "yarn clean && yarn compile && hardhat test",
     "typechain": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat typechain",
     "verify": "hardhat verify"

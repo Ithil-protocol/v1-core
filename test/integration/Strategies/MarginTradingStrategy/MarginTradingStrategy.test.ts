@@ -144,10 +144,12 @@ describe("MarginTradingStrategy integration test", function () {
   });
 
   it("Decent slippage should close successfully", async function () {
+    const positionID = 1;
+
     // 1% slippage
     const minObtained = quoted.mul(99).div(100);
-    const [, dueFees] = await liquidatorContract.computeLiquidationScore(strategy.address, await strategy.positions(1));
-    await strategy.connect(trader1).closePosition(1, minObtained);
+    const [, dueFees] = await liquidatorContract.computeLiquidationScore(strategy.address, positionID);
+    await strategy.connect(trader1).closePosition(positionID, minObtained);
 
     // vault should gain
     expect(await marginToken.balanceOf(vault.address)).to.be.above(vaultBalance.add(dueFees).sub(1));
@@ -180,18 +182,20 @@ describe("MarginTradingStrategy integration test", function () {
   });
 
   it("Close short position", async function () {
-    const position = await strategy.positions(2);
+    const positionID = 2;
+
+    const position = await strategy.positions(positionID);
     const principal = position.principal;
-    const [, dueFees] = await liquidatorContract.computeLiquidationScore(strategy.address, position);
+    const [, dueFees] = await liquidatorContract.computeLiquidationScore(strategy.address, positionID);
     [quoted] = await strategy.quote(investmentToken.address, marginToken.address, principal.add(dueFees));
 
     // max spent too high should revert
     let maxSpent = position.allowance.add(1);
-    await expect(strategy.connect(trader1).closePosition(2, maxSpent)).to.be.reverted;
+    await expect(strategy.connect(trader1).closePosition(positionID, maxSpent)).to.be.reverted;
 
     // 1% slippage
     maxSpent = quoted.mul(101).div(100);
-    await strategy.connect(trader1).closePosition(2, maxSpent);
+    await strategy.connect(trader1).closePosition(positionID, maxSpent);
 
     // vault should gain
     expect(await investmentToken.balanceOf(vault.address)).to.be.above(vaultBalance.add(dueFees).sub(1));

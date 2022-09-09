@@ -253,7 +253,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     }
 
     function approveAllowance(Position memory position) external override onlyLiquidator {
-        IERC20(position.heldToken).approve(liquidator, position.allowance);
+        _maxApprove(IERC20(position.heldToken), liquidator);
     }
 
     function directClosure(Position memory position, uint256 maxOrMin)
@@ -301,13 +301,13 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     function tokenURI(uint256 tokenId) public view override(ERC721) returns (string memory) {
         assert(_exists(tokenId));
 
-        Position storage position = positions[tokenId];
         (bool success, bytes memory data) = liquidator.staticcall(
-            abi.encodeWithSignature("liquidationScore(address,uint256)", address(this), tokenId)
+            abi.encodeWithSignature("computeLiquidationScore(address,uint256)", address(this), tokenId)
         );
-        require(success, "tokenURI: static call error");
-
+        assert(success);
         int256 score = abi.decode(data, (int256));
+        
+        Position memory position = positions[tokenId];
 
         return
             SVGImage.generateMetadata(

@@ -16,42 +16,39 @@ contract Liquidator is Ownable {
     using SafeERC20 for IERC20;
     using GeneralMath for uint256;
 
-    IERC20 public rewardToken;
+    error Liquidator__Insufficient_Margin_Provided(int256 newScore);
+    error Liquidator__Position_Not_Liquidable(uint256 positionId, int256 score);
+    error Liquidator__Below_Fair_Price(uint256 price, uint256 fairPrice);
+    error Liquidator__Unstaking_Too_Much();
+
+    IERC20 public token;
     mapping(address => mapping(address => uint256)) public stakes;
-    // maximumStake is always denominated in rewardToken
+    // maximumStake is always denominated in the token
     uint256 public maximumStake;
 
-    error Liquidator__Not_Enough_Ithil_Allowance(uint256 allowance);
-    error Liquidator__Not_Enough_Ithil();
-    error Liquidator__Unstaking_Too_Much(uint256 maximum);
-
-    constructor(address _rewardToken) {
-        rewardToken = IERC20(_rewardToken);
+    constructor(address _token) {
+        token = IERC20(_token);
     }
 
     function setMaximumStake(uint256 amount) external onlyOwner {
         maximumStake = amount;
     }
 
-    function setToken(address token) external onlyOwner {
-        rewardToken = IERC20(token);
+    function setToken(address _token) external onlyOwner {
+        token = IERC20(_token);
     }
 
-    // The rewardToken only can be staked
     function stake(uint256 amount) external {
-        uint256 allowance = rewardToken.allowance(msg.sender, address(this));
-        if (rewardToken.balanceOf(msg.sender) < amount) revert Liquidator__Not_Enough_Ithil();
-        if (allowance < amount) revert Liquidator__Not_Enough_Ithil_Allowance(allowance);
-        stakes[address(rewardToken)][msg.sender] += amount;
-        rewardToken.safeTransferFrom(msg.sender, address(this), amount);
+        stakes[address(token)][msg.sender] += amount;
+        token.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // When the token changes, people must be able to unstake the old one
-    function unstake(address token, uint256 amount) external {
-        uint256 staked = stakes[token][msg.sender];
-        if (staked < amount) revert Liquidator__Unstaking_Too_Much(staked);
-        stakes[token][msg.sender] -= amount;
-        IERC20(token).safeTransfer(msg.sender, amount);
+    function unstake(address _token, uint256 amount) external {
+        if (stakes[_token][msg.sender] < amount) revert Liquidator__Unstaking_Too_Much();
+
+        stakes[_token][msg.sender] -= amount;
+        IERC20(_token).safeTransfer(msg.sender, amount);
     }
 
     function liquidateSingle(IStrategy strategy, uint256 positionId) external {
@@ -77,10 +74,10 @@ contract Liquidator is Ownable {
         _transferAllowance(strategy, positionId, price, msg.sender, reward);
     }
 
-    // rewardPercentage is computed as of the stakes of rewardTokens
+    // rewardPercentage is computed as of the tokens staked
     function rewardPercentage() public view returns (uint256) {
         if (maximumStake > 0) {
-            uint256 stakePercentage = (stakes[address(rewardToken)][msg.sender] * VaultMath.RESOLUTION) / maximumStake;
+            uint256 stakePercentage = (stakes[address(token)][msg.sender] * VaultMath.RESOLUTION) / maximumStake;
             if (stakePercentage > VaultMath.RESOLUTION) return VaultMath.RESOLUTION;
             else return stakePercentage;
         } else {
@@ -89,19 +86,10 @@ contract Liquidator is Ownable {
     }
 
     // Liquidator
-
-    function liquidationScore(address _strategy, uint256 _positionId) external view returns (int256) {
+    function computeLiquidationScore(address _strategy, uint256 _positionId) public view returns (int256, uint256) {
         IStrategy strategy = IStrategy(_strategy);
         IStrategy.Position memory position = strategy.getPosition(_positionId);
-        (int256 score, ) = computeLiquidationScore(strategy, position);
-        return score;
-    }
 
-    function computeLiquidationScore(IStrategy strategy, IStrategy.Position memory position)
-        public
-        view
-        returns (int256, uint256)
-    {
         bool collateralInOwedToken = position.collateralToken != position.heldToken;
         uint256 expectedTokens;
         int256 profitAndLoss;
@@ -137,7 +125,7 @@ contract Liquidator is Ownable {
     ) internal {
         IStrategy.Position memory position = strategy.getPosition(positionId);
 
-        (int256 score, uint256 dueFees) = computeLiquidationScore(strategy, position);
+        (int256 score, uint256 dueFees) = computeLiquidationScore(address(strategy), positionId);
         if (score > 0) {
             strategy.deleteAndBurn(positionId);
             uint256 maxOrMin = 0;
@@ -193,7 +181,7 @@ contract Liquidator is Ownable {
         uint256 reward
     ) internal {
         IStrategy.Position memory position = strategy.getPosition(positionId);
-        (int256 score, uint256 dueFees) = computeLiquidationScore(strategy, position);
+        (int256 score, uint256 dueFees) = computeLiquidationScore(address(strategy), positionId);
         if (score > 0) {
             strategy.deleteAndBurn(positionId);
             uint256 fairPrice = 0;
@@ -242,7 +230,7 @@ contract Liquidator is Ownable {
         uint256 reward
     ) internal {
         IStrategy.Position memory position = strategy.getPosition(positionId);
-        (int256 score, uint256 dueFees) = computeLiquidationScore(strategy, position);
+        (int256 score, uint256 dueFees) = computeLiquidationScore(address(strategy), positionId);
         if (score > 0) {
             strategy.transferNFT(positionId, liquidatorUser);
             // reduce due fees based on reward (max 50%)
@@ -260,14 +248,10 @@ contract Liquidator is Ownable {
                 );
             }
             strategy.editPosition(positionId, newCollateral);
-            (int256 newScore, ) = computeLiquidationScore(strategy, strategy.getPosition(positionId));
+            (int256 newScore, ) = computeLiquidationScore(address(strategy), positionId);
             if (newScore > 0) revert Liquidator__Insufficient_Margin_Provided(newScore);
         } else {
             revert Liquidator__Position_Not_Liquidable(positionId, score);
         }
     }
-
-    error Liquidator__Insufficient_Margin_Provided(int256 newScore);
-    error Liquidator__Position_Not_Liquidable(uint256 positionId, int256 score);
-    error Liquidator__Below_Fair_Price(uint256 price, uint256 fairPrice);
 }
