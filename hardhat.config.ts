@@ -6,6 +6,7 @@ import "hardhat-abi-exporter";
 import "hardhat-gas-reporter";
 import "hardhat-contract-sizer";
 import "hardhat-spdx-license-identifier";
+import "hardhat-tracer";
 import "solidity-coverage";
 
 import { chainIds } from "./constants";

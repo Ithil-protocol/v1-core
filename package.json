@@ -91,5 +91,8 @@
     "test": "yarn clean && yarn compile && hardhat test",
     "typechain": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat typechain",
     "verify": "hardhat verify"
+  },
+  "dependencies": {
+    "hardhat-tracer": "^1.1.0-rc.9"
   }
 }
