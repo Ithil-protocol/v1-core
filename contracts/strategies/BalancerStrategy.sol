@@ -100,13 +100,11 @@ contract BalancerStrategy is BaseStrategy {
         emit BalancerPoolWasAdded(poolAddress);
     }
 
-    /*
     function removePool(address poolAddress) external onlyOwner {
         delete pools[poolAddress];
 
         emit BalancerPoolWasRemoved(poolAddress);
     }
-    */
 
     /**
      * @dev Tells the exchange rate for a BPT expressed in the strategy token. Since here we are working with stable
