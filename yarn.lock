@@ -4452,7 +4452,7 @@ ethers@^4.0.32, ethers@^4.0.40:
     uuid "2.0.1"
     xmlhttprequest "1.8.0"
 
-ethers@^5.0.1, ethers@^5.0.2, ethers@^5.5.2, ethers@^5.5.3, ethers@^5.5.4, ethers@^5.6.8:
+ethers@^5.0.1, ethers@^5.0.2, ethers@^5.5.2, ethers@^5.5.3, ethers@^5.5.4, ethers@^5.6.1, ethers@^5.6.8:
   version "5.7.0"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.7.0.tgz#0055da174b9e076b242b8282638bc94e04b39835"
   integrity sha512-5Xhzp2ZQRi0Em+0OkOcRHxPzCfoBfgtOQA+RUylSkuHbhTEaQklnYi2hsWbRgs3ztJsXVXd9VKBcO1ScWL8YfA==
@@ -5513,6 +5513,13 @@ hardhat-spdx-license-identifier@^2.0.3:
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/hardhat-spdx-license-identifier/-/hardhat-spdx-license-identifier-2.0.3.tgz#6dd89a7e036ede4f7e86fb349eb23daaaad6890f"
   integrity sha512-G4u4I1md0tWaitX6Os7Nq9sYZ/CFdR+ibm7clCksGJ4yrtdHEZxgLjWpJ0WiALF9SoFKt03PwCe9lczDQ/5ADA==
+
+hardhat-tracer@^1.1.0-rc.9:
+  version "1.1.0-rc.9"
+  resolved "https://registry.yarnpkg.com/hardhat-tracer/-/hardhat-tracer-1.1.0-rc.9.tgz#cc35b4cd8b77fea87df0fe0ab2b51811e455e3a1"
+  integrity sha512-R9ikCBXCf+r78gdQMyTHPUiOeqAUxhJ3JUUzYulnJ/fuB/JwbolDJ3DvdTuBy1cOXFwLVkPBtpWYEWwW1pBXKQ==
+  dependencies:
+    ethers "^5.6.1"
 
 hardhat@^2.8.3:
   version "2.10.2"
