@@ -94,3 +94,8 @@ export function expandTo18Decimals(n: number): BigNumber {
 export function expandToNDecimals(n: number, decimals: number): BigNumber {
   return BigNumber.from(n).mul(BigNumber.from(10).pow(decimals));
 }
+
+export function equalWithTolerance(a: BigNumber, b: BigNumber, decimals: number) {
+  expect(a).to.be.above(b.sub(BigNumber.from(10).pow(decimals)));
+  expect(a).to.be.below(b.add(BigNumber.from(10).pow(decimals)));
+}

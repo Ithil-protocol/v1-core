@@ -11,6 +11,7 @@ import {
   expandTo18Decimals,
   expandToNDecimals,
   mintAndStake,
+  equalWithTolerance,
 } from "../common/utils";
 import { baseFee, fixedFee, minimumMargin } from "../common/params";
 
@@ -108,10 +109,6 @@ describe("Lending unit tests", function () {
       const amountAdded = expandTo18Decimals(100);
       await token.mintTo(vault.address, amountAdded);
 
-      // Withdrawing too much should revert
-      await expect(vault.connect(investor1).unstake(token.address, amountToStake.add(amountAdded).add(1))).to.be
-        .reverted;
-
       // Unstake maximum
       const unstakeTx = await vault.connect(investor1).unstake(token.address, amountBack.add(amountAdded));
       const unstakeEvents = (await unstakeTx.wait()).events;
@@ -120,7 +117,11 @@ describe("Lending unit tests", function () {
         balance: await token.balanceOf(investor1.address),
       };
 
-      expect(finalState.balance).to.equal(initialStakerLiquidity.sub(amountToStake).add(amountBack).add(amountAdded));
+      equalWithTolerance(
+        finalState.balance,
+        initialStakerLiquidity.sub(amountToStake).add(amountBack).add(amountAdded),
+        4,
+      );
 
       const validUnstakeEvents = unstakeEvents?.filter(
         event => event.event === "Withdrawal" && event.args && event.args[0] === investor1.address,
