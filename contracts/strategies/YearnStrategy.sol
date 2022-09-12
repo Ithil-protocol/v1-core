@@ -31,8 +31,7 @@ contract YearnStrategy is BaseStrategy {
         IERC20 spentToken = IERC20(order.spentToken);
         if (yvault != order.obtainedToken) revert Strategy__Incorrect_Obtained_Token();
 
-        if(spentToken.allowance(address(this), yvault) < order.maxSpent)
-            spentToken.approve(yvault, type(uint256).max);
+        if (spentToken.allowance(address(this), yvault) < order.maxSpent) spentToken.approve(yvault, type(uint256).max);
 
         uint256 amountIn = IYearnVault(yvault).deposit(order.maxSpent, address(this));
 

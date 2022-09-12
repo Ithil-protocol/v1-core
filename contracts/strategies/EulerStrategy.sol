@@ -34,8 +34,7 @@ contract EulerStrategy is BaseStrategy {
         if (eToken == address(0)) revert EulerStrategy__Inexistent_Market(order.spentToken);
         if (eToken != order.obtainedToken) revert Strategy__Incorrect_Obtained_Token();
 
-        if(spentToken.allowance(address(this), euler) < order.maxSpent)
-            spentToken.approve(euler, type(uint256).max);
+        if (spentToken.allowance(address(this), euler) < order.maxSpent) spentToken.approve(euler, type(uint256).max);
 
         IEulerEToken eTkn = IEulerEToken(eToken);
         // must be called before, the deposit affects the exchange rate
