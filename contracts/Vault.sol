@@ -264,13 +264,13 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 fees,
         uint256 riskFactor,
         address borrower
-    ) external override onlyStrategy {
+    ) external override onlyStrategy returns (uint256) {
         checkWhitelisted(token);
 
         VaultState.VaultData storage vaultData = vaults[token];
 
-        vaultData.repayLoan(IERC20(token), borrower, debt, fees, amount, riskFactor);
-
         emit LoanRepaid(borrower, token, amount);
+
+        return vaultData.repayLoan(IERC20(token), borrower, debt, fees, amount, riskFactor);
     }
 }

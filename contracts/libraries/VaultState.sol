@@ -96,7 +96,7 @@ library VaultState {
         uint256 fees,
         uint256 amount,
         uint256 riskFactor
-    ) internal {
+    ) internal returns (uint256) {
         uint256 totalRisk = self.optimalRatio * self.netLoans;
         subtractLoan(self, debt);
         self.optimalRatio = self.netLoans != 0 ? totalRisk.positiveSub(riskFactor * debt) / self.netLoans : 0;
@@ -111,6 +111,7 @@ library VaultState {
             self.latestRepay = block.timestamp;
 
             token.safeTransfer(borrower, amount - debt - fees);
+            return amount - debt - fees;
             // Since fees >= insurancePortion, we still have
             // token.balanceOf(address(this)) >= self.insuranceReserveBalance;
         } else {
@@ -118,6 +119,7 @@ library VaultState {
             // amount is already adjusted in BaseStrategy
             if (amount < debt) subtractInsuranceReserve(self, debt - amount);
             token.safeTransfer(borrower, amount / 19);
+            return amount / 19;
         }
     }
 }

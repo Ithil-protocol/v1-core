@@ -168,14 +168,12 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             block.timestamp - position.createdAt
         );
 
-        IERC20 owedToken = IERC20(position.owedToken);
-        uint256 vaultRepaid = owedToken.balanceOf(address(vault));
         (uint256 amountIn, uint256 amountOut) = _closePosition(position, maxOrMin);
         if (
             (amountIn < maxOrMin && position.collateralToken != position.heldToken) ||
             (amountOut > maxOrMin && position.collateralToken != position.owedToken)
         ) revert Strategy__Insufficient_Amount_Out(amountIn, maxOrMin);
-        vault.repay(
+        uint256 repaid = vault.repay(
             position.owedToken,
             amountIn,
             position.principal,
@@ -185,11 +183,10 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         );
         if (position.collateralToken != position.owedToken && amountOut <= position.allowance)
             IERC20(position.heldToken).safeTransfer(owner, position.allowance - amountOut);
-        vaultRepaid = owedToken.balanceOf(address(vault)) - vaultRepaid;
 
         /// The following check is important to prevent users from triggering bad liquidations
-        if (vaultRepaid < position.principal + position.fees)
-            revert Strategy__Loan_Not_Repaid(vaultRepaid, position.principal + position.fees);
+        if (amountIn - repaid < position.principal + position.fees)
+            revert Strategy__Loan_Not_Repaid(amountIn - repaid, position.principal + position.fees);
 
         emit PositionWasClosed(positionId, amountIn, amountOut, position.fees);
     }
@@ -287,6 +284,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
     function _openPosition(Order calldata order) internal virtual returns (uint256);
 
+    // Implementation rule: the amountOut must be transferred to the vault
     function _closePosition(Position memory position, uint256 maxOrMin) internal virtual returns (uint256, uint256);
 
     function quote(
