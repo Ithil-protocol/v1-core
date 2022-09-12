@@ -8,7 +8,6 @@ import { IWrappedToken } from "../interfaces/IWrappedToken.sol";
 /// @author   Ithil
 /// @notice   A library to collect functions related to actions with wrapped token
 library WrappedTokenHelper {
-
     /// @notice mint wrapped tokens
     /// @param amount the amount of wrapped tokens to mint
     /// @param user the user to transfer wrapped tokens to

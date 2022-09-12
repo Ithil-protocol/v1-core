@@ -154,7 +154,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
 
         uint256 toMint = VaultMath.sharesPerNatives(amount, wToken.totalSupply(), balance(token));
-        if(toMint == 0) revert Vault__Null_Amount();
+        if (toMint == 0) revert Vault__Null_Amount();
         // Transfer must be after calculation because alters balance
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         wToken.mint(msg.sender, toMint);
@@ -189,7 +189,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         IWrappedToken wToken = IWrappedToken(vaults[weth].wrappedToken);
         uint256 toMint = VaultMath.sharesPerNatives(amount, wToken.totalSupply(), balance(weth));
-        if(toMint == 0) revert Vault__Null_Amount();
+        if (toMint == 0) revert Vault__Null_Amount();
 
         IWETH(weth).deposit{ value: amount }();
         wToken.mint(msg.sender, toMint);
@@ -205,7 +205,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 totalBalance = balance(token);
         uint256 toBurn = VaultMath.sharesPerNatives(amount, totalSupply, totalBalance);
         uint256 toWithdraw = VaultMath.nativesPerShares(toBurn, totalSupply, totalBalance);
-        if(toBurn == 0 || toWithdraw == 0) revert Vault__Null_Amount();
+        if (toBurn == 0 || toWithdraw == 0) revert Vault__Null_Amount();
 
         wToken.burn(msg.sender, toBurn);
         IERC20(token).safeTransfer(msg.sender, toWithdraw);

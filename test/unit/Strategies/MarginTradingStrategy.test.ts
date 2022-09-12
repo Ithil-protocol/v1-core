@@ -361,7 +361,10 @@ describe("Margin Trading Strategy unit tests", function () {
     // now staker can unstake everything missing
     await vault.connect(investor1).unstake(marginToken.address, currentProfits.sub(currentProfits.div(21600)));
     // check investor balance
-    equalWithTolerance(await marginToken.balanceOf(investor1.address), initialInvestorBalance.add(marginTokenLiquidity).add(currentProfits), 6);
-    
+    equalWithTolerance(
+      await marginToken.balanceOf(investor1.address),
+      initialInvestorBalance.add(marginTokenLiquidity).add(currentProfits),
+      6,
+    );
   });
 });

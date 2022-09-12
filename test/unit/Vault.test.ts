@@ -11,7 +11,7 @@ import {
   expandTo18Decimals,
   expandToNDecimals,
   mintAndStake,
-  equalWithTolerance
+  equalWithTolerance,
 } from "../common/utils";
 import { baseFee, fixedFee, minimumMargin } from "../common/params";
 
@@ -117,7 +117,11 @@ describe("Lending unit tests", function () {
         balance: await token.balanceOf(investor1.address),
       };
 
-      equalWithTolerance(finalState.balance,initialStakerLiquidity.sub(amountToStake).add(amountBack).add(amountAdded),4);
+      equalWithTolerance(
+        finalState.balance,
+        initialStakerLiquidity.sub(amountToStake).add(amountBack).add(amountAdded),
+        4,
+      );
 
       const validUnstakeEvents = unstakeEvents?.filter(
         event => event.event === "Withdrawal" && event.args && event.args[0] === investor1.address,
