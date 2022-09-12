@@ -10,7 +10,6 @@ import { IWETH } from "./interfaces/external/IWETH.sol";
 import { VaultMath } from "./libraries/VaultMath.sol";
 import { VaultState } from "./libraries/VaultState.sol";
 import { GeneralMath } from "./libraries/GeneralMath.sol";
-import { WrappedTokenHelper } from "./libraries/WrappedTokenHelper.sol";
 import { WrappedToken } from "./WrappedToken.sol";
 
 /// @title    Vault contract
@@ -18,7 +17,6 @@ import { WrappedToken } from "./WrappedToken.sol";
 /// @notice   Stores staked funds, issues loans and handles repayments to strategies
 contract Vault is IVault, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
-    using WrappedTokenHelper for IWrappedToken;
     using VaultMath for uint256;
     using GeneralMath for uint256;
     using GeneralMath for VaultState.VaultData;
