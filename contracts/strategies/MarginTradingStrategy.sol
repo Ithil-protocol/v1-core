@@ -72,7 +72,8 @@ contract MarginTradingStrategy is BaseStrategy {
 
         uint256 initialDstBalance = tokenToBuy.balanceOf(recipient);
 
-        super._maxApprove(tokenToSell, address(kyberProxy));
+        if(tokenToSell.allowance(address(this), address(kyberProxy)) < maxSourceAmount)
+            tokenToSell.approve(address(kyberProxy), type(uint256).max);
 
         // slither-disable-next-line unused-return
         kyberProxy.trade(

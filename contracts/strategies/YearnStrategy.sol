@@ -28,9 +28,11 @@ contract YearnStrategy is BaseStrategy {
 
     function _openPosition(Order calldata order) internal override returns (uint256) {
         address yvault = registry.latestVault(order.spentToken);
+        IERC20 spentToken = IERC20(order.spentToken);
         if (yvault != order.obtainedToken) revert Strategy__Incorrect_Obtained_Token();
 
-        super._maxApprove(IERC20(order.spentToken), yvault);
+        if(spentToken.allowance(address(this), yvault) < order.maxSpent)
+            spentToken.approve(yvault, type(uint256).max);
 
         uint256 amountIn = IYearnVault(yvault).deposit(order.maxSpent, address(this));
 
