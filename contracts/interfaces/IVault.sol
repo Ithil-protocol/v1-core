@@ -107,6 +107,7 @@ interface IVault {
     /// @param amount the total amount transfered during the repayment
     /// @param debt the debt of the loan
     /// @param borrower the owner of the loan
+    /// @return repaid the amount repaid to the borrower
     function repay(
         address token,
         uint256 amount,
@@ -114,7 +115,7 @@ interface IVault {
         uint256 fees,
         uint256 riskFactor,
         address borrower
-    ) external;
+    ) external returns (uint256);
 
     /// ==== EVENTS ==== ///
 
