@@ -202,17 +202,6 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         );
     }
 
-    function _maxApprove(IERC20 token, address receiver) internal {
-        if (token.allowance(address(this), receiver) <= 0) {
-            token.safeApprove(receiver, 0);
-            token.safeApprove(receiver, type(uint256).max);
-        }
-    }
-
-    function _resetApproval(IERC20 token, address receiver) internal {
-        token.safeApprove(receiver, 0);
-    }
-
     function _borrow(Order calldata order)
         internal
         returns (
@@ -250,7 +239,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     }
 
     function approveAllowance(Position memory position) external override onlyLiquidator {
-        _maxApprove(IERC20(position.heldToken), liquidator);
+        IERC20(position.heldToken).approve(liquidator, type(uint256).max);
     }
 
     function directClosure(Position memory position, uint256 maxOrMin)

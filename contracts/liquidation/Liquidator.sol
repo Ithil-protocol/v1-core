@@ -89,27 +89,7 @@ contract Liquidator is Ownable {
     function computeLiquidationScore(address _strategy, uint256 _positionId) public view returns (int256, uint256) {
         IStrategy strategy = IStrategy(_strategy);
         IStrategy.Position memory position = strategy.getPosition(_positionId);
-
-        bool collateralInOwedToken = position.collateralToken != position.heldToken;
-        uint256 expectedTokens;
-        int256 profitAndLoss;
-
-        uint256 dueFees = position.fees +
-            (position.interestRate * (block.timestamp - position.createdAt) * position.principal) /
-            (uint32(VaultMath.TIME_FEE_PERIOD) * VaultMath.RESOLUTION);
-
-        if (collateralInOwedToken) {
-            (expectedTokens, ) = strategy.quote(position.heldToken, position.owedToken, position.allowance);
-            profitAndLoss = SafeCast.toInt256(expectedTokens) - SafeCast.toInt256(position.principal + dueFees);
-        } else {
-            (expectedTokens, ) = strategy.quote(position.owedToken, position.heldToken, position.principal + dueFees);
-            profitAndLoss = SafeCast.toInt256(position.allowance) - SafeCast.toInt256(expectedTokens);
-        }
-
-        int256 score = SafeCast.toInt256(position.collateral * position.riskFactor) -
-            profitAndLoss *
-            int24(VaultMath.RESOLUTION);
-
+        (int256 score, uint256 dueFees, , ) = _computeLiquidationScore(strategy, position);
         return (score, dueFees);
     }
 
@@ -125,16 +105,11 @@ contract Liquidator is Ownable {
     ) internal {
         IStrategy.Position memory position = strategy.getPosition(positionId);
 
-        (int256 score, uint256 dueFees) = computeLiquidationScore(address(strategy), positionId);
+        (int256 score, uint256 dueFees, uint256 maxOrMin, ) = _computeLiquidationScore(strategy, position);
         if (score > 0) {
             strategy.deleteAndBurn(positionId);
-            uint256 maxOrMin = 0;
             bool collateralInHeldTokens = position.collateralToken != position.owedToken;
-            if (collateralInHeldTokens) {
-                maxOrMin = position.allowance;
-            } else {
-                (maxOrMin, ) = strategy.quote(position.heldToken, position.owedToken, position.allowance);
-            }
+            if (collateralInHeldTokens) maxOrMin = position.allowance;
 
             uint256 amountIn = strategy.directClosure(position, maxOrMin);
 
@@ -181,13 +156,11 @@ contract Liquidator is Ownable {
         uint256 reward
     ) internal {
         IStrategy.Position memory position = strategy.getPosition(positionId);
-        (int256 score, uint256 dueFees) = computeLiquidationScore(address(strategy), positionId);
+        (int256 score, uint256 dueFees, uint256 fairPrice, ) = _computeLiquidationScore(strategy, position);
         if (score > 0) {
             strategy.deleteAndBurn(positionId);
-            uint256 fairPrice = 0;
             // This is the market price of the position's allowance in owedTokens
             // No need to distinguish between collateral in held tokens or not
-            (fairPrice, ) = strategy.quote(position.heldToken, position.owedToken, position.allowance);
             fairPrice += dueFees;
             // Apply discount based on reward (max 5%)
             // In this case there is no distinction between good or bad liquidation
@@ -230,7 +203,7 @@ contract Liquidator is Ownable {
         uint256 reward
     ) internal {
         IStrategy.Position memory position = strategy.getPosition(positionId);
-        (int256 score, uint256 dueFees) = computeLiquidationScore(address(strategy), positionId);
+        (int256 score, uint256 dueFees, , ) = _computeLiquidationScore(strategy, position);
         if (score > 0) {
             strategy.transferNFT(positionId, liquidatorUser);
             // reduce due fees based on reward (max 50%)
@@ -253,5 +226,43 @@ contract Liquidator is Ownable {
         } else {
             revert Liquidator__Position_Not_Liquidable(positionId, score);
         }
+    }
+
+    function _computeLiquidationScore(IStrategy strategy, IStrategy.Position memory position)
+        internal
+        view
+        returns (
+            int256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        bool collateralInOwedToken = position.collateralToken != position.heldToken;
+        uint256 expectedTokensOwed = 0;
+        uint256 expectedTokensHeld = 0;
+        int256 profitAndLoss = 0;
+
+        uint256 dueFees = position.fees +
+            (position.interestRate * (block.timestamp - position.createdAt) * position.principal) /
+            (uint32(VaultMath.TIME_FEE_PERIOD) * VaultMath.RESOLUTION);
+
+        if (collateralInOwedToken) {
+            (expectedTokensOwed, ) = strategy.quote(position.heldToken, position.owedToken, position.allowance);
+            profitAndLoss = SafeCast.toInt256(expectedTokensOwed) - SafeCast.toInt256(position.principal + dueFees);
+        } else {
+            (expectedTokensHeld, ) = strategy.quote(
+                position.owedToken,
+                position.heldToken,
+                position.principal + dueFees
+            );
+            profitAndLoss = SafeCast.toInt256(position.allowance) - SafeCast.toInt256(expectedTokensHeld);
+        }
+
+        int256 score = SafeCast.toInt256(position.collateral * position.riskFactor) -
+            profitAndLoss *
+            int24(VaultMath.RESOLUTION);
+
+        return (score, dueFees, expectedTokensOwed, expectedTokensHeld);
     }
 }
