@@ -239,9 +239,9 @@ contract Liquidator is Ownable {
         )
     {
         bool collateralInOwedToken = position.collateralToken != position.heldToken;
-        uint256 expectedTokensOwed;
-        uint256 expectedTokensHeld;
-        int256 profitAndLoss;
+        uint256 expectedTokensOwed = 0;
+        uint256 expectedTokensHeld = 0;
+        int256 profitAndLoss = 0;
 
         uint256 dueFees = position.fees +
             (position.interestRate * (block.timestamp - position.createdAt) * position.principal) /
