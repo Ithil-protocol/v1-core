@@ -93,13 +93,15 @@ interface IVault {
     /// @param amount the total amount to borrow
     /// @param riskFactor the riskiness of this loan
     /// @param borrower the ultimate requester of the loan
+    /// @param destinationChain cross-chain borrowings
     /// @return interestRate the interest rate calculated for the loan
     /// @return fees the fees calculated for the loan
     function borrow(
         address token,
         uint256 amount,
         uint256 riskFactor,
-        address borrower
+        address borrower,
+        uint256 destinationChain
     ) external returns (uint256, uint256);
 
     /// @notice repays a loan
@@ -107,6 +109,7 @@ interface IVault {
     /// @param amount the total amount transfered during the repayment
     /// @param debt the debt of the loan
     /// @param borrower the owner of the loan
+    /// @param destinationChain cross-chain borrowings
     /// @return repaid the amount repaid to the borrower
     function repay(
         address token,
@@ -114,7 +117,8 @@ interface IVault {
         uint256 debt,
         uint256 fees,
         uint256 riskFactor,
-        address borrower
+        address borrower,
+        uint256 destinationChain
     ) external returns (uint256);
 
     /// ==== EVENTS ==== ///
@@ -155,6 +159,7 @@ interface IVault {
     /// ==== ERRORS ==== ///
 
     error Vault__Unsupported_Token(address token);
+    error Vault__Unsupported_Chain(uint256 chainId);
     error Vault__Token_Already_Supported(address token);
     error Vault__ETH_Callback_Failed();
     error Vault__Restricted_Access();

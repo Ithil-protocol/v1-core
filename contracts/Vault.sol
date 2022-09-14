@@ -25,7 +25,8 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     address public immutable override weth;
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address public guardian;
-
+    address public bridge;
+    mapping(uint256 => bool) public supportedChains;
     mapping(address => VaultState.VaultData) public vaults;
     mapping(address => bool) public strategies;
     mapping(address => mapping(address => uint256)) public boosters;
@@ -59,8 +60,20 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         if (msg.sender != weth) revert Vault__ETH_Callback_Failed();
     }
 
+    function setBridge(address _bridge) external onlyOwner {
+        bridge = _bridge;
+    }
+
     function setGuardian(address _guardian) external onlyOwner {
         guardian = _guardian;
+    }
+
+    function addSupportedChain(uint256 chainId) external onlyOwner {
+        supportedChains[chainId] = true;
+    }
+
+    function removeSupportedChain(uint256 chainId) external onlyOwner {
+        delete supportedChains[chainId];
     }
 
     function toggleOusdRebase(bool enabled) external onlyOwner {
@@ -75,6 +88,11 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
             );
             assert(success);
         }
+    }
+
+    function checkSupportedChain(uint256 chainId) public view {
+        /// @todo TBD
+        if (chainId != 0 && !supportedChains[chainId]) revert Vault__Unsupported_Chain(chainId);
     }
 
     function checkWhitelisted(address token) public view override {
@@ -233,15 +251,17 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         address token,
         uint256 amount,
         uint256 riskFactor,
-        address borrower
+        address borrower,
+        uint256 destinationChain
     ) external override unlocked(token) onlyStrategy returns (uint256, uint256) {
         checkWhitelisted(token);
+        checkSupportedChain(destinationChain);
 
         VaultState.VaultData storage vaultData = vaults[token];
         uint256 baseInterestRate = 0;
         uint256 fees = vaultData.fixedFee;
         if (amount > 0) {
-            uint256 freeLiquidity = vaultData.takeLoan(IERC20(token), amount, riskFactor);
+            uint256 freeLiquidity = vaultData.takeLoan(IERC20(token), amount, riskFactor, destinationChain, bridge);
 
             baseInterestRate = VaultMath.computeInterestRateNoLeverage(
                 vaultData.netLoans - amount,
@@ -263,14 +283,16 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 debt,
         uint256 fees,
         uint256 riskFactor,
-        address borrower
+        address borrower,
+        uint256 destinationChain
     ) external override onlyStrategy returns (uint256) {
         checkWhitelisted(token);
+        checkSupportedChain(destinationChain);
 
         VaultState.VaultData storage vaultData = vaults[token];
 
         emit LoanRepaid(borrower, token, amount);
 
-        return vaultData.repayLoan(IERC20(token), borrower, debt, fees, amount, riskFactor);
+        return vaultData.repayLoan(IERC20(token), borrower, debt, fees, amount, riskFactor, destinationChain, bridge);
     }
 }

@@ -40,7 +40,7 @@ contract TestStrategy is BaseStrategy {
         uint256 riskFactor,
         address borrower
     ) external returns (uint256, uint256) {
-        (uint256 baseInterestRate, uint256 fees) = vault.borrow(token, amount, riskFactor, borrower);
+        (uint256 baseInterestRate, uint256 fees) = vault.borrow(token, amount, riskFactor, borrower, 0);
 
         return (baseInterestRate, fees);
     }
@@ -53,7 +53,7 @@ contract TestStrategy is BaseStrategy {
         uint256 riskFactor,
         address borrower
     ) external {
-        vault.repay(token, amount, debt, fees, riskFactor, borrower);
+        vault.repay(token, amount, debt, fees, riskFactor, borrower, 0);
     }
 
     function exposure(address token) public view override returns (uint256) {

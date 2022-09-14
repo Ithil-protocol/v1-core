@@ -20,7 +20,7 @@ contract VaultLendingTest is VaultEnvironmentSetup {
         uint256 amount,
         uint256 riskFactor
     ) public {
-        vault.borrow(token, amount, riskFactor, address(this));
+        vault.borrow(token, amount, riskFactor, address(this), 0);
         borrowed[token] -= amount;
     }
 
@@ -29,7 +29,7 @@ contract VaultLendingTest is VaultEnvironmentSetup {
         uint256 amount,
         uint256 riskFactor
     ) public {
-        vault.repay(token, amount, amount, 0, riskFactor, address(this)); /// @todo this one fails
+        vault.repay(token, amount, amount, 0, riskFactor, address(this), 0); /// @todo this one fails
         borrowed[token] += amount;
     }
 

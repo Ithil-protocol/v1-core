@@ -179,7 +179,8 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             position.principal,
             position.fees,
             riskFactors[position.heldToken],
-            owner
+            owner,
+            0
         );
         if (position.collateralToken != position.owedToken && amountOut <= position.allowance)
             IERC20(position.heldToken).safeTransfer(owner, position.allowance - amountOut);
@@ -227,7 +228,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         if (order.collateral < vault.getMinimumMargin(order.spentToken))
             revert Strategy__Margin_Below_Minimum(order.collateral, vault.getMinimumMargin(order.spentToken));
 
-        (interestRate, fees) = vault.borrow(order.spentToken, toBorrow, riskFactor, msg.sender);
+        (interestRate, fees) = vault.borrow(order.spentToken, toBorrow, riskFactor, msg.sender, 0);
     }
 
     // Only liquidator
@@ -260,7 +261,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         uint256 riskFactor,
         address borrower
     ) external override onlyLiquidator {
-        vault.repay(token, amount, debt, fees, riskFactor, borrower);
+        vault.repay(token, amount, debt, fees, riskFactor, borrower, 0);
     }
 
     function transferNFT(uint256 positionId, address newOwner) external override onlyLiquidator {

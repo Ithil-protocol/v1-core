@@ -4,12 +4,14 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { GeneralMath } from "./GeneralMath.sol";
 import { VaultMath } from "./VaultMath.sol";
+import { BridgeHelper } from "./BridgeHelper.sol";
 
 /// @title    VaultState library
 /// @author   Ithil
 /// @notice   A library to store the vault status
 library VaultState {
     using SafeERC20 for IERC20;
+    using BridgeHelper for IERC20;
     using GeneralMath for uint256;
 
     error Vault__Insufficient_Free_Liquidity(address token, uint256 requested, uint256 freeLiquidity);
@@ -62,7 +64,9 @@ library VaultState {
         VaultState.VaultData storage self,
         IERC20 token,
         uint256 amount,
-        uint256 riskFactor
+        uint256 riskFactor,
+        uint256 destinationChainId,
+        address bridge
     ) internal returns (uint256) {
         uint256 totalRisk = self.optimalRatio * self.netLoans;
         self.netLoans += amount;
@@ -73,7 +77,15 @@ library VaultState {
 
         if (amount > freeLiquidity) revert Vault__Insufficient_Free_Liquidity(address(token), amount, freeLiquidity);
 
-        token.safeTransfer(msg.sender, amount);
+        // check if it is a cross-chain transfer
+        if (destinationChainId != 0) {
+            uint32 destinationDomain = BridgeHelper.getDomain(destinationChainId);
+
+            BridgeHelper.bridgedTransfer(token, bridge, msg.sender, amount, amount, destinationDomain);
+        } else {
+            token.safeTransfer(msg.sender, amount);
+        }
+
         // We have transferred an amount <= freeLiquidity, therefore we now have
         // IERC20(token).balanceOf(address(this)) >= self.insuranceReserveBalance
         return freeLiquidity;
@@ -95,8 +107,11 @@ library VaultState {
         uint256 debt,
         uint256 fees,
         uint256 amount,
-        uint256 riskFactor
+        uint256 riskFactor,
+        uint256 destinationChainId,
+        address bridge
     ) internal returns (uint256) {
+        uint256 amountToTransfer = 0;
         uint256 totalRisk = self.optimalRatio * self.netLoans;
         subtractLoan(self, debt);
         self.optimalRatio = self.netLoans != 0 ? totalRisk.positiveSub(riskFactor * debt) / self.netLoans : 0;
@@ -105,21 +120,28 @@ library VaultState {
             // Insurance reserve increases by a portion of fees
             uint256 insurancePortion = addInsuranceReserve(self, token.balanceOf(address(this)), fees);
             self.currentProfits =
-                VaultMath.calculateLockedProfit(self.currentProfits, block.timestamp, self.latestRepay) +
+                VaultMath.calculateLockedProfit(self.currentProfits, block.timestamp, self.latestRepay);
+            self.currentProfits +=
                 fees -
                 insurancePortion;
             self.latestRepay = block.timestamp;
-
-            token.safeTransfer(borrower, amount - debt - fees);
-            return amount - debt - fees;
+            amountToTransfer = amount - debt - fees;
             // Since fees >= insurancePortion, we still have
             // token.balanceOf(address(this)) >= self.insuranceReserveBalance;
         } else {
             // Bad liquidation: rewards the liquidator with 5% of the amountIn
             // amount is already adjusted in BaseStrategy
             if (amount < debt) subtractInsuranceReserve(self, debt - amount);
-            token.safeTransfer(borrower, amount / 19);
-            return amount / 19;
+            amountToTransfer = amount / 19;
         }
+
+        if(destinationChainId != 0) {
+            uint32 destinationDomain = BridgeHelper.getDomain(destinationChainId);
+            BridgeHelper.bridgedTransfer(token, bridge, borrower, amount, amount, destinationDomain);
+        } else {
+            token.safeTransfer(borrower, amountToTransfer);
+        }
+
+        return amountToTransfer;
     }
 }
