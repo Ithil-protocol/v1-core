@@ -29,7 +29,7 @@ const config: HardhatUserConfig = {
   gasReporter: {
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     currency: "USD",
-    enabled: process.env.REPORT_GAS ? true : false,
+    enabled: process.env.REPORT_GAS == "true" ? true : false,
     excludeContracts: ["contracts/mocks/", "contracts/libraries/"],
     src: "./contracts",
   },
@@ -40,7 +40,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: chainIds.hardhat,
       forking: {
-        enabled: process.env.FORKING ? true : false,
+        enabled: process.env.FORKING == "true" ? true : false,
         url: "https://eth-mainnet.g.alchemy.com/v2/" + process.env.ALCHEMY_API_KEY,
         blockNumber: 14967494,
       },
@@ -93,6 +93,7 @@ const config: HardhatUserConfig = {
       "TestStrategy",
       "YearnStrategy",
       "EulerStrategy",
+      "BalancerStrategy",
     ],
   },
 };

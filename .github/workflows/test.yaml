@@ -29,6 +29,9 @@ jobs:
       - name: Run yarn compile
         run: yarn compile
 
+      - name: Check contract sizes
+        run: yarn size
+
       - name: Run integration tests
         env:
           ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}

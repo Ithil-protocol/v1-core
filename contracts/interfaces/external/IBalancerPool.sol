@@ -6,6 +6,31 @@ import { IBalancerVault } from "./IBalancerVault.sol";
 
 /// @title    Interface of Balancer BasePool contract
 interface IBalancerPool is IERC20 {
+    enum SwapKind {
+        GIVEN_IN,
+        GIVEN_OUT
+    }
+
+    struct SwapRequest {
+        SwapKind kind;
+        IERC20 tokenIn;
+        IERC20 tokenOut;
+        uint256 amount;
+        // Misc data
+        bytes32 poolId;
+        uint256 lastChangeBlock;
+        address from;
+        address to;
+        bytes userData;
+    }
+
+    function onSwap(
+        SwapRequest memory swapRequest,
+        uint256[] memory balances,
+        uint256 indexIn,
+        uint256 indexOut
+    ) external view returns (uint256 amount);
+
     /**
      * @dev Called by the Vault when a user calls `IVault.joinPool` to add liquidity to this Pool. Returns how many of
      * each registered token the user should provide, as well as the amount of protocol fees the Pool owes to the Vault.

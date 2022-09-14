@@ -74,7 +74,7 @@ describe("Balancer strategy integration tests", function () {
 
     await vault.whitelistToken(marginTokenDAI.address, 10, 10, 1000);
     await vault.whitelistToken(investmentTokenDAI.address, 10, 10, 1);
-  
+
     await strategy.setRiskFactor(marginTokenDAI.address, 3000);
     await strategy.setRiskFactor(investmentTokenDAI.address, 4000);
 
@@ -110,9 +110,7 @@ describe("Balancer strategy integration tests", function () {
     // 0.1% slippage
     order.minObtained = firstQuote.mul(999).div(1000);
 
-    await strategy
-      .connect(trader1)
-      .openPosition(order);
+    await strategy.connect(trader1).openPosition(order);
 
     const allowance = (await strategy.positions(1)).allowance;
 
