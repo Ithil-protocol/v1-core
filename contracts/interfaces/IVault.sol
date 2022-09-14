@@ -119,6 +119,9 @@ interface IVault {
 
     /// ==== EVENTS ==== ///
 
+    /// @notice Emitted when a new guardian role is appointed
+    event GuardianWasUpdated(address guardian);
+
     /// @notice Emitted when the governance changes the min margin requirement for a token
     event MinimumMarginWasUpdated(address indexed token, uint256 minimumMargin);
 

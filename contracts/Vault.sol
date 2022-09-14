@@ -61,6 +61,8 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
     function setGuardian(address _guardian) external onlyOwner {
         guardian = _guardian;
+
+        emit GuardianWasUpdated(_guardian);
     }
 
     function toggleOusdRebase(bool enabled) external onlyOwner {
