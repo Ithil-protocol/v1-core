@@ -5,7 +5,6 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { VaultState } from "./VaultState.sol";
 import { IBalancerVault } from "../interfaces/external/IBalancerVault.sol";
 import { IBalancerPool } from "../interfaces/external/IBalancerPool.sol";
-import "hardhat/console.sol";
 
 /// @title    BalancerHelper library
 /// @author   Ithil
@@ -61,7 +60,7 @@ library BalancerHelper {
             IBalancerVault.ExitPoolRequest({
                 assets: pool.tokens,
                 minAmountsOut: minAmountsOut,
-                userData: abi.encodePacked(
+                userData: abi.encode(
                     IBalancerVault.ExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT,
                     bptAmountIn,
                     tokenIndex

@@ -4,6 +4,7 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IBalancerVault } from "../interfaces/external/IBalancerVault.sol";
 import { IBalancerPool } from "../interfaces/external/IBalancerPool.sol";
+import { IAuraBooster } from "../interfaces/external/IAuraBooster.sol";
 import { BalancerHelper } from "../libraries/BalancerHelper.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 import "hardhat/console.sol";
@@ -55,19 +56,13 @@ contract BalancerStrategy is BaseStrategy {
     {
         BalancerHelper.PoolData memory pool = pools[position.heldToken];
 
-        console.log("balance", BalancerHelper.getBalance(balancerVault, pool, position.owedToken));
-
-        /*
-        BalancerHelper.PoolData memory pool = pools[position.heldToken];
-
         IBalancerVault.ExitPoolRequest memory request = BalancerHelper.exitPoolRequest(
             pool,
             position.owedToken,
             position.allowance, // bptIn
-            1e18 // minOut
+            0 // minOut
         );
         balancerVault.exitPool(pool.id, address(this), payable(address(this)), request);
-        */
     }
 
     function quote(
@@ -92,20 +87,27 @@ contract BalancerStrategy is BaseStrategy {
     function addPool(address poolAddress) external onlyOwner {
         IBalancerPool balancerPool = IBalancerPool(poolAddress);
         bytes32 poolID = balancerPool.getPoolId();
-        console.log("rate", balancerPool.getRate());
 
-        (address[] memory poolTokens, , ) = balancerVault.getPoolTokens(poolID);
+        (address[] memory poolTokens,,) = balancerVault.getPoolTokens(poolID);
         pools[poolAddress] = BalancerHelper.PoolData(poolID, poolAddress, poolTokens, uint8(poolTokens.length));
 
         for (uint8 i = 0; i < poolTokens.length; i++) {
-            super._maxApprove(IERC20(poolTokens[i]), address(balancerVault));
+            // @todo check allowance first?
+            IERC20(poolTokens[i]).approve(address(balancerVault), type(uint256).max);
+            //IERC20(poolTokens[i]).approve(address(aura), type(uint256).max);
         }
 
         emit BalancerPoolWasAdded(poolAddress);
     }
 
     function removePool(address poolAddress) external onlyOwner {
+        BalancerHelper.PoolData memory pool = pools[poolAddress];
         delete pools[poolAddress];
+
+        for (uint8 i = 0; i < pool.tokens.length; i++) {
+            IERC20(pool.tokens[i]).approve(pool.poolAddress, 0);
+            //IERC20(pool.tokens[i]).approve(pool.auraPoolAddress, 0);
+        }
 
         emit BalancerPoolWasRemoved(poolAddress);
     }
