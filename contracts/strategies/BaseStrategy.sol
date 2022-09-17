@@ -115,10 +115,8 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
         if (!order.collateralIsSpentToken) amountIn += order.collateral;
 
-        // slither-disable-next-line divide-before-multiply
-        interestRate *=
-            (toBorrow * (amountIn + 2 * initialExposure)) /
-            (2 * order.collateral * (initialExposure + amountIn));
+        interestRate *= (toBorrow * (amountIn + 2 * initialExposure));
+        interestRate /= (2 * order.collateral * (initialExposure + amountIn));
 
         if (interestRate > VaultMath.MAX_RATE) revert Strategy__Maximum_Leverage_Exceeded(interestRate);
 
@@ -178,7 +176,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             amountIn,
             position.principal,
             position.fees,
-            riskFactors[position.heldToken],
+            position.riskFactor,
             owner
         );
         if (position.collateralToken != position.owedToken && amountOut <= position.allowance)
