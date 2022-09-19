@@ -119,7 +119,7 @@ library VaultState {
             if (amount < debt) subtractInsuranceReserve(self, debt - amount);
             amountToTransfer = amount / 19;
         }
-        
+
         token.safeTransfer(borrower, amountToTransfer);
         return amountToTransfer;
     }
