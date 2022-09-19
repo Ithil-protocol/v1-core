@@ -105,11 +105,12 @@ contract Liquidator is Ownable {
     ) internal {
         IStrategy.Position memory position = strategy.getPosition(positionId);
 
-        (int256 score, uint256 dueFees, uint256 maxOrMin, ) = _computeLiquidationScore(strategy, position);
+        (int256 score, uint256 dueFees, , ) = _computeLiquidationScore(strategy, position);
         if (score > 0) {
             strategy.deleteAndBurn(positionId);
             bool collateralInHeldTokens = position.collateralToken != position.owedToken;
-            if (collateralInHeldTokens) maxOrMin = position.allowance;
+
+            uint256 maxOrMin = collateralInHeldTokens ? position.allowance : 0;
 
             uint256 amountIn = strategy.directClosure(position, maxOrMin);
 
