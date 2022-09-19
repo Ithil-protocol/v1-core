@@ -12,12 +12,14 @@ import { VaultMath } from "./libraries/VaultMath.sol";
 import { VaultState } from "./libraries/VaultState.sol";
 import { GeneralMath } from "./libraries/GeneralMath.sol";
 import { WrappedToken } from "./WrappedToken.sol";
+import "hardhat/console.sol";
 
 /// @title    Vault contract
 /// @author   Ithil
 /// @notice   Stores staked funds, issues loans and handles repayments to strategies
 contract Vault is IVault, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
+    using SafeERC20 for IERC20Permit;
     using VaultMath for uint256;
     using GeneralMath for uint256;
     using GeneralMath for VaultState.VaultData;
@@ -173,7 +175,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
         checkWhitelisted(token);
 
-        uint256 toMint = _stake(weth, amount);
+        uint256 toMint = _stake(token, amount);
 
         // Transfer must be after calculation because alters balance
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
@@ -191,9 +193,11 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     ) external override unlocked(token) isValidAmount(amount) {
         checkWhitelisted(token);
 
-        uint256 toMint = _stake(weth, amount);
+        uint256 toMint = _stake(token, amount);
 
-        IERC20Permit(token).permit(msg.sender, address(this), amount, deadline, v, r, s);
+        IERC20Permit permitToken = IERC20Permit(token);
+        permitToken.safePermit(msg.sender, address(this), amount, deadline, v, r, s);
+console.log(2);
 
         // Transfer must be after calculation because alters balance
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);

@@ -5,16 +5,16 @@ import { BigNumber, Wallet } from "ethers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 
 import { tokens } from "../../common/mainnet";
-import { getTokens, matchState, expandToNDecimals } from "../../common/utils";
+import { getTokens, matchState } from "../../common/utils";
 
 import type { ERC20 } from "../../../src/types/ERC20";
+import { ERC20Permit } from "../../../src/types/ERC20Permit";
 import type { Vault } from "../../../src/types/Vault";
 import type { Artifact } from "hardhat/types";
 
 import { vaultFixture } from "../../common/fixtures";
-
+import { getPermitSignature } from "../../common/permit";
 import { amount, baseFee, fixedFee, marginTokenLiquidity, minimumMargin, stakedValue } from "../../common/params";
-import { WritableStream } from "stream/web";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -199,5 +199,20 @@ describe("Lending integration tests", function () {
     });
 
     //TODO: other tests with investor1 and investor2 interlacing
+  });
+
+  it("Vault: stake with permit", async function () {
+    const ohmAmount = BigNumber.from(10**9);
+
+    const tokenArtifact: Artifact = await artifacts.readArtifact("ERC20Permit");
+    let ohm = <ERC20Permit>await ethers.getContractAt(tokenArtifact.abi, tokens.OHM.address);
+    await vault.whitelistToken(ohm.address, baseFee, fixedFee, ohmAmount);
+
+    const { v, r, s } = await getPermitSignature(wallet, ohm, vault.address);//, ohmAmount);
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+
+    expect(await ohm.allowance(wallet.address, vault.address)).to.be.eq(0);
+    await vault.connect(wallet.address).stakeWithPermit(ohm.address, ohmAmount, deadline, v, r, s);
+    await vault.connect(wallet.address).unstake(ohm.address, ohmAmount);
   });
 });

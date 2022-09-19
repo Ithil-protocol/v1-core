@@ -49,6 +49,9 @@ export const changeRate = async (kyber: MockKyberNetworkProxy, token: any, rate:
 export const getTokens = async (user: string, token: any, whale: string, amount: BigNumber) => {
   const contract = await ethers.getContractAt(ERC20.abi, token);
 
+  const balance = await contract.balanceOf(whale);
+  expect(balance).to.be.gte(amount);
+
   await ethers.provider.send("hardhat_impersonateAccount", [whale]);
   const impersonatedAccount = ethers.provider.getSigner(whale);
   await contract.connect(impersonatedAccount).transfer(user, amount);
