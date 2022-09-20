@@ -51,7 +51,7 @@ library BalancerHelper {
         address token,
         uint256 bptAmountIn,
         uint256 minObtained
-    ) internal pure returns (IBalancerVault.ExitPoolRequest memory) {
+    ) internal view returns (IBalancerVault.ExitPoolRequest memory) {
         uint256[] memory minAmountsOut = new uint256[](pool.tokens.length);
         uint8 tokenIndex = getTokenIndex(pool.tokens, token);
         minAmountsOut[tokenIndex] = minObtained;
@@ -60,11 +60,7 @@ library BalancerHelper {
             IBalancerVault.ExitPoolRequest({
                 assets: pool.tokens,
                 minAmountsOut: minAmountsOut,
-                userData: abi.encode(
-                    IBalancerVault.ExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT,
-                    bptAmountIn,
-                    tokenIndex
-                ),
+                userData: abi.encode(IBalancerVault.ExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT, bptAmountIn, tokenIndex),
                 toInternalBalance: false
             });
     }

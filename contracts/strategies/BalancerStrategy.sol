@@ -7,7 +7,6 @@ import { IBalancerPool } from "../interfaces/external/IBalancerPool.sol";
 import { IAuraBooster } from "../interfaces/external/IAuraBooster.sol";
 import { BalancerHelper } from "../libraries/BalancerHelper.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
-import "hardhat/console.sol";
 
 /// @title    BalancerStrategy contract
 /// @author   Ithil
@@ -55,14 +54,16 @@ contract BalancerStrategy is BaseStrategy {
         returns (uint256 amountIn, uint256 amountOut)
     {
         BalancerHelper.PoolData memory pool = pools[position.heldToken];
-
+        IERC20 owedToken = IERC20(position.owedToken);
+        uint256 owedBalance = owedToken.balanceOf(address(vault));
         IBalancerVault.ExitPoolRequest memory request = BalancerHelper.exitPoolRequest(
             pool,
             position.owedToken,
             position.allowance, // bptIn
-            0 // minOut
+            42000000 // minOut
         );
-        balancerVault.exitPool(pool.id, address(this), payable(address(this)), request);
+        balancerVault.exitPool(pool.id, address(this), payable(address(vault)), request);
+        amountIn = owedToken.balanceOf(address(vault)) - owedBalance;
     }
 
     function quote(
@@ -88,7 +89,7 @@ contract BalancerStrategy is BaseStrategy {
         IBalancerPool balancerPool = IBalancerPool(poolAddress);
         bytes32 poolID = balancerPool.getPoolId();
 
-        (address[] memory poolTokens,,) = balancerVault.getPoolTokens(poolID);
+        (address[] memory poolTokens, , ) = balancerVault.getPoolTokens(poolID);
         pools[poolAddress] = BalancerHelper.PoolData(poolID, poolAddress, poolTokens, uint8(poolTokens.length));
 
         for (uint8 i = 0; i < poolTokens.length; i++) {

@@ -95,8 +95,6 @@ describe("Balancer strategy integration tests", function () {
       maxSpent: marginTokenMargin.mul(leverage),
       deadline: deadline,
     };
-
-    console.log(order.maxSpent.toString());
   });
 
   it("Balancer Strategy: open position on DAI", async function () {
