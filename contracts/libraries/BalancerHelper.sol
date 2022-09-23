@@ -5,6 +5,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { VaultState } from "./VaultState.sol";
 import { IBalancerVault } from "../interfaces/external/IBalancerVault.sol";
 import { IBalancerPool } from "../interfaces/external/IBalancerPool.sol";
+import "hardhat/console.sol";
 
 /// @title    BalancerHelper library
 /// @author   Ithil
@@ -51,7 +52,7 @@ library BalancerHelper {
         address token,
         uint256 bptAmountIn,
         uint256 minObtained
-    ) internal view returns (IBalancerVault.ExitPoolRequest memory) {
+    ) internal pure returns (IBalancerVault.ExitPoolRequest memory) {
         uint256[] memory minAmountsOut = new uint256[](pool.tokens.length);
         uint8 tokenIndex = getTokenIndex(pool.tokens, token);
         minAmountsOut[tokenIndex] = minObtained;
@@ -65,37 +66,36 @@ library BalancerHelper {
             });
     }
 
-    function getBalance(
-        IBalancerVault balancerVault,
-        PoolData memory pool,
-        address token
-    ) internal view returns (uint256 amount) {
-        (, uint256[] memory totalBalances, uint256 lastChangeBlock) = balancerVault.getPoolTokens(pool.id);
-        IBalancerPool balancerPool = IBalancerPool(pool.poolAddress);
+    // function getBalance(
+    //     IBalancerVault balancerVault,
+    //     PoolData memory pool,
+    //     address token
+    // ) internal view returns (uint256 amount) {
+    //     (, uint256[] memory totalBalances, uint256 lastChangeBlock) = balancerVault.getPoolTokens(pool.id);
+    //     IBalancerPool balancerPool = IBalancerPool(pool.poolAddress);
+    //     uint256 underlyingIndex = BalancerHelper.getTokenIndex(pool.tokens, token);
+    //     uint256 poolShare = (balancerPool.balanceOf(msg.sender) * 1e18) / balancerPool.totalSupply();
+    //     uint256[] memory underlyingBalances = new uint256[](pool.tokens.length);
 
-        uint256 underlyingIndex = BalancerHelper.getTokenIndex(pool.tokens, token);
-        uint256 poolShare = (balancerPool.balanceOf(address(this)) * 1e18) / balancerPool.totalSupply();
-        uint256[] memory underlyingBalances = new uint256[](pool.tokens.length);
+    //     for (uint8 i = 0; i < pool.tokens.length; i++) {
+    //         underlyingBalances[i] = totalBalances[i] * poolShare;
+    //     }
+    //     amount += underlyingBalances[0];
 
-        for (uint8 i = 0; i < pool.tokens.length; i++) {
-            underlyingBalances[i] = totalBalances[i] * poolShare;
-        }
-        amount += underlyingBalances[0];
+    //     IBalancerPool.SwapRequest memory request = IBalancerPool.SwapRequest(
+    //         IBalancerPool.SwapKind.GIVEN_IN,
+    //         IERC20(pool.tokens[1]),
+    //         IERC20(pool.tokens[0]),
+    //         underlyingBalances[1],
+    //         pool.id,
+    //         lastChangeBlock,
+    //         address(this),
+    //         address(this),
+    //         abi.encode(0)
+    //     );
 
-        IBalancerPool.SwapRequest memory request = IBalancerPool.SwapRequest(
-            IBalancerPool.SwapKind.GIVEN_IN,
-            IERC20(pool.tokens[1]),
-            IERC20(pool.tokens[0]),
-            underlyingBalances[1],
-            pool.id,
-            lastChangeBlock,
-            address(this),
-            address(this),
-            abi.encode(0)
-        );
+    //     amount += balancerPool.onSwap(request, totalBalances, 1, underlyingIndex);
 
-        amount += balancerPool.onSwap(request, totalBalances, 1, underlyingIndex);
-
-        return amount;
-    }
+    //     return amount;
+    // }
 }

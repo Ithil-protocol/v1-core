@@ -78,7 +78,7 @@ describe("Balancer strategy integration tests", function () {
     await strategy.setRiskFactor(marginTokenDAI.address, 3000);
     await strategy.setRiskFactor(investmentTokenDAI.address, 4000);
 
-    await strategy.addPool(balancerDAIWETH);
+    await strategy.addPool(balancerDAIWETH, "0x0b09dea16768f0799065c475be02919503cb2a3500020000000000000000001a");
 
     await getTokens(staker.address, marginTokenDAI.address, tokens.DAI.whale, marginTokenLiquidity);
     await getTokens(trader1.address, marginTokenDAI.address, tokens.DAI.whale, marginTokenLiquidity);

@@ -3,16 +3,19 @@ pragma solidity >=0.8.12;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IBalancerVault } from "../interfaces/external/IBalancerVault.sol";
-import { IBalancerPool } from "../interfaces/external/IBalancerPool.sol";
+// import { IBalancerPool } from "../interfaces/external/IBalancerPool.sol";
 import { IAuraBooster } from "../interfaces/external/IAuraBooster.sol";
 import { BalancerHelper } from "../libraries/BalancerHelper.sol";
+import { FloatingPowers } from "../libraries/FloatingPowers.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
+import "hardhat/console.sol";
 
 /// @title    BalancerStrategy contract
 /// @author   Ithil
 /// @notice   A strategy to perform leveraged lping on any Balancer pool
 contract BalancerStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
+    using FloatingPowers for uint256;
 
     event BalancerPoolWasAdded(address pool);
     event BalancerPoolWasRemoved(address pool);
@@ -60,7 +63,7 @@ contract BalancerStrategy is BaseStrategy {
             pool,
             position.owedToken,
             position.allowance, // bptIn
-            42000000 // minOut
+            maxOrMin // minOut
         );
         balancerVault.exitPool(pool.id, address(this), payable(address(vault)), request);
         amountIn = owedToken.balanceOf(address(vault)) - owedBalance;
@@ -71,24 +74,26 @@ contract BalancerStrategy is BaseStrategy {
         address dst,
         uint256 amount
     ) public view override returns (uint256, uint256) {
-        if (pools[src].poolAddress != address(0)) {
-            // exiting
-        } else if (pools[dst].poolAddress != address(0)) {
-            // joining
-        }
+        // weight of DAI in this pool and swap percentage fees
+        /// @dev needs to be fetched!
+        uint256 quoted;
+        bool isJoining = pools[dst].poolAddress != address(0);
+        BalancerHelper.PoolData memory pool = isJoining ? pools[dst] : pools[src];
+        IERC20 bpToken = IERC20(pool.poolAddress);
+        (address[] memory tokens, uint256[] memory totalBalances, ) = balancerVault.getPoolTokens(pool.id);
+        uint8 tokenIndex = BalancerHelper.getTokenIndex(tokens, isJoining ? src : dst);
+        quoted = isJoining
+            ? amount.computeBptOut(bpToken.totalSupply(), totalBalances[tokenIndex], 4e17, 5e14)
+            : amount.computeAmountOut(bpToken.totalSupply(), totalBalances[tokenIndex], 4e17, 5e14);
 
-        // pool not supported
-        return (0, 0);
+        return (quoted, quoted);
     }
 
     function exposure(address token) public view override returns (uint256) {
         return IERC20(token).balanceOf(address(this));
     }
 
-    function addPool(address poolAddress) external onlyOwner {
-        IBalancerPool balancerPool = IBalancerPool(poolAddress);
-        bytes32 poolID = balancerPool.getPoolId();
-
+    function addPool(address poolAddress, bytes32 poolID) external onlyOwner {
         (address[] memory poolTokens, , ) = balancerVault.getPoolTokens(poolID);
         pools[poolAddress] = BalancerHelper.PoolData(poolID, poolAddress, poolTokens, uint8(poolTokens.length));
 
@@ -101,17 +106,17 @@ contract BalancerStrategy is BaseStrategy {
         emit BalancerPoolWasAdded(poolAddress);
     }
 
-    function removePool(address poolAddress) external onlyOwner {
-        BalancerHelper.PoolData memory pool = pools[poolAddress];
-        delete pools[poolAddress];
+    // function removePool(address poolAddress) external onlyOwner {
+    //     BalancerHelper.PoolData memory pool = pools[poolAddress];
+    //     delete pools[poolAddress];
 
-        for (uint8 i = 0; i < pool.tokens.length; i++) {
-            IERC20(pool.tokens[i]).approve(pool.poolAddress, 0);
-            //IERC20(pool.tokens[i]).approve(pool.auraPoolAddress, 0);
-        }
+    //     for (uint8 i = 0; i < pool.tokens.length; i++) {
+    //         IERC20(pool.tokens[i]).approve(pool.poolAddress, 0);
+    //         //IERC20(pool.tokens[i]).approve(pool.auraPoolAddress, 0);
+    //     }
 
-        emit BalancerPoolWasRemoved(poolAddress);
-    }
+    //     emit BalancerPoolWasRemoved(poolAddress);
+    // }
 
     /*
     function _getMinAmountOut(address pool, uint256 amountIn, uint256 slippage)
