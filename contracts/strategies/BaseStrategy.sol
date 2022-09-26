@@ -115,12 +115,11 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
         if (amountIn < order.minObtained) revert Strategy__Insufficient_Amount_Out(amountIn, order.minObtained);
 
-        if (!order.collateralIsSpentToken){
+        if (!order.collateralIsSpentToken) {
             interestRate *= (amountIn * (amountIn + 2 * initialExposure));
             amountIn += order.collateral;
-        } else
-            interestRate *= (toBorrow * (amountIn + 2 * initialExposure));
-        
+        } else interestRate *= (toBorrow * (amountIn + 2 * initialExposure));
+
         interestRate /= (2 * order.collateral * (initialExposure + amountIn));
 
         if (interestRate > VaultMath.MAX_RATE) revert Strategy__Maximum_Leverage_Exceeded(interestRate);
