@@ -6,7 +6,6 @@ import { IBalancerVault } from "../interfaces/external/IBalancerVault.sol";
 // import { IBalancerPool } from "../interfaces/external/IBalancerPool.sol";
 import { IAuraBooster } from "../interfaces/external/IAuraBooster.sol";
 import { BalancerHelper } from "../libraries/BalancerHelper.sol";
-import { FloatingPowers } from "../libraries/FloatingPowers.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 import "hardhat/console.sol";
 
@@ -15,7 +14,6 @@ import "hardhat/console.sol";
 /// @notice   A strategy to perform leveraged lping on any Balancer pool
 contract BalancerStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
-    using FloatingPowers for uint256;
 
     event BalancerPoolWasAdded(address pool);
     event BalancerPoolWasRemoved(address pool);
@@ -83,8 +81,8 @@ contract BalancerStrategy is BaseStrategy {
         (address[] memory tokens, uint256[] memory totalBalances, ) = balancerVault.getPoolTokens(pool.id);
         uint8 tokenIndex = BalancerHelper.getTokenIndex(tokens, isJoining ? src : dst);
         quoted = isJoining
-            ? amount.computeBptOut(bpToken.totalSupply(), totalBalances[tokenIndex], 4e17, 5e14)
-            : amount.computeAmountOut(bpToken.totalSupply(), totalBalances[tokenIndex], 4e17, 5e14);
+            ? BalancerHelper.computeBptOut(amount, bpToken.totalSupply(), totalBalances[tokenIndex], 4e17, 5e14)
+            : BalancerHelper.computeAmountOut(amount, bpToken.totalSupply(), totalBalances[tokenIndex], 4e17, 5e14);
 
         return (quoted, quoted);
     }
@@ -105,71 +103,10 @@ contract BalancerStrategy is BaseStrategy {
 
         emit BalancerPoolWasAdded(poolAddress);
     }
-
-    // function removePool(address poolAddress) external onlyOwner {
-    //     BalancerHelper.PoolData memory pool = pools[poolAddress];
-    //     delete pools[poolAddress];
-
-    //     for (uint8 i = 0; i < pool.tokens.length; i++) {
-    //         IERC20(pool.tokens[i]).approve(pool.poolAddress, 0);
-    //         //IERC20(pool.tokens[i]).approve(pool.auraPoolAddress, 0);
-    //     }
-
-    //     emit BalancerPoolWasRemoved(poolAddress);
-    // }
-
-    /*
-    function _getMinAmountOut(address pool, uint256 amountIn, uint256 slippage)
-        internal
-        view
-        returns (uint256 minAmountOut)
-    {
-        uint256 price;
-        if (tokenIn == _token && tokenOut == _pool) {
-            price = FixedPoint.ONE.divUp(getRate());
-        } else if (tokenIn == _pool && tokenOut == _token) {
-            price = getRate();
-        }
-
-        minAmountOut = amountIn.mulUp(price).mulUp(FixedPoint.ONE - slippage);
+    
+    function removePool(address poolAddress) external onlyOwner {
+        delete pools[poolAddress];
+        
+        emit BalancerPoolWasRemoved(poolAddress);
     }
-    */
-
-    /*
-    function pooledBalance(address _token, uint256 amount) public view returns (uint256) {
-        BalancerHelper.PoolData memory data = pools[_token];
-
-        uint256 totalUnderlyingPooled;
-        (, uint256[] memory totalBalances, uint256 lastChangeBlock) = balancerVault
-            .getPoolTokens(data.id);
-
-        IBalancerPool pool = IBalancerPool(data.poolAddress);
-        uint256 bptBalance = pool.balanceOf(address(this));
-        uint256 _nPoolTokens = data.tokens.length; // save SLOADs
-        uint8 underlyingIndex = 0;
-        address underlyingAsset = address(data.tokens[underlyingIndex]); // save SLOADs
-        for (uint8 i = 0; i < _nPoolTokens; i++) {
-            uint256 tokenPooled = (totalBalances[i] * bptBalance) / pool.totalSupply();
-            if (tokenPooled > 0) {
-                IERC20 token = IERC20(data.tokens[i]);
-                if (address(token) != underlyingAsset) {
-                    IBalancerPool.SwapRequest memory request = IBalancerPool.SwapRequest(
-                        IBalancerPool.SwapKind.GIVEN_IN,
-                        token,
-                        IERC20(_token),
-                        amount,
-                        data.id,
-                        lastChangeBlock,
-                        address(this),
-                        address(this),
-                        abi.encode(0)
-                    );
-                    tokenPooled = pool.onSwap(request, totalBalances, i, underlyingIndex);
-                }
-                totalUnderlyingPooled += tokenPooled;
-            }
-        }
-        return totalUnderlyingPooled;
-    }
-    */
 }

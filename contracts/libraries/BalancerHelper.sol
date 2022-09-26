@@ -2,10 +2,10 @@
 pragma solidity >=0.8.12;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { VaultState } from "./VaultState.sol";
 import { IBalancerVault } from "../interfaces/external/IBalancerVault.sol";
 import { IBalancerPool } from "../interfaces/external/IBalancerPool.sol";
-import "hardhat/console.sol";
+import { FloatingPointMath } from "./FloatingPointMath.sol";
+import { VaultState } from "./VaultState.sol";
 
 /// @title    BalancerHelper library
 /// @author   Ithil
@@ -66,36 +66,51 @@ library BalancerHelper {
             });
     }
 
-    // function getBalance(
-    //     IBalancerVault balancerVault,
-    //     PoolData memory pool,
-    //     address token
-    // ) internal view returns (uint256 amount) {
-    //     (, uint256[] memory totalBalances, uint256 lastChangeBlock) = balancerVault.getPoolTokens(pool.id);
-    //     IBalancerPool balancerPool = IBalancerPool(pool.poolAddress);
-    //     uint256 underlyingIndex = BalancerHelper.getTokenIndex(pool.tokens, token);
-    //     uint256 poolShare = (balancerPool.balanceOf(msg.sender) * 1e18) / balancerPool.totalSupply();
-    //     uint256[] memory underlyingBalances = new uint256[](pool.tokens.length);
+    function computeBptOut(
+        uint256 amountIn,
+        uint256 totalBptSupply,
+        uint256 totalTokenBalance,
+        uint256 normalizedWeight,
+        uint256 swapPercentageFee
+    ) internal pure returns (uint256) {
+        uint256 swapFee = FloatingPointMath.mul(
+            FloatingPointMath.mul(amountIn, FloatingPointMath.REFERENCE - normalizedWeight),
+            swapPercentageFee
+        );
+        uint256 balanceRatio = FloatingPointMath.div(totalTokenBalance + amountIn - swapFee, totalTokenBalance);
+        uint256 invariantRatio = FloatingPointMath.power(balanceRatio, normalizedWeight);
+        return
+            invariantRatio > FloatingPointMath.REFERENCE
+                ? FloatingPointMath.mul(totalBptSupply, invariantRatio - FloatingPointMath.REFERENCE)
+                : 0;
+    }
 
-    //     for (uint8 i = 0; i < pool.tokens.length; i++) {
-    //         underlyingBalances[i] = totalBalances[i] * poolShare;
-    //     }
-    //     amount += underlyingBalances[0];
+    function computeAmountOut(
+        uint256 amountIn,
+        uint256 totalBptSupply,
+        uint256 totalTokenBalance,
+        uint256 normalizedWeight,
+        uint256 swapPercentageFee
+    ) internal pure returns (uint256) {
+        uint256 invariantRatio = FloatingPointMath.div(totalBptSupply - amountIn, totalBptSupply);
+        uint256 balanceRatio = FloatingPointMath.power(
+            invariantRatio,
+            FloatingPointMath.div(FloatingPointMath.REFERENCE, normalizedWeight)
+        );
+        uint256 amountOutWithoutFee = FloatingPointMath.mul(
+            totalTokenBalance,
+            FloatingPointMath.complement(balanceRatio)
+        );
+        uint256 taxableAmount = FloatingPointMath.mul(
+            amountOutWithoutFee,
+            FloatingPointMath.complement(normalizedWeight)
+        );
+        uint256 nonTaxableAmount = FloatingPointMath.sub(amountOutWithoutFee, taxableAmount);
+        uint256 taxableAmountMinusFees = FloatingPointMath.mul(
+            taxableAmount,
+            FloatingPointMath.complement(swapPercentageFee)
+        );
 
-    //     IBalancerPool.SwapRequest memory request = IBalancerPool.SwapRequest(
-    //         IBalancerPool.SwapKind.GIVEN_IN,
-    //         IERC20(pool.tokens[1]),
-    //         IERC20(pool.tokens[0]),
-    //         underlyingBalances[1],
-    //         pool.id,
-    //         lastChangeBlock,
-    //         address(this),
-    //         address(this),
-    //         abi.encode(0)
-    //     );
-
-    //     amount += balancerPool.onSwap(request, totalBalances, 1, underlyingIndex);
-
-    //     return amount;
-    // }
+        return nonTaxableAmount + taxableAmountMinusFees;
+    }
 }
