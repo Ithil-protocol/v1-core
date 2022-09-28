@@ -3,7 +3,7 @@ pragma solidity >=0.8.12;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IBalancerVault } from "../interfaces/external/IBalancerVault.sol";
-// import { IBalancerPool } from "../interfaces/external/IBalancerPool.sol";
+import { IBalancerPool } from "../interfaces/external/IBalancerPool.sol";
 import { IAuraBooster } from "../interfaces/external/IAuraBooster.sol";
 import { BalancerHelper } from "../libraries/BalancerHelper.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
@@ -94,8 +94,12 @@ contract BalancerStrategy is BaseStrategy {
     function addPool(address poolAddress, bytes32 poolID) external onlyOwner {
         (address[] memory poolTokens, , ) = balancerVault.getPoolTokens(poolID);
         pools[poolAddress] = BalancerHelper.PoolData(poolID, poolAddress, poolTokens, uint8(poolTokens.length));
+        uint256[] memory weights = IBalancerPool(poolAddress).getNormalizedWeights();
+
 
         for (uint8 i = 0; i < poolTokens.length; i++) {
+            console.log("token n. ", i);
+            console.log("weights ", weights[i]);
             // @todo check allowance first?
             IERC20(poolTokens[i]).approve(address(balancerVault), type(uint256).max);
             //IERC20(poolTokens[i]).approve(address(aura), type(uint256).max);
@@ -103,10 +107,12 @@ contract BalancerStrategy is BaseStrategy {
 
         emit BalancerPoolWasAdded(poolAddress);
     }
-    
+
+    /*
     function removePool(address poolAddress) external onlyOwner {
         delete pools[poolAddress];
         
         emit BalancerPoolWasRemoved(poolAddress);
     }
+    */
 }
