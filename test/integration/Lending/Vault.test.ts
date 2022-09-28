@@ -202,7 +202,7 @@ describe("Lending integration tests", function () {
       const amountToStake = BigNumber.from(10);
 
       const tokenArtifact: Artifact = await artifacts.readArtifact("ERC20Permit");
-      let ohm = <ERC20Permit>await ethers.getContractAt(tokenArtifact.abi, tokens.OHM.address);
+      const ohm = <ERC20Permit>await ethers.getContractAt(tokenArtifact.abi, tokens.OHM.address);
       await vault.whitelistToken(ohm.address, baseFee, fixedFee, amountToStake);
 
       const address = "0x67d30ef950015Ab1a03e30ED5d5F2A26de196C4d";
