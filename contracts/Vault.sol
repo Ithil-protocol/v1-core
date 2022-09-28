@@ -2,6 +2,7 @@
 pragma solidity >=0.8.12;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IVault } from "./interfaces/IVault.sol";
@@ -17,6 +18,7 @@ import { WrappedToken } from "./WrappedToken.sol";
 /// @notice   Stores staked funds, issues loans and handles repayments to strategies
 contract Vault is IVault, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
+    using SafeERC20 for IERC20Permit;
     using VaultMath for uint256;
     using GeneralMath for uint256;
     using GeneralMath for VaultState.VaultData;
@@ -149,19 +151,6 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         emit MinimumMarginWasUpdated(token, minimumMargin);
     }
 
-    function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
-        checkWhitelisted(token);
-        IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
-
-        uint256 toMint = VaultMath.sharesPerNatives(amount, wToken.totalSupply(), balance(token));
-        if (toMint == 0) revert Vault__Null_Amount();
-        // Transfer must be after calculation because alters balance
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        wToken.mint(msg.sender, toMint);
-
-        emit Deposit(msg.sender, token, amount, toMint);
-    }
-
     function boost(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
         checkWhitelisted(token);
 
@@ -182,19 +171,60 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         emit Unboosted(msg.sender, token, amount);
     }
 
+    function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
+        checkWhitelisted(token);
+
+        uint256 toMint = _stake(token, amount, false);
+
+        emit Deposit(msg.sender, token, amount, toMint);
+    }
+
+    function stakeWithPermit(
+        address token,
+        uint256 amount,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external override unlocked(token) isValidAmount(amount) {
+        checkWhitelisted(token);
+
+        IERC20Permit permitToken = IERC20Permit(token);
+        permitToken.safePermit(msg.sender, address(this), amount, deadline, v, r, s);
+
+        uint256 toMint = _stake(token, amount, false);
+
+        emit Deposit(msg.sender, token, amount, toMint);
+    }
+
     function stakeETH(uint256 amount) external payable override unlocked(weth) isValidAmount(amount) {
         checkWhitelisted(weth);
 
         if (msg.value != amount) revert Vault__Insufficient_ETH(msg.value, amount);
 
-        IWrappedToken wToken = IWrappedToken(vaults[weth].wrappedToken);
-        uint256 toMint = VaultMath.sharesPerNatives(amount, wToken.totalSupply(), balance(weth));
-        if (toMint == 0) revert Vault__Null_Amount();
-
-        IWETH(weth).deposit{ value: amount }();
-        wToken.mint(msg.sender, toMint);
+        uint256 toMint = _stake(weth, amount, true);
 
         emit Deposit(msg.sender, weth, amount, toMint);
+    }
+
+    function _stake(
+        address token,
+        uint256 amount,
+        bool isEth
+    ) internal returns (uint256) {
+        IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
+        uint256 toMint = VaultMath.sharesPerNatives(amount, wToken.totalSupply(), balance(weth));
+
+        if (toMint == 0) revert Vault__Null_Amount();
+
+        // Transfer must be after calculation because alters balance
+        isEth
+            ? IWETH(weth).deposit{ value: amount }()
+            : IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+
+        wToken.mint(msg.sender, toMint);
+
+        return toMint;
     }
 
     function unstake(address token, uint256 amount) external override isValidAmount(amount) {
@@ -221,7 +251,9 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 totalBalance = balance(weth);
         uint256 toBurn = VaultMath.sharesPerNatives(amount, totalSupply, totalBalance);
         uint256 toWithdraw = VaultMath.nativesPerShares(toBurn, totalSupply, totalBalance);
+        if (toBurn == 0 || toWithdraw == 0) revert Vault__Null_Amount();
 
+        wToken.burn(msg.sender, toBurn);
         IWETH(weth).withdraw(toWithdraw);
 
         // slither-disable-next-line reentrancy-events,arbitrary-send

@@ -13,6 +13,8 @@ import { BaseStrategy } from "./BaseStrategy.sol";
 contract MarginTradingStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
 
+    error MarginTradingStrategy__Unsupported_Pair(address token0, address token1);
+
     IKyberNetworkProxy public immutable kyberProxy;
 
     constructor(
@@ -33,6 +35,7 @@ contract MarginTradingStrategy is BaseStrategy {
             order.minObtained,
             address(this)
         );
+
         return amountIn;
     }
 
@@ -75,20 +78,24 @@ contract MarginTradingStrategy is BaseStrategy {
         if (tokenToSell.allowance(address(this), address(kyberProxy)) < maxSourceAmount)
             tokenToSell.approve(address(kyberProxy), type(uint256).max);
 
-        // slither-disable-next-line unused-return
-        kyberProxy.trade(
-            tokenToSell,
-            maxSourceAmount,
-            tokenToBuy,
-            payable(recipient),
-            type(uint256).max,
-            minDestinationAmount / maxSourceAmount,
-            payable(address(this))
-        );
-        uint256 amountIn = tokenToBuy.balanceOf(recipient) - initialDstBalance;
-        uint256 amountOut = maxSourceAmount;
+        try
+            kyberProxy.trade(
+                tokenToSell,
+                maxSourceAmount,
+                tokenToBuy,
+                payable(recipient),
+                type(uint256).max,
+                minDestinationAmount / maxSourceAmount,
+                payable(address(this))
+            )
+        {
+            uint256 amountIn = tokenToBuy.balanceOf(recipient) - initialDstBalance;
+            uint256 amountOut = maxSourceAmount;
 
-        return (amountIn, amountOut);
+            return (amountIn, amountOut);
+        } catch {
+            revert MarginTradingStrategy__Unsupported_Pair(address(tokenToSell), address(tokenToBuy));
+        }
     }
 
     function exposure(address token) public view override returns (uint256) {

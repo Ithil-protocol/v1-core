@@ -27,6 +27,22 @@ interface IVault {
     /// @param amount the amount of tokens to be deposited
     function stake(address token, uint256 amount) external;
 
+    /// @notice Add tokens to the vault without preapproval, using EIP2612 off-chain signed permit
+    /// @param token the token to deposit
+    /// @param amount the amount of tokens to be deposited
+    /// @param deadline Deadline for EIP2612 approval
+    /// @param v V component of permit signature
+    /// @param r R component of permit signature
+    /// @param s S component of permit signature
+    function stakeWithPermit(
+        address token,
+        uint256 amount,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+
     /// @notice Get ETH, wraps them into WETH and adds them to the vault,
     ///         then it updates internal status to register updated claiming powers
     /// @param amount the amount of tokens to be deposited

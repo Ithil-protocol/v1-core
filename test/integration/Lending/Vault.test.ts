@@ -5,16 +5,16 @@ import { BigNumber, Wallet } from "ethers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 
 import { tokens } from "../../common/mainnet";
-import { getTokens, matchState, expandToNDecimals } from "../../common/utils";
+import { getTokens, matchState } from "../../common/utils";
 
 import type { ERC20 } from "../../../src/types/ERC20";
+import { ERC20Permit } from "../../../src/types/ERC20Permit";
 import type { Vault } from "../../../src/types/Vault";
 import type { Artifact } from "hardhat/types";
 
 import { vaultFixture } from "../../common/fixtures";
-
+import { getPermitDigest, sign } from "../../common/permit";
 import { amount, baseFee, fixedFee, marginTokenLiquidity, minimumMargin, stakedValue } from "../../common/params";
-import { WritableStream } from "stream/web";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -198,6 +198,48 @@ describe("Lending integration tests", function () {
       await vault.toggleOusdRebase(false);
     });
 
+    it("Vault: stake with permit", async function () {
+      const amountToStake = BigNumber.from(10);
+
+      const tokenArtifact: Artifact = await artifacts.readArtifact("ERC20Permit");
+      const ohm = <ERC20Permit>await ethers.getContractAt(tokenArtifact.abi, tokens.OHM.address);
+      await vault.whitelistToken(ohm.address, baseFee, fixedFee, amountToStake);
+
+      const address = "0x67d30ef950015Ab1a03e30ED5d5F2A26de196C4d";
+      const privateKey = "c429601ee7a6167356f15baa70fd8fe17b0325dab7047a658a31039e5384bffd";
+      const signer: SignerWithAddress = await ethers.getImpersonatedSigner(address);
+
+      const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+      const nonce = await ohm.nonces(address);
+      const approve = {
+        owner: address,
+        spender: vault.address,
+        value: amountToStake,
+      };
+      const digest = getPermitDigest(
+        await ohm.name(),
+        ohm.address,
+        await wallet.getChainId(),
+        approve,
+        nonce,
+        deadline,
+      );
+      const privateKeyBuffer = Buffer.from(privateKey, "hex");
+      const { v, r, s } = sign(digest, privateKeyBuffer);
+
+      await admin.sendTransaction({
+        to: tokens.OHM.whale,
+        value: ethers.utils.parseEther("10.0"),
+      });
+      await admin.sendTransaction({
+        to: address,
+        value: ethers.utils.parseEther("10.0"),
+      });
+      await getTokens(address, tokens.OHM.address, tokens.OHM.whale, amountToStake);
+      await expect(vault.connect(signer).stake(ohm.address, amountToStake)).to.be.reverted;
+      await vault.connect(signer).stakeWithPermit(ohm.address, amountToStake, deadline, v, r, s);
+      await vault.connect(signer).unstake(ohm.address, amountToStake);
+    });
     //TODO: other tests with investor1 and investor2 interlacing
   });
 });

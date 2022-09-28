@@ -59,6 +59,13 @@ interface IStrategy {
     /// @param order the structure with the order parameters
     function openPosition(Order calldata order) external returns (uint256);
 
+    function openPositionWithPermit(
+        Order calldata order,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (uint256);
+
     /// @notice close the position and repays the vault and the user
     /// @param positionId the id of the position to be closed
     /// @param maxOrMin depending on the Position structure, either the maximum amount to spend,

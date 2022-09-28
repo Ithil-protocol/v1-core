@@ -1,10 +1,12 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
+import ERC20Permit from "@openzeppelin/contracts/build/contracts/ERC20Permit.json";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { expect } from "chai";
+
 import type { Vault } from "../../src/types/Vault";
 import type { MockWETH } from "../../src/types/MockWETH";
 
-import ERC20 from "@openzeppelin/contracts/build/contracts/ERC20.json";
 import {
   compareVaultStates,
   INITIAL_VAULT_STATE,
@@ -14,9 +16,8 @@ import {
   equalWithTolerance,
 } from "../common/utils";
 import { baseFee, fixedFee, minimumMargin } from "../common/params";
-
+import { getPermitDigest, sign } from "../common/permit";
 import { mockVaultFixture } from "../common/mockfixtures";
-import { expect } from "chai";
 
 describe("Lending unit tests", function () {
   const createFixtureLoader = waffle.createFixtureLoader;
@@ -79,7 +80,7 @@ describe("Lending unit tests", function () {
 
       // Get wrapped token contract
       const wrappedTokenAddress = (await vault.vaults(token.address)).wrappedToken;
-      const wrappedToken = await ethers.getContractAt(ERC20.abi, wrappedTokenAddress);
+      const wrappedToken = await ethers.getContractAt(ERC20Permit.abi, wrappedTokenAddress);
 
       expect(await wrappedToken.decimals()).to.equal(await token.decimals());
 
@@ -115,7 +116,10 @@ describe("Lending unit tests", function () {
 
       const finalState = {
         balance: await token.balanceOf(investor1.address),
+        wrappedBalance: await wrappedToken.balanceOf(investor1.address),
       };
+
+      expect(finalState.wrappedBalance).to.equal(0);
 
       equalWithTolerance(
         finalState.balance,
@@ -130,19 +134,31 @@ describe("Lending unit tests", function () {
     });
 
     it("Vault: stake and unstake ETH", async function () {
+      const token = mockWETH;
+
+      // Get wrapped token contract
+      const wrappedTokenAddress = (await vault.vaults(token.address)).wrappedToken;
+      const wrappedToken = await ethers.getContractAt(ERC20Permit.abi, wrappedTokenAddress);
+
       const amount = ethers.utils.parseUnits("1.0", 18);
       const amountBack = ethers.utils.parseUnits("1.0", 18);
 
       const initialState = {
         balance: await waffle.provider.getBalance(investor1.address),
+        wrappedBalance: await wrappedToken.balanceOf(investor1.address),
       };
+
+      expect(initialState.wrappedBalance).to.equal(0);
 
       const stakeTx = await vault.connect(investor1).stakeETH(amount, { value: amount });
       const stakeEvents = await stakeTx.wait();
 
       const middleState = {
         balance: await waffle.provider.getBalance(investor1.address),
+        wrappedBalance: await wrappedToken.balanceOf(investor1.address),
       };
+
+      expect(middleState.wrappedBalance).to.equal(amount);
 
       const totalGasForStaking = stakeEvents.gasUsed.mul(stakeEvents.effectiveGasPrice);
 
@@ -158,7 +174,10 @@ describe("Lending unit tests", function () {
 
       const finalState = {
         balance: await waffle.provider.getBalance(investor1.address),
+        wrappedBalance: await wrappedToken.balanceOf(investor1.address),
       };
+
+      expect(finalState.wrappedBalance).to.equal(0);
 
       const totalGasForUnstaking = unstakeEvents.gasUsed.mul(unstakeEvents.effectiveGasPrice);
 
@@ -217,10 +236,20 @@ describe("Lending unit tests", function () {
       );
       expect(validEvents?.length).to.equal(1);
     });
+
     // checkTreasuryStaking();
     // checkRebalanceInsurance();
     it("Vault: claimable", async function () {
+      const token = mockWETH;
+      // Get wrapped token contract
+      const wrappedTokenAddress = (await vault.vaults(token.address)).wrappedToken;
+      const wrappedToken = await ethers.getContractAt(ERC20Permit.abi, wrappedTokenAddress);
       // Initial status
+      const initialState = {
+        balance: await token.balanceOf(investor1.address),
+        wrappedBalance: await wrappedToken.balanceOf(investor1.address),
+      };
+      expect(initialState.wrappedBalance).to.equal(0);
       const initialClaimable = await vault.connect(investor1).claimable(mockWETH.address);
       expect(initialClaimable).to.equal(0);
 
@@ -230,9 +259,47 @@ describe("Lending unit tests", function () {
       await mintAndStake(investor1, vault, mockWETH, initialStakerLiquidity, amountToStake);
 
       const claimable = await vault.connect(investor1).claimable(mockWETH.address);
-
       expect(claimable).to.equal(amountToStake);
     });
+
+    it("Vault: stake with permit", async function () {
+      // reset approval
+      await mockWETH.approve(vault.address, 0);
+
+      const amount = ethers.utils.parseUnits("1.0", 18);
+      const address = "0x67d30ef950015Ab1a03e30ED5d5F2A26de196C4d";
+      const privateKey = "c429601ee7a6167356f15baa70fd8fe17b0325dab7047a658a31039e5384bffd";
+      const signer: SignerWithAddress = await ethers.getImpersonatedSigner(address);
+
+      const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+      const nonce = await mockWETH.nonces(address);
+      const approve = {
+        owner: address,
+        spender: vault.address,
+        value: amount,
+      };
+      const digest = getPermitDigest(
+        await mockWETH.name(),
+        mockWETH.address,
+        await wallet.getChainId(),
+        approve,
+        nonce,
+        deadline,
+      );
+      const privateKeyBuffer = Buffer.from(privateKey, "hex");
+      const { v, r, s } = sign(digest, privateKeyBuffer);
+
+      await admin.sendTransaction({
+        to: address,
+        value: ethers.utils.parseEther("10.0"),
+      });
+
+      await mockWETH.mintTo(signer.address, amount);
+      await expect(vault.connect(signer).stake(mockWETH.address, amount)).to.be.reverted;
+      await vault.connect(signer).stakeWithPermit(mockWETH.address, amount, deadline, v, r, s);
+      await vault.connect(signer).unstake(mockWETH.address, amount);
+    });
+
     it("Vault: toggle lock", async function () {
       // Initial status should be unlocked
       const initialLock = (await vault.vaults(mockWETH.address)).locked;
@@ -245,6 +312,7 @@ describe("Lending unit tests", function () {
       const finalLock = (await vault.vaults(mockWETH.address)).locked;
       expect(finalLock).to.equal(true);
     });
+
     // checkBorrow(); // borrow, repay // TODO: currently, skip borrow checking because it is strategyOnly
   });
 });

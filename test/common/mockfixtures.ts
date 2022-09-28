@@ -1,7 +1,6 @@
 import { artifacts, ethers } from "hardhat";
 import { Fixture, deployContract } from "ethereum-waffle";
 import type { Artifact } from "hardhat/types";
-import type { ERC20 } from "../../src/types/ERC20";
 import { MockWETH } from "../../src/types/MockWETH";
 import { MockToken } from "../../src/types/MockToken";
 import { MockYearnRegistry } from "../../src/types/MockYearnRegistry";
