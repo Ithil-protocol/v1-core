@@ -125,5 +125,14 @@ interface IBalancerPool is IERC20 {
         IBalancerVault.ExitPoolRequest memory request
     ) external returns (uint256 bptIn, uint256[] memory amountsOut);
 
+    /**
+     * @dev Returns an 18 decimal fixed point number that is the exchange rate of the token to some other underlying
+     * token. The meaning of this rate depends on the context.
+     */
     function getRate() external view returns (uint256);
+
+    /**
+     * @dev Returns all normalized weights, in the same order as the Pool's tokens.
+     */
+    function getNormalizedWeights() external view returns (uint256[] memory);
 }
