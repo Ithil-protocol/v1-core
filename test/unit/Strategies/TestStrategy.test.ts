@@ -1,21 +1,21 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { Artifact } from "hardhat/types";
+import { Wallet, BigNumber } from "ethers";
+import { expect } from "chai";
+
 import { Liquidator } from "../../../src/types/Liquidator";
 import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../../src/types/MockWETH";
 import { Vault } from "../../../src/types/Vault";
 import { TestStrategy } from "../../../src/types/TestStrategy";
-import { Wallet, BigNumber } from "ethers";
+import { MockToken } from "../../../src/types/MockToken";
+import { IStrategy } from "../../../src/types/MarginTradingStrategy";
 
 import { mockTestFixture } from "../../common/mockfixtures";
-import { MockToken } from "../../../src/types/MockToken";
-
+import { getPermitDigest, sign } from "../../common/permit";
 import { expandToNDecimals, fundVault } from "../../common/utils";
 import { marginTokenMargin, marginTokenLiquidity, leverage, investmentTokenLiquidity } from "../../common/params";
-
-import { expect } from "chai";
-import { IStrategy } from "../../../src/types/MarginTradingStrategy";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -183,5 +183,33 @@ describe("Test strategy unit tests", function () {
 
   it("Insufficient balance error", async function () {
     await expect(strategy.connect(admin).openPosition(order)).to.be.reverted;
+  });
+
+  it("open position with permit", async function () {
+    const address = "0x67d30ef950015Ab1a03e30ED5d5F2A26de196C4d";
+    const privateKey = "c429601ee7a6167356f15baa70fd8fe17b0325dab7047a658a31039e5384bffd";
+    const signer: SignerWithAddress = await ethers.getImpersonatedSigner(address);
+
+    await marginToken.mintTo(address, expandToNDecimals(100000, 18));
+
+    const nonce = await marginToken.nonces(address);
+    const approve = {
+      owner: address,
+      spender: strategy.address,
+      value: order.maxSpent,
+    };
+    const digest = getPermitDigest(
+      await marginToken.name(),
+      marginToken.address,
+      await wallet.getChainId(),
+      approve,
+      nonce,
+      order.deadline,
+    );
+    const privateKeyBuffer = Buffer.from(privateKey, "hex");
+    const { v, r, s } = sign(digest, privateKeyBuffer);
+
+    await expect(strategy.connect(signer).openPosition(order)).to.be.reverted;
+    await strategy.connect(signer).openPositionWithPermit(order, v, r, s);
   });
 });

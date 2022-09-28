@@ -87,6 +87,6 @@ export const tokens = {
     symbol: "OHM",
     address: "0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5",
     decimals: 9,
-    whale: "0x9Cf59Ecde926cc1B5FF1Cb9b247E0FEC627091b1",
+    whale: "0x96397032ab1e22f3c553386dddf5fd6a272a3617",
   },
 };

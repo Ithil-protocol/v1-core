@@ -12,7 +12,6 @@ import { VaultMath } from "./libraries/VaultMath.sol";
 import { VaultState } from "./libraries/VaultState.sol";
 import { GeneralMath } from "./libraries/GeneralMath.sol";
 import { WrappedToken } from "./WrappedToken.sol";
-import "hardhat/console.sol";
 
 /// @title    Vault contract
 /// @author   Ithil
@@ -194,10 +193,8 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         checkWhitelisted(token);
 
         uint256 toMint = _stake(token, amount);
-
         IERC20Permit permitToken = IERC20Permit(token);
         permitToken.safePermit(msg.sender, address(this), amount, deadline, v, r, s);
-console.log(2);
 
         // Transfer must be after calculation because alters balance
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);

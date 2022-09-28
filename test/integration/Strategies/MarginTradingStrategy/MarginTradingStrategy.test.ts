@@ -2,6 +2,7 @@ import { artifacts, ethers, waffle } from "hardhat";
 import type { Artifact } from "hardhat/types";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { BigNumber, Wallet } from "ethers";
+import { expect } from "chai";
 
 import { tokens } from "../../../common/mainnet";
 import { getTokens, expandToNDecimals, fundVault } from "../../../common/utils";
@@ -12,8 +13,6 @@ import type { ERC20 } from "../../../../src/types/ERC20";
 import type { Vault } from "../../../../src/types/Vault";
 import { MarginTradingStrategy } from "../../../../src/types/MarginTradingStrategy";
 import { Liquidator } from "../../../../src/types/Liquidator";
-import { expect } from "chai";
-import exp from "constants";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 

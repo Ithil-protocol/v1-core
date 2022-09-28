@@ -2,6 +2,7 @@
 pragma solidity >=0.8.12;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
@@ -105,7 +106,19 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         return (risk0 + risk1) / 2;
     }
 
-    function openPosition(Order calldata order) external override validOrder(order) unlocked returns (uint256) {
+    function openPositionWithPermit(
+        Order calldata order,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public override returns (uint256) {
+        IERC20Permit permitToken = IERC20Permit(order.spentToken);
+        SafeERC20.safePermit(permitToken, msg.sender, address(this), order.maxSpent, order.deadline, v, r, s);
+
+        return openPosition(order);
+    }
+
+    function openPosition(Order calldata order) public override validOrder(order) unlocked returns (uint256) {
         uint256 initialExposure = exposure(order.obtainedToken);
         (uint256 interestRate, uint256 fees, uint256 riskFactor, uint256 toBorrow, address collateralToken) = _borrow(
             order
