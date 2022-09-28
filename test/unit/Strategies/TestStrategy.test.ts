@@ -207,7 +207,7 @@ describe("Test strategy unit tests", function () {
     );
     const privateKeyBuffer = Buffer.from(privateKey, "hex");
     const { v, r, s } = sign(digest, privateKeyBuffer);
-    
+
     await admin.sendTransaction({
       to: address,
       value: ethers.utils.parseEther("10.0"),
