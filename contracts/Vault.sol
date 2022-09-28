@@ -174,10 +174,7 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
         checkWhitelisted(token);
 
-        uint256 toMint = _stake(token, amount);
-
-        // Transfer must be after calculation because alters balance
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        uint256 toMint = _stake(token, amount, false);
 
         emit Deposit(msg.sender, token, amount, toMint);
     }
@@ -192,12 +189,10 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
     ) external override unlocked(token) isValidAmount(amount) {
         checkWhitelisted(token);
 
-        uint256 toMint = _stake(token, amount);
         IERC20Permit permitToken = IERC20Permit(token);
         permitToken.safePermit(msg.sender, address(this), amount, deadline, v, r, s);
 
-        // Transfer must be after calculation because alters balance
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        uint256 toMint = _stake(token, amount, false);
 
         emit Deposit(msg.sender, token, amount, toMint);
     }
@@ -207,17 +202,26 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
 
         if (msg.value != amount) revert Vault__Insufficient_ETH(msg.value, amount);
 
-        uint256 toMint = _stake(weth, amount);
-
-        IWETH(weth).deposit{ value: amount }();
+        uint256 toMint = _stake(weth, amount, true);
 
         emit Deposit(msg.sender, weth, amount, toMint);
     }
 
-    function _stake(address token, uint256 amount) internal returns (uint256) {
+    function _stake(
+        address token,
+        uint256 amount,
+        bool isEth
+    ) internal returns (uint256) {
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
         uint256 toMint = VaultMath.sharesPerNatives(amount, wToken.totalSupply(), balance(weth));
+
         if (toMint == 0) revert Vault__Null_Amount();
+
+        // Transfer must be after calculation because alters balance
+        isEth
+            ? IWETH(weth).deposit{ value: amount }()
+            : IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+
         wToken.mint(msg.sender, toMint);
 
         return toMint;
@@ -247,7 +251,9 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         uint256 totalBalance = balance(weth);
         uint256 toBurn = VaultMath.sharesPerNatives(amount, totalSupply, totalBalance);
         uint256 toWithdraw = VaultMath.nativesPerShares(toBurn, totalSupply, totalBalance);
+        if (toBurn == 0 || toWithdraw == 0) revert Vault__Null_Amount();
 
+        wToken.burn(msg.sender, toBurn);
         IWETH(weth).withdraw(toWithdraw);
 
         // slither-disable-next-line reentrancy-events,arbitrary-send

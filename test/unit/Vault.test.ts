@@ -116,7 +116,10 @@ describe("Lending unit tests", function () {
 
       const finalState = {
         balance: await token.balanceOf(investor1.address),
+        wrappedBalance: await wrappedToken.balanceOf(investor1.address),
       };
+
+      expect(finalState.wrappedBalance).to.equal(0);
 
       equalWithTolerance(
         finalState.balance,
@@ -131,19 +134,31 @@ describe("Lending unit tests", function () {
     });
 
     it("Vault: stake and unstake ETH", async function () {
+      const token = mockWETH;
+
+      // Get wrapped token contract
+      const wrappedTokenAddress = (await vault.vaults(token.address)).wrappedToken;
+      const wrappedToken = await ethers.getContractAt(ERC20Permit.abi, wrappedTokenAddress);
+
       const amount = ethers.utils.parseUnits("1.0", 18);
       const amountBack = ethers.utils.parseUnits("1.0", 18);
 
       const initialState = {
         balance: await waffle.provider.getBalance(investor1.address),
+        wrappedBalance: await wrappedToken.balanceOf(investor1.address),
       };
+
+      expect(initialState.wrappedBalance).to.equal(0);
 
       const stakeTx = await vault.connect(investor1).stakeETH(amount, { value: amount });
       const stakeEvents = await stakeTx.wait();
 
       const middleState = {
         balance: await waffle.provider.getBalance(investor1.address),
+        wrappedBalance: await wrappedToken.balanceOf(investor1.address),
       };
+
+      expect(middleState.wrappedBalance).to.equal(amount);
 
       const totalGasForStaking = stakeEvents.gasUsed.mul(stakeEvents.effectiveGasPrice);
 
@@ -159,7 +174,10 @@ describe("Lending unit tests", function () {
 
       const finalState = {
         balance: await waffle.provider.getBalance(investor1.address),
+        wrappedBalance: await wrappedToken.balanceOf(investor1.address),
       };
+
+      expect(finalState.wrappedBalance).to.equal(0);
 
       const totalGasForUnstaking = unstakeEvents.gasUsed.mul(unstakeEvents.effectiveGasPrice);
 
@@ -222,7 +240,16 @@ describe("Lending unit tests", function () {
     // checkTreasuryStaking();
     // checkRebalanceInsurance();
     it("Vault: claimable", async function () {
+      const token = mockWETH;
+      // Get wrapped token contract
+      const wrappedTokenAddress = (await vault.vaults(token.address)).wrappedToken;
+      const wrappedToken = await ethers.getContractAt(ERC20Permit.abi, wrappedTokenAddress);
       // Initial status
+      const initialState = {
+        balance: await token.balanceOf(investor1.address),
+        wrappedBalance: await wrappedToken.balanceOf(investor1.address),
+      };
+      expect(initialState.wrappedBalance).to.equal(0);
       const initialClaimable = await vault.connect(investor1).claimable(mockWETH.address);
       expect(initialClaimable).to.equal(0);
 
@@ -232,7 +259,6 @@ describe("Lending unit tests", function () {
       await mintAndStake(investor1, vault, mockWETH, initialStakerLiquidity, amountToStake);
 
       const claimable = await vault.connect(investor1).claimable(mockWETH.address);
-
       expect(claimable).to.equal(amountToStake);
     });
 
@@ -262,6 +288,11 @@ describe("Lending unit tests", function () {
       );
       const privateKeyBuffer = Buffer.from(privateKey, "hex");
       const { v, r, s } = sign(digest, privateKeyBuffer);
+
+      await admin.sendTransaction({
+        to: address,
+        value: ethers.utils.parseEther("10.0"),
+      });
 
       await mockWETH.mintTo(signer.address, amount);
       await expect(vault.connect(signer).stake(mockWETH.address, amount)).to.be.reverted;
