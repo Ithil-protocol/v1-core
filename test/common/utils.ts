@@ -1,13 +1,14 @@
 import { Provider } from "@ethersproject/providers";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { ethers } from "hardhat";
-import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
+import { expect } from "chai";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import ERC20 from "@openzeppelin/contracts/build/contracts/ERC20.json";
+
+import { Order } from "../types";
 import { MockWETH } from "../../src/types/MockWETH";
 import { Vault } from "../../src/types/Vault";
-import ERC20 from "@openzeppelin/contracts/build/contracts/ERC20.json";
-import { expect } from "chai";
-import { BindOptions } from "dgram";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
 
 export const INITIAL_VAULT_STATE = {
   supported: false,
@@ -102,3 +103,13 @@ export function equalWithTolerance(a: BigNumber, b: BigNumber, decimals: number)
   expect(a).to.be.above(b.sub(BigNumber.from(10).pow(decimals)));
   expect(a).to.be.below(b.add(BigNumber.from(10).pow(decimals)));
 }
+
+let order: {
+  spentToken: string;
+  obtainedToken: string;
+  collateral: BigNumber;
+  collateralIsSpentToken: boolean;
+  minObtained: BigNumber;
+  maxSpent: BigNumber;
+  deadline: number;
+};

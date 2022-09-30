@@ -1,13 +1,14 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
 import type { Artifact } from "hardhat/types";
+import { expect } from "chai";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+
 import type { Vault } from "../../../../src/types/Vault";
-import { Signers } from "../../../types";
+import { Order, Signers } from "../../../types";
 import type { ERC20 } from "../../../../src/types/ERC20";
 
 import { tokens } from "../../../common/mainnet";
-import { euler, eulerMarkets, etokenDAI } from "./constants";
 import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
 import { getTokens, expandToNDecimals, fundVault } from "../../../common/utils";
 
@@ -15,7 +16,7 @@ import { EulerStrategy } from "../../../../src/types/EulerStrategy";
 import { Liquidator } from "../../../../src/types/Liquidator";
 
 import { eulerFixture } from "./fixture";
-import { expect } from "chai";
+import { euler, eulerMarkets, etokenDAI } from "./constants";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -43,15 +44,7 @@ let marginTokenWETH: ERC20;
 let investmentTokenDAI: ERC20;
 let investmentTokenWETH: ERC20;
 
-let order: {
-  spentToken: string;
-  obtainedToken: string;
-  collateral: BigNumber;
-  collateralIsSpentToken: boolean;
-  minObtained: BigNumber;
-  maxSpent: BigNumber;
-  deadline: number;
-};
+let order: Order;
 
 describe("Euler strategy integration tests", function () {
   before("create fixture loader", async () => {
@@ -101,16 +94,17 @@ describe("Euler strategy integration tests", function () {
     const initialVaultBalance = await marginTokenDAI.balanceOf(vault.address);
     // First call should revert since minObtained is too high
 
-    await expect(strategy.connect(trader1).openPosition(order)).to.be.reverted;
+    await expect(strategy.connect(trader1).openPosition(order, ethers.constants.HashZero)).to.be.reverted;
 
     const [firstQuote] = await strategy.quote(order.spentToken, order.obtainedToken, order.maxSpent);
 
     // 0.1% slippage
     order.minObtained = firstQuote.mul(999).div(1000);
 
-    await strategy
-      .connect(trader1)
-      .openPosition(order, { gasPrice: ethers.utils.parseUnits("500", "gwei"), gasLimit: 30000000 });
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero, {
+      gasPrice: ethers.utils.parseUnits("500", "gwei"),
+      gasLimit: 30000000,
+    });
 
     const allowance = (await strategy.positions(1)).allowance;
 

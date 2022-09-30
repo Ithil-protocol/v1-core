@@ -79,6 +79,8 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         _;
     }
 
+    // Admin functions
+
     function setGuardian(address _guardian) external onlyOwner {
         guardian = _guardian;
     }
@@ -95,6 +97,8 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         emit StrategyLockWasToggled(locked);
     }
 
+    // Public facing functions
+
     function getPosition(uint256 positionId) external view override returns (Position memory) {
         return positions[positionId];
     }
@@ -108,6 +112,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
     function openPositionWithPermit(
         Order calldata order,
+        bytes calldata extraParams,
         uint8 v,
         bytes32 r,
         bytes32 s
@@ -115,25 +120,28 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         IERC20Permit permitToken = IERC20Permit(order.spentToken);
         SafeERC20.safePermit(permitToken, msg.sender, address(this), order.maxSpent, order.deadline, v, r, s);
 
-        return openPosition(order);
+        return openPosition(order, extraParams);
     }
 
-    function openPosition(Order calldata order) public override validOrder(order) unlocked returns (uint256) {
+    function openPosition(Order calldata order, bytes calldata extraParams)
+        public
+        override
+        validOrder(order)
+        unlocked
+        returns (uint256)
+    {
         uint256 initialExposure = exposure(order.obtainedToken);
         (uint256 interestRate, uint256 fees, uint256 riskFactor, uint256 toBorrow, address collateralToken) = _borrow(
             order
         );
-
-        uint256 amountIn = _openPosition(order);
-
+        uint256 amountIn = _openPosition(order, extraParams);
         if (!order.collateralIsSpentToken) amountIn += order.collateral;
+        if (amountIn < order.minObtained) revert Strategy__Insufficient_Amount_Out();
 
         interestRate *= (toBorrow * (amountIn + 2 * initialExposure));
         interestRate /= (2 * order.collateral * (initialExposure + amountIn));
 
-        if (interestRate > VaultMath.MAX_RATE) revert Strategy__Maximum_Leverage_Exceeded(interestRate);
-
-        if (amountIn < order.minObtained) revert Strategy__Insufficient_Amount_Out(amountIn, order.minObtained);
+        if (interestRate > VaultMath.MAX_RATE) revert Strategy__Maximum_Leverage_Exceeded();
 
         positions[++id] = Position({
             owedToken: order.spentToken,
@@ -148,6 +156,9 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             createdAt: block.timestamp
         });
 
+        _safeMint(msg.sender, id);
+
+        /*
         emit PositionWasOpened(
             id,
             msg.sender,
@@ -161,8 +172,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             fees,
             block.timestamp
         );
-
-        _safeMint(msg.sender, id);
+*/
 
         return id;
     }
@@ -183,7 +193,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         if (
             (amountIn < maxOrMin && position.collateralToken != position.heldToken) ||
             (amountOut > maxOrMin && position.collateralToken != position.owedToken)
-        ) revert Strategy__Insufficient_Amount_Out(amountIn, maxOrMin);
+        ) revert Strategy__Insufficient_Amount_Out();
         uint256 repaid = vault.repay(
             position.owedToken,
             amountIn,
@@ -213,10 +223,36 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         );
     }
 
+    // slither-disable-next-line external-function
+    function tokenURI(uint256 tokenId) public view override(ERC721) returns (string memory) {
+        assert(_exists(tokenId));
+
+        (bool success, bytes memory data) = liquidator.staticcall(
+            abi.encodeWithSignature("computeLiquidationScore(address,uint256)", address(this), tokenId)
+        );
+        assert(success);
+        int256 score = abi.decode(data, (int256));
+
+        Position memory position = positions[tokenId];
+
+        return
+            SVGImage.generateMetadata(
+                name(),
+                symbol(),
+                tokenId,
+                position.collateralToken,
+                position.collateral,
+                position.createdAt,
+                score
+            );
+    }
+
+    // Internal functions
+
     function _borrow(Order calldata order)
         internal
         returns (
-            uint256 interestRate,
+            uint256 baseInterestRate,
             uint256 fees,
             uint256 riskFactor,
             uint256 toBorrow,
@@ -238,10 +274,10 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         if (order.collateral < vault.getMinimumMargin(collateralToken))
             revert Strategy__Margin_Below_Minimum(order.collateral, vault.getMinimumMargin(collateralToken));
 
-        (interestRate, fees) = vault.borrow(order.spentToken, toBorrow, riskFactor, msg.sender);
+        (baseInterestRate, fees) = vault.borrow(order.spentToken, toBorrow, riskFactor, msg.sender);
     }
 
-    // Only liquidator
+    // Reserved for the Liquidator
 
     function deleteAndBurn(uint256 positionId) external override onlyLiquidator {
         delete positions[positionId];
@@ -280,9 +316,9 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         emit PositionChangedOwner(positionId, oldOwner, newOwner);
     }
 
-    // Abstract strategy
+    // Abstract functions
 
-    function _openPosition(Order calldata order) internal virtual returns (uint256);
+    function _openPosition(Order calldata order, bytes calldata extraParams) internal virtual returns (uint256);
 
     // Implementation rule: the amountOut must be transferred to the vault
     function _closePosition(Position memory position, uint256 maxOrMin) internal virtual returns (uint256, uint256);
@@ -294,28 +330,4 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     ) public view virtual override returns (uint256, uint256);
 
     function exposure(address token) public view virtual returns (uint256);
-
-    // slither-disable-next-line external-function
-    function tokenURI(uint256 tokenId) public view override(ERC721) returns (string memory) {
-        assert(_exists(tokenId));
-
-        (bool success, bytes memory data) = liquidator.staticcall(
-            abi.encodeWithSignature("computeLiquidationScore(address,uint256)", address(this), tokenId)
-        );
-        assert(success);
-        int256 score = abi.decode(data, (int256));
-
-        Position memory position = positions[tokenId];
-
-        return
-            SVGImage.generateMetadata(
-                name(),
-                symbol(),
-                tokenId,
-                position.collateralToken,
-                position.collateral,
-                position.createdAt,
-                score
-            );
-    }
 }

@@ -1,5 +1,6 @@
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import type { Fixture } from "ethereum-waffle";
+import { BigNumber } from "ethers";
 
 import type { Liquidator } from "../src/types/Liquidator";
 import type { MockToken } from "../src/types/MockToken";
@@ -34,4 +35,14 @@ export interface Signers {
   investor: SignerWithAddress;
   trader: SignerWithAddress;
   liquidator: SignerWithAddress;
+}
+
+export interface Order {
+  spentToken: string;
+  obtainedToken: string;
+  collateral: BigNumber;
+  collateralIsSpentToken: boolean;
+  minObtained: BigNumber;
+  maxSpent: BigNumber;
+  deadline: number;
 }

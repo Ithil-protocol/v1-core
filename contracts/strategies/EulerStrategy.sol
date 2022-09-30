@@ -28,7 +28,7 @@ contract EulerStrategy is BaseStrategy {
         euler = _euler;
     }
 
-    function _openPosition(Order calldata order) internal override returns (uint256) {
+    function _openPosition(Order calldata order, bytes calldata extraParams) internal override returns (uint256) {
         address eToken = markets.underlyingToEToken(order.spentToken);
         IERC20 spentToken = IERC20(order.spentToken);
         if (eToken == address(0)) revert EulerStrategy__Inexistent_Market(order.spentToken);
@@ -49,7 +49,7 @@ contract EulerStrategy is BaseStrategy {
         uint256 amountOut = position.allowance;
         uint256 amountIn = eTkn.convertBalanceToUnderlying(position.allowance);
         // We only support underlying margin, therefore maxOrMin is always a min
-        if (amountIn < maxOrMin) revert Strategy__Insufficient_Amount_Out(amountIn, maxOrMin);
+        if (amountIn < maxOrMin) revert Strategy__Insufficient_Amount_Out();
         eTkn.withdraw(0, amountIn);
 
         IERC20(position.owedToken).safeTransfer(address(vault), amountIn);

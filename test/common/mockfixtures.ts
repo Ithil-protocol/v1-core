@@ -12,7 +12,6 @@ import { TestStrategy } from "../../src/types/TestStrategy";
 import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
 import { YearnStrategy } from "../../src/types/YearnStrategy";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Console } from "console";
 
 interface MockVaultFixture {
   mockWETH: MockWETH;

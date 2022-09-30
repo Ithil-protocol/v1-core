@@ -25,7 +25,7 @@ contract MarginTradingStrategy is BaseStrategy {
         kyberProxy = IKyberNetworkProxy(_kyber);
     }
 
-    function _openPosition(Order calldata order) internal override returns (uint256) {
+    function _openPosition(Order calldata order, bytes calldata extraParams) internal override returns (uint256) {
         vault.checkWhitelisted(order.obtainedToken);
 
         (uint256 amountIn, ) = _swap(

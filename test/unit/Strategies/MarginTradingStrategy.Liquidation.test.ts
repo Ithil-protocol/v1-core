@@ -1,21 +1,22 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import type { Artifact } from "hardhat/types";
+import { expect } from "chai";
+import { BigNumber, Wallet } from "ethers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+
 import type { Vault } from "../../../src/types/Vault";
 import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../../src/types/MockWETH";
 import { MarginTradingStrategy } from "../../../src/types/MarginTradingStrategy";
 import { Liquidator } from "../../../src/types/Liquidator";
 import { MockToken } from "../../../src/types/MockToken";
-import { expandToNDecimals } from "../../common/utils";
-import { BigNumber, Wallet } from "ethers";
-import { marginTokenLiquidity, investmentTokenLiquidity, marginTokenMargin, leverage } from "../../common/params";
 
+import { expandToNDecimals } from "../../common/utils";
+import { marginTokenLiquidity, investmentTokenLiquidity, marginTokenMargin, leverage } from "../../common/params";
 import { mockMarginTradingFixture } from "../../common/mockfixtures";
 import { fundVault, changeRate } from "../../common/utils";
 
-import { expect } from "chai";
-import exp from "constants";
+import { Order } from "../../types";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -50,15 +51,7 @@ const price1 = BigNumber.from(1);
 const price2 = BigNumber.from(100);
 let fees: BigNumber;
 
-let order: {
-  spentToken: string;
-  obtainedToken: string;
-  collateral: BigNumber;
-  collateralIsSpentToken: boolean;
-  minObtained: BigNumber;
-  maxSpent: BigNumber;
-  deadline: number;
-};
+let order: Order;
 
 describe("Margin Trading Strategy Liquidation unit tests", function () {
   before("create fixture loader", async () => {
@@ -147,7 +140,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     order.minObtained = minObtained;
 
     // open position
-    await strategy.connect(trader1).openPosition(order);
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero);
 
     // check liquidation score math
     const positionID = 1;
@@ -215,7 +208,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     order.maxSpent = toBorrow;
     traderBalance = await marginToken.balanceOf(trader1.address);
 
-    await strategy.connect(trader1).openPosition(order);
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero);
     // Now the strategy should have margin * (leverage + 1) margin tokens
     expect(await marginToken.balanceOf(strategy.address)).to.equal(marginTokenMargin.mul(leverage + 1));
 
@@ -281,7 +274,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     order.minObtained = minObtained;
 
     // open position
-    await strategy.connect(trader1).openPosition(order);
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero);
     const pairRiskFactor = await strategy.computePairRiskFactor(investmentToken.address, marginToken.address);
     const extraMargin = expandToNDecimals(50, 18);
 
@@ -337,7 +330,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     traderBalance = await marginToken.balanceOf(trader1.address);
     vaultInvestmentBalance = await investmentToken.balanceOf(vault.address);
 
-    await strategy.connect(trader1).openPosition(order);
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero);
 
     // check liquidation score math
     const positionID = 4;
@@ -400,7 +393,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     const traderBalance = await marginToken.balanceOf(trader1.address);
     const liquidatorBalance = await investmentToken.balanceOf(liquidator.address);
     // open position
-    await strategy.connect(trader1).openPosition(order);
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero);
 
     const positionID = 5;
     let position = await strategy.positions(positionID);
@@ -468,7 +461,7 @@ describe("Margin Trading Strategy Liquidation unit tests", function () {
     vaultInvestmentBalance = await investmentToken.balanceOf(vault.address);
     const liquidatorBalance = await marginToken.balanceOf(liquidator.address);
 
-    await strategy.connect(trader1).openPosition(order);
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero);
 
     // check liquidation score math
     const positionID = 6;

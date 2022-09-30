@@ -57,10 +57,12 @@ interface IStrategy {
 
     /// @notice open a position by borrowing from the vault and executing external contract calls
     /// @param order the structure with the order parameters
-    function openPosition(Order calldata order) external returns (uint256);
+    /// @param extraParams strategy-specific additional arguments
+    function openPosition(Order calldata order, bytes calldata extraParams) external returns (uint256);
 
     function openPositionWithPermit(
         Order calldata order,
+        bytes calldata extraParams,
         uint8 v,
         bytes32 r,
         bytes32 s
@@ -149,8 +151,8 @@ interface IStrategy {
     error Strategy__Insufficient_Collateral(uint256 collateral);
     error Strategy__Restricted_Access(address owner, address sender);
     error Strategy__Action_Throttled();
-    error Strategy__Maximum_Leverage_Exceeded(uint256 interestRate);
-    error Strategy__Insufficient_Amount_Out(uint256 amountIn, uint256 minAmountOut);
+    error Strategy__Maximum_Leverage_Exceeded();
+    error Strategy__Insufficient_Amount_Out();
     error Strategy__Loan_Not_Repaid(uint256 repaid, uint256 debt);
     error Strategy__Only_Liquidator(address sender, address liquidator);
     error Strategy__Position_Not_Liquidable(uint256 id, int256 score);

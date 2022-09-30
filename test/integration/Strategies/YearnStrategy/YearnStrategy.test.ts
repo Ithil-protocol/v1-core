@@ -1,21 +1,22 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import type { Artifact } from "hardhat/types";
 import { BigNumber, Wallet } from "ethers";
+import { expect } from "chai";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+
 import type { Vault } from "../../../../src/types/Vault";
 import type { ERC20 } from "../../../../src/types/ERC20";
+import { YearnStrategy } from "../../../../src/types/YearnStrategy";
+import { Liquidator } from "../../../../src/types/Liquidator";
+
+import { Order } from "../../../types";
 
 import { tokens } from "../../../common/mainnet";
 import { getTokens, expandToNDecimals, fundVault } from "../../../common/utils";
 import { marginTokenLiquidity, marginTokenMargin, leverage, investmentTokenLiquidity } from "../../../common/params";
 
-import { YearnStrategy } from "../../../../src/types/YearnStrategy";
-import { Liquidator } from "../../../../src/types/Liquidator";
-
 import { yvaultDAI, yvaultWETH } from "./constants";
 import { yearnFixture } from "./fixture";
-
-import { expect } from "chai";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -43,15 +44,7 @@ let investmentToken: ERC20;
 let yTokenDAI: ERC20;
 let yTokenWETH: ERC20;
 
-let order: {
-  spentToken: string;
-  obtainedToken: string;
-  collateral: BigNumber;
-  collateralIsSpentToken: boolean;
-  minObtained: BigNumber;
-  maxSpent: BigNumber;
-  deadline: number;
-};
+let order: Order;
 
 describe("Yearn Strategy integration test", function () {
   before("create fixture loader", async () => {
@@ -107,14 +100,14 @@ describe("Yearn Strategy integration test", function () {
 
   it("Yearn Strategy: stake DAI", async function () {
     // First call should revert since minObtained is too high
-    await expect(strategy.connect(trader1).openPosition(order)).to.be.reverted;
+    await expect(strategy.connect(trader1).openPosition(order, ethers.constants.HashZero)).to.be.reverted;
 
     const [firstQuote] = await strategy.quote(order.spentToken, order.obtainedToken, order.maxSpent);
 
     // 0.1% slippage
     order.minObtained = firstQuote.mul(999).div(1000);
 
-    await strategy.connect(trader1).openPosition(order);
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero);
 
     const allowance = (await strategy.positions(1)).allowance;
 
@@ -152,13 +145,12 @@ describe("Yearn Strategy integration test", function () {
     };
 
     // First call should revert since minObtained is too high
-    await expect(strategy.connect(trader1).openPosition(order)).to.be.reverted;
+    await expect(strategy.connect(trader1).openPosition(order, ethers.constants.HashZero)).to.be.reverted;
     const [firstQuote] = await strategy.quote(order.spentToken, order.obtainedToken, order.maxSpent);
 
     // 0.1% slippage
     order.minObtained = firstQuote.mul(999).div(1000);
-
-    await strategy.connect(trader1).openPosition(order);
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero);
 
     const allowance = (await strategy.positions(2)).allowance;
 

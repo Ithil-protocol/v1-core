@@ -26,7 +26,7 @@ contract YearnStrategy is BaseStrategy {
         registry = IYearnRegistry(_registry);
     }
 
-    function _openPosition(Order calldata order) internal override returns (uint256) {
+    function _openPosition(Order calldata order, bytes calldata extraParams) internal override returns (uint256) {
         address yvault = registry.latestVault(order.spentToken);
         IERC20 spentToken = IERC20(order.spentToken);
         if (yvault != order.obtainedToken) revert Strategy__Incorrect_Obtained_Token();

@@ -4,6 +4,7 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "../strategies/BaseStrategy.sol";
+import "hardhat/console.sol";
 
 /// @dev Used for testing, unaudited
 contract TestStrategy is BaseStrategy {
@@ -13,7 +14,7 @@ contract TestStrategy is BaseStrategy {
         BaseStrategy(_vault, _liquidator, "TestStrategy", "ITHIL-TS-POS")
     {}
 
-    function _openPosition(Order calldata order) internal override returns (uint256) {
+    function _openPosition(Order calldata order, bytes calldata extraParams) internal override returns (uint256) {
         return order.maxSpent;
     }
 

@@ -1,21 +1,22 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import type { Artifact } from "hardhat/types";
+import { BigNumber, Wallet } from "ethers";
+import { expect } from "chai";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+
 import type { Vault } from "../../../src/types/Vault";
 import { MockKyberNetworkProxy } from "../../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../../src/types/MockWETH";
 import { MarginTradingStrategy } from "../../../src/types/MarginTradingStrategy";
 import { Liquidator } from "../../../src/types/Liquidator";
 import { MockToken } from "../../../src/types/MockToken";
-import { expandToNDecimals, equalWithTolerance } from "../../common/utils";
-import { BigNumber, Wallet } from "ethers";
-import { marginTokenLiquidity, investmentTokenLiquidity, marginTokenMargin, leverage } from "../../common/params";
 
+import { expandToNDecimals, equalWithTolerance } from "../../common/utils";
+import { marginTokenLiquidity, investmentTokenLiquidity, marginTokenMargin, leverage } from "../../common/params";
 import { mockMarginTradingFixture } from "../../common/mockfixtures";
 import { fundVault, changeRate } from "../../common/utils";
 
-import { expect } from "chai";
-import exp from "constants";
+import { Order } from "../../types";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -51,15 +52,7 @@ let price1: BigNumber;
 let price2: BigNumber;
 let fees: BigNumber;
 
-let order: {
-  spentToken: string;
-  obtainedToken: string;
-  collateral: BigNumber;
-  collateralIsSpentToken: boolean;
-  minObtained: BigNumber;
-  maxSpent: BigNumber;
-  deadline: number;
-};
+let order: Order;
 
 let position: [string, string, string, string, BigNumber, BigNumber, BigNumber, BigNumber, BigNumber, BigNumber];
 let positionId = 1;
@@ -160,7 +153,8 @@ describe("Margin Trading Strategy unit tests", function () {
     order.maxSpent = marginTokenMargin;
 
     const tBalanceBefore = await marginToken.balanceOf(trader1.address);
-    await strategy.connect(trader1).openPosition(order);
+
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero);
     const position = await strategy.positions(positionId);
     const [maxOrMin] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);
     await strategy.connect(trader1).closePosition(positionId, maxOrMin);
@@ -174,7 +168,7 @@ describe("Margin Trading Strategy unit tests", function () {
     order.minObtained = minObtained;
     order.maxSpent = marginTokenMargin.div(2);
 
-    await strategy.connect(trader1).openPosition(order);
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero);
     const position = await strategy.positions(positionId);
     const [maxOrMin] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);
     await strategy.connect(trader1).closePosition(positionId, maxOrMin);
@@ -196,7 +190,7 @@ describe("Margin Trading Strategy unit tests", function () {
     expect(traderBalance).to.equal(initialTraderBalance);
     order.maxSpent = marginTokenMargin.mul(leverage);
 
-    await strategy.connect(trader1).openPosition(order);
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero);
 
     // Check all tokens flows
     // Trader has paid margin
@@ -257,7 +251,8 @@ describe("Margin Trading Strategy unit tests", function () {
 
   it("Revert if deadline is expired", async function () {
     order.deadline = 0;
-    await expect(strategy.connect(trader1).openPosition(order)).to.be.reverted;
+
+    await expect(strategy.connect(trader1).openPosition(order, ethers.constants.HashZero)).to.be.reverted;
   });
 
   it("Open the position in the opposite side", async function () {
@@ -286,7 +281,7 @@ describe("Margin Trading Strategy unit tests", function () {
     vaultInvestmentBalance = await investmentToken.balanceOf(vault.address);
     const strategyBalance = await marginToken.balanceOf(strategy.address);
 
-    await strategy.connect(trader1).openPosition(order);
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero);
 
     // Check all token flows
     // Trader has paid margin

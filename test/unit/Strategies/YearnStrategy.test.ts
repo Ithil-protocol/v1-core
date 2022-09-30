@@ -1,7 +1,9 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import type { Artifact } from "hardhat/types";
 import { expect } from "chai";
+import { BigNumber, Wallet } from "ethers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+
 import type { Vault } from "../../../src/types/Vault";
 import { MockYearnRegistry } from "../../../src/types/MockYearnRegistry";
 import { MockWETH } from "../../../src/types/MockWETH";
@@ -11,10 +13,9 @@ import { Liquidator } from "../../../src/types/Liquidator";
 
 import { expandToNDecimals, fundVault } from "../../common/utils";
 import { marginTokenMargin, marginTokenLiquidity, leverage } from "../../common/params";
-
 import { mockYearnFixture } from "../../common/mockfixtures";
-import { BigNumber, Wallet } from "ethers";
-import { yearnRegistry } from "../../integration/Strategies/YearnStrategy/constants";
+
+import { Order } from "../../types";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -41,15 +42,7 @@ let mockYearnRegistry: MockYearnRegistry;
 let marginToken: MockToken;
 let investmentToken: MockToken;
 
-let order: {
-  spentToken: string;
-  obtainedToken: string;
-  collateral: BigNumber;
-  collateralIsSpentToken: boolean;
-  minObtained: BigNumber;
-  maxSpent: BigNumber;
-  deadline: number;
-};
+let order: Order;
 
 describe("Yearn strategy unit tests", function () {
   before("create fixture loader", async () => {
@@ -121,7 +114,7 @@ describe("Yearn strategy unit tests", function () {
     order.minObtained = minObtained;
     order.maxSpent = marginTokenMargin;
 
-    await strategy.connect(trader1).openPosition(order);
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero);
 
     const allowance = (await strategy.positions(1)).allowance;
   });

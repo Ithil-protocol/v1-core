@@ -1,18 +1,21 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import type { Artifact } from "hardhat/types";
-import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { BigNumber, Wallet } from "ethers";
 import { expect } from "chai";
+import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 
 import { tokens } from "../../../common/mainnet";
 import { getTokens, expandToNDecimals, fundVault } from "../../../common/utils";
 import { marginTokenLiquidity, investmentTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
-import { marginTradingFixture } from "./fixture";
 
 import type { ERC20 } from "../../../../src/types/ERC20";
 import type { Vault } from "../../../../src/types/Vault";
 import { MarginTradingStrategy } from "../../../../src/types/MarginTradingStrategy";
 import { Liquidator } from "../../../../src/types/Liquidator";
+
+import { marginTradingFixture } from "./fixture";
+
+import { Order } from "../../../types";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -39,15 +42,7 @@ let vaultBalance: BigNumber;
 let marginToken: ERC20;
 let investmentToken: ERC20;
 
-let order: {
-  spentToken: string;
-  obtainedToken: string;
-  collateral: BigNumber;
-  collateralIsSpentToken: boolean;
-  minObtained: BigNumber;
-  maxSpent: BigNumber;
-  deadline: number;
-};
+let order: Order;
 
 let price: BigNumber;
 let quoted: BigNumber;
@@ -116,14 +111,15 @@ describe("MarginTradingStrategy integration test", function () {
   });
 
   it("MarginTradingStrategy: too high minObtained should revert", async function () {
-    await expect(strategy.connect(trader1).openPosition(order)).to.be.reverted;
+    await expect(strategy.connect(trader1).openPosition(order, ethers.constants.HashZero)).to.be.reverted;
   });
 
   it("MarginTradingStrategy: swap DAI for WETH", async function () {
     vaultBalance = await marginToken.balanceOf(vault.address);
     // 1% slippage
     order.minObtained = openingPrice.mul(99).div(100);
-    await strategy.connect(trader1).openPosition(order);
+
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero);
 
     expect((await strategy.positions(1)).allowance).to.be.above(order.minObtained);
   });
@@ -173,11 +169,12 @@ describe("MarginTradingStrategy integration test", function () {
 
     // min obtained too high should revert
     order.minObtained = marginTokenMargin.mul(leverage).mul(11).div(10);
-    await expect(strategy.connect(trader1).openPosition(order)).to.be.reverted;
+
+    await expect(strategy.connect(trader1).openPosition(order, ethers.constants.HashZero)).to.be.reverted;
 
     // 1% slippage
     order.minObtained = marginTokenMargin.mul(leverage).mul(99).div(100);
-    await strategy.connect(trader1).openPosition(order);
+    await strategy.connect(trader1).openPosition(order, ethers.constants.HashZero);
   });
 
   it("Close short position", async function () {
