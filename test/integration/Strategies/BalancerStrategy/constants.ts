@@ -1,2 +1,3 @@
 export const balancerVault = "0xBA12222222228d8Ba445958a75a0704d566BF2C8";
-export const balancerDAIWETH = "0x0b09deA16768f0799065C475bE02919503cB2a35";
+export const balancerPoolAddress = "0x06df3b2bbb68adc8b0e302443692037ed9f91b42";
+export const balancerPoolID = "0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000063";

@@ -13,7 +13,7 @@ import { getTokens, expandToNDecimals, fundVault } from "../../../common/utils";
 import { BalancerStrategy } from "../../../../src/types/BalancerStrategy";
 import { Liquidator } from "../../../../src/types/Liquidator";
 
-import { balancerDAIWETH } from "./constants";
+import { balancerPoolAddress, balancerPoolID } from "./constants";
 import { balancerFixture } from "./fixture";
 import { expect } from "chai";
 
@@ -38,8 +38,8 @@ let liquidatorContract: Liquidator;
 let strategy: BalancerStrategy;
 let tokensAmount: BigNumber;
 
-let marginTokenDAI: ERC20;
-let investmentTokenDAI: ERC20;
+let marginToken: ERC20;
+let investmentTokenBPT: ERC20;
 
 let order: {
   spentToken: string;
@@ -69,26 +69,29 @@ describe("Balancer strategy integration tests", function () {
     const staker = signers[1];
 
     const tokenArtifact: Artifact = await artifacts.readArtifact("ERC20");
-    marginTokenDAI = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.DAI.address);
-    investmentTokenDAI = <ERC20>await ethers.getContractAt(tokenArtifact.abi, balancerDAIWETH);
+    marginToken = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.DAI.address);
+    investmentTokenBPT = <ERC20>await ethers.getContractAt(tokenArtifact.abi, balancerPoolAddress);
 
-    await vault.whitelistToken(marginTokenDAI.address, 10, 10, 1000);
-    await vault.whitelistToken(investmentTokenDAI.address, 10, 10, 1);
+    await vault.whitelistToken(marginToken.address, 10, 10, 1000);
+    await vault.whitelistToken(investmentTokenBPT.address, 10, 10, 1);
 
-    await strategy.setRiskFactor(marginTokenDAI.address, 3000);
-    await strategy.setRiskFactor(investmentTokenDAI.address, 4000);
+    await strategy.setRiskFactor(marginToken.address, 3000);
+    await strategy.setRiskFactor(investmentTokenBPT.address, 4000);
 
-    await strategy.addPool(balancerDAIWETH, "0x0b09dea16768f0799065c475be02919503cb2a3500020000000000000000001a");
+    await strategy.addPool(balancerPoolAddress, balancerPoolID, false, {
+      gasPrice: ethers.utils.parseUnits("500", "gwei"),
+      gasLimit: 30000000,
+    });
 
-    await getTokens(staker.address, marginTokenDAI.address, tokens.DAI.whale, marginTokenLiquidity);
-    await getTokens(trader1.address, marginTokenDAI.address, tokens.DAI.whale, marginTokenLiquidity);
-    await fundVault(signers[1], vault, marginTokenDAI, marginTokenLiquidity);
+    await getTokens(staker.address, marginToken.address, tokens.DAI.whale, marginTokenLiquidity);
+    await getTokens(trader1.address, marginToken.address, tokens.DAI.whale, marginTokenLiquidity);
+    await fundVault(signers[1], vault, marginToken, marginTokenLiquidity);
 
-    await marginTokenDAI.connect(trader1).approve(strategy.address, marginTokenMargin);
+    await marginToken.connect(trader1).approve(strategy.address, marginTokenMargin);
 
     order = {
-      spentToken: marginTokenDAI.address,
-      obtainedToken: balancerDAIWETH,
+      spentToken: marginToken.address,
+      obtainedToken: balancerPoolAddress,
       collateral: marginTokenMargin,
       collateralIsSpentToken: true,
       minObtained: BigNumber.from(2).pow(255),
@@ -97,8 +100,13 @@ describe("Balancer strategy integration tests", function () {
     };
   });
 
+  it("Balancer Strategy: quoter", async function () {
+    const [firstQuote] = await strategy.quote(order.spentToken, order.obtainedToken, order.maxSpent);
+    console.log("firstQuote", firstQuote);
+  });
+
   it("Balancer Strategy: open position on DAI", async function () {
-    const initialVaultBalance = await marginTokenDAI.balanceOf(vault.address);
+    const initialVaultBalance = await marginToken.balanceOf(vault.address);
     // First call should revert since minObtained is too high
 
     await expect(strategy.connect(trader1).openPosition(order)).to.be.reverted;
@@ -117,17 +125,17 @@ describe("Balancer strategy integration tests", function () {
     /// expect(allowance).to.be.below(firstQuote.mul(10001).div(10000));
 
     // Check that the strategy actually got the assets
-    expect(await investmentTokenDAI.balanceOf(strategy.address)).to.equal(allowance);
+    expect(await investmentTokenBPT.balanceOf(strategy.address)).to.equal(allowance);
 
     // Check that the vault has borrowed the expected tokens
-    expect(await marginTokenDAI.balanceOf(vault.address)).to.equal(
+    expect(await marginToken.balanceOf(vault.address)).to.equal(
       initialVaultBalance.sub(order.maxSpent.sub(order.collateral)),
     );
   });
 
-  it("Balancer Strategy: close position on DAI", async function () {
-    const initialVaultBalance = await marginTokenDAI.balanceOf(vault.address);
-    const initialTraderBalance = await marginTokenDAI.balanceOf(trader1.address);
+  xit("Balancer Strategy: close position on DAI", async function () {
+    const initialVaultBalance = await marginToken.balanceOf(vault.address);
+    const initialTraderBalance = await marginToken.balanceOf(trader1.address);
     // Calculate how much we will obtain
     const position = await strategy.positions(1);
     const [obtained] = await strategy.quote(position.heldToken, position.owedToken, position.allowance);
@@ -146,12 +154,12 @@ describe("Balancer strategy integration tests", function () {
     const dueFees = receipt.events?.[receipt.events?.length - 1].args?.fees as BigNumber;
 
     // Check that vault has gained
-    expect(await marginTokenDAI.balanceOf(vault.address)).to.equal(
+    expect(await marginToken.balanceOf(vault.address)).to.equal(
       initialVaultBalance.add(position.principal).add(dueFees),
     );
 
     // Check that the trader has the rest
-    expect(await marginTokenDAI.balanceOf(trader1.address)).to.equal(
+    expect(await marginToken.balanceOf(trader1.address)).to.equal(
       initialTraderBalance.add(amountIn).sub(position.principal).sub(dueFees),
     );
   });

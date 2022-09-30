@@ -54,6 +54,7 @@ contract BalancerStrategy is BaseStrategy {
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
+        /*
         BalancerHelper.PoolData memory pool = pools[position.heldToken];
         IERC20 owedToken = IERC20(position.owedToken);
         uint256 owedBalance = owedToken.balanceOf(address(vault));
@@ -65,6 +66,7 @@ contract BalancerStrategy is BaseStrategy {
         );
         balancerVault.exitPool(pool.id, address(this), payable(address(vault)), request);
         amountIn = owedToken.balanceOf(address(vault)) - owedBalance;
+        */
     }
 
     function quote(
@@ -81,8 +83,20 @@ contract BalancerStrategy is BaseStrategy {
         (address[] memory tokens, uint256[] memory totalBalances, ) = balancerVault.getPoolTokens(pool.id);
         uint8 tokenIndex = BalancerHelper.getTokenIndex(tokens, isJoining ? src : dst);
         quoted = isJoining
-            ? BalancerHelper.computeBptOut(amount, bpToken.totalSupply(), totalBalances[tokenIndex], 4e17, 5e14)
-            : BalancerHelper.computeAmountOut(amount, bpToken.totalSupply(), totalBalances[tokenIndex], 4e17, 5e14);
+            ? BalancerHelper.computeBptOut(
+                amount,
+                bpToken.totalSupply(),
+                totalBalances[tokenIndex],
+                pool.weights[tokenIndex],
+                pool.swapFee
+            )
+            : BalancerHelper.computeAmountOut(
+                amount,
+                bpToken.totalSupply(),
+                totalBalances[tokenIndex],
+                pool.weights[tokenIndex],
+                pool.swapFee
+            );
 
         return (quoted, quoted);
     }
@@ -91,26 +105,52 @@ contract BalancerStrategy is BaseStrategy {
         return IERC20(token).balanceOf(address(this));
     }
 
-    function addPool(address poolAddress, bytes32 poolID) external onlyOwner {
+    function addPool(
+        address poolAddress,
+        bytes32 poolID,
+        bool weighted
+    ) external onlyOwner {
         (address[] memory poolTokens, , ) = balancerVault.getPoolTokens(poolID);
-        pools[poolAddress] = BalancerHelper.PoolData(poolID, poolAddress, poolTokens, uint8(poolTokens.length));
-        uint256[] memory weights = IBalancerPool(poolAddress).getNormalizedWeights();
+        uint256 length = poolTokens.length;
+        IBalancerPool bpool = IBalancerPool(poolAddress);
+        uint256 fee = bpool.getSwapFeePercentage();
+        uint256[] memory weights = new uint256[](length);
 
+        if (weighted) weights = bpool.getNormalizedWeights();
 
-        for (uint8 i = 0; i < poolTokens.length; i++) {
-            console.log("token n. ", i);
-            console.log("weights ", weights[i]);
-            // @todo check allowance first?
-            IERC20(poolTokens[i]).approve(address(balancerVault), type(uint256).max);
+        for (uint8 i = 0; i < length; i++) {
+            IERC20 token = IERC20(poolTokens[i]);
+            if (token.allowance(address(this), address(balancerVault)) == 0)
+                token.safeApprove(address(balancerVault), type(uint256).max);
             //IERC20(poolTokens[i]).approve(address(aura), type(uint256).max);
+            if (!weighted) weights[i] = 1e18/length;
         }
+
+        pools[poolAddress] = BalancerHelper.PoolData(
+            poolID,
+            poolAddress,
+            poolTokens,
+            weights,
+            uint8(length),
+            fee
+        );
 
         emit BalancerPoolWasAdded(poolAddress);
     }
 
     /*
     function removePool(address poolAddress) external onlyOwner {
+        BalancerHelper.PoolData memory pool = pools[poolAddress];
         delete pools[poolAddress];
+
+        for (uint8 i = 0; i < poolTokens.length; i++) {
+            // @todo check allowance first?
+            console.log(poolTokens[i]);
+
+            IERC20(poolTokens[i]).approve(address(balancerVault), type(uint256).max);
+            //IERC20(poolTokens[i]).approve(address(aura), type(uint256).max);
+            if(!weighted) weights[i] = 1;
+        }
         
         emit BalancerPoolWasRemoved(poolAddress);
     }

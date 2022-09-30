@@ -17,7 +17,9 @@ library BalancerHelper {
         bytes32 id;
         address poolAddress;
         address[] tokens;
+        uint256[] weights;
         uint8 length;
+        uint256 swapFee;
     }
 
     function getTokenIndex(address[] memory tokens, address token) internal pure returns (uint8) {
