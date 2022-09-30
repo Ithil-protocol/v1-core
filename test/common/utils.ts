@@ -103,13 +103,3 @@ export function equalWithTolerance(a: BigNumber, b: BigNumber, decimals: number)
   expect(a).to.be.above(b.sub(BigNumber.from(10).pow(decimals)));
   expect(a).to.be.below(b.add(BigNumber.from(10).pow(decimals)));
 }
-
-let order: {
-  spentToken: string;
-  obtainedToken: string;
-  collateral: BigNumber;
-  collateralIsSpentToken: boolean;
-  minObtained: BigNumber;
-  maxSpent: BigNumber;
-  deadline: number;
-};
