@@ -53,7 +53,7 @@ let price: BigNumber;
 let quoted: BigNumber;
 let openingPrice: BigNumber;
 
-describe("MarginTradingStrategy integration test", function () {
+describe("MarginTrading Strategy integration test", function () {
   before("create fixture loader", async () => {
     [wallet, other] = await (ethers as any).getSigners();
     loadFixture = createFixtureLoader([wallet, other]);

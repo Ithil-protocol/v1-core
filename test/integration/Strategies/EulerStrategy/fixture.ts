@@ -48,7 +48,13 @@ export const eulerFixture: Fixture<EulerStrategyFixture> = async function (): Pr
     createStrategy: async () => {
       const esArtifact: Artifact = await artifacts.readArtifact("EulerStrategy");
       const strategy = <EulerStrategy>(
-        await deployContract(admin, esArtifact, [vault.address, liquidator.address, eulerMarkets, euler])
+        await deployContract(admin, esArtifact, [
+          vault.address,
+          liquidator.address,
+          "0x0000000000000000000000000000000000000000",
+          eulerMarkets,
+          euler,
+        ])
       );
       await vault.addStrategy(strategy.address);
       return strategy;

@@ -7,10 +7,11 @@ import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
 import { IVault } from "../interfaces/IVault.sol";
+import { ISVGImageGenerator } from "../interfaces/ISVGImageGenerator.sol";
+import { IInterestRateModel } from "../interfaces/IInterestRateModel.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { GeneralMath } from "../libraries/GeneralMath.sol";
 import { PositionHelper } from "../libraries/PositionHelper.sol";
-import { SVGImage } from "../libraries/SVGImage.sol";
 
 /// @title    BaseStrategy contract
 /// @author   Ithil
@@ -27,31 +28,27 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     bool public locked;
     address public guardian;
     mapping(address => uint256) public riskFactors;
+    ISVGImageGenerator public immutable generator;
+    IInterestRateModel public immutable interestRateModel;
 
     constructor(
         address _vault,
         address _liquidator,
+        address _generator,
+        address _interestRateModel,
         string memory _name,
         string memory _symbol
     ) ERC721(_name, _symbol) {
         liquidator = _liquidator;
         vault = IVault(_vault);
+        generator = ISVGImageGenerator(_generator);
+        interestRateModel = IInterestRateModel(_interestRateModel);
         id = 0;
         locked = false;
     }
 
-    modifier validOrder(Order calldata order) {
-        if (block.timestamp > order.deadline) revert Strategy__Order_Expired(block.timestamp, order.deadline);
-        if (order.spentToken == order.obtainedToken) revert Strategy__Source_Eq_Dest(order.spentToken);
-        if (order.collateral == 0) revert Strategy__Insufficient_Collateral(order.collateral);
-        _;
-
-        vault.checkWhitelisted(order.spentToken);
-    }
-
     modifier isPositionEditable(uint256 positionId) {
-        if (msg.sender != ownerOf(positionId) && msg.sender != liquidator)
-            revert Strategy__Restricted_Access(ownerOf(positionId), msg.sender);
+        if (msg.sender != ownerOf(positionId) && msg.sender != liquidator) revert Strategy__Restricted_Access();
 
         // flashloan protection
         if (positions[positionId].createdAt == block.timestamp) revert Strategy__Action_Throttled();
@@ -70,12 +67,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     }
 
     modifier onlyLiquidator() {
-        if (msg.sender != liquidator) revert Strategy__Only_Liquidator(msg.sender, liquidator);
-        _;
-    }
-
-    modifier validRisk(uint256 riskFactor) {
-        if (riskFactor > VaultMath.RESOLUTION) revert Strategy__Too_High_Risk(riskFactor);
+        if (msg.sender != liquidator) revert Strategy__Only_Liquidator();
         _;
     }
 
@@ -83,7 +75,8 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         guardian = _guardian;
     }
 
-    function setRiskFactor(address token, uint256 riskFactor) external onlyOwner validRisk(riskFactor) {
+    function setRiskFactor(address token, uint256 riskFactor) external onlyOwner {
+        if (riskFactor > GeneralMath.RESOLUTION) revert Strategy__Too_High_Risk();
         riskFactors[token] = riskFactor;
 
         emit RiskFactorWasUpdated(token, riskFactor);
@@ -99,13 +92,6 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         return positions[positionId];
     }
 
-    function computePairRiskFactor(address token0, address token1) public view override returns (uint256) {
-        uint256 risk0 = riskFactors[token0];
-        uint256 risk1 = riskFactors[token1];
-        if (risk0 == 0 || risk1 == 0) revert Strategy__Unsupported_Token(token0, token1);
-        return (risk0 + risk1) / 2;
-    }
-
     function openPositionWithPermit(
         Order calldata order,
         uint8 v,
@@ -118,24 +104,26 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         return openPosition(order);
     }
 
-    function openPosition(Order calldata order) public override validOrder(order) unlocked returns (uint256) {
+    function openPosition(Order calldata order) public override unlocked returns (uint256) {
+        if (block.timestamp > order.deadline) revert Strategy__Order_Expired();
+        if (order.spentToken == order.obtainedToken) revert Strategy__Source_Eq_Dest();
+        if (order.collateral == 0) revert Strategy__Insufficient_Collateral();
+
+        vault.checkWhitelisted(order.spentToken);
+
         uint256 initialExposure = exposure(order.obtainedToken);
         (uint256 interestRate, uint256 fees, uint256 riskFactor, uint256 toBorrow, address collateralToken) = _borrow(
             order
         );
 
         uint256 amountIn = _openPosition(order);
-
         if (!order.collateralIsSpentToken) amountIn += order.collateral;
+        if (amountIn < order.minObtained) revert Strategy__Insufficient_Amount_Out();
 
-        interestRate *= (toBorrow * (amountIn + 2 * initialExposure));
-        interestRate /= (2 * order.collateral * (initialExposure + amountIn));
-
-        if (interestRate > VaultMath.MAX_RATE) revert Strategy__Maximum_Leverage_Exceeded(interestRate);
-
-        if (amountIn < order.minObtained) revert Strategy__Insufficient_Amount_Out(amountIn, order.minObtained);
+        interestRate = interestRateModel.computeIR(interestRate, toBorrow, amountIn, initialExposure, order.collateral);
 
         positions[++id] = Position({
+            lender: address(vault),
             owedToken: order.spentToken,
             heldToken: order.obtainedToken,
             collateralToken: collateralToken,
@@ -144,7 +132,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             allowance: amountIn,
             interestRate: interestRate,
             riskFactor: riskFactor,
-            fees: (fees * order.maxSpent) / VaultMath.RESOLUTION,
+            fees: (fees * order.maxSpent) / GeneralMath.RESOLUTION,
             createdAt: block.timestamp
         });
 
@@ -173,7 +161,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         delete positions[positionId];
         _burn(positionId);
 
-        position.fees += VaultMath.computeTimeFees(
+        position.fees += interestRateModel.computeTimeFees(
             position.principal,
             position.interestRate,
             block.timestamp - position.createdAt
@@ -183,7 +171,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         if (
             (amountIn < maxOrMin && position.collateralToken != position.heldToken) ||
             (amountOut > maxOrMin && position.collateralToken != position.owedToken)
-        ) revert Strategy__Insufficient_Amount_Out(amountIn, maxOrMin);
+        ) revert Strategy__Insufficient_Amount_Out();
         uint256 repaid = vault.repay(
             position.owedToken,
             amountIn,
@@ -196,8 +184,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             IERC20(position.heldToken).safeTransfer(owner, position.allowance - amountOut);
 
         /// The following check is important to prevent users from triggering bad liquidations
-        if (amountIn - repaid < position.principal + position.fees)
-            revert Strategy__Loan_Not_Repaid(amountIn - repaid, position.principal + position.fees);
+        if (amountIn - repaid < position.principal + position.fees) revert Strategy__Loan_Not_Repaid();
 
         emit PositionWasClosed(positionId, amountIn, amountOut, position.fees);
     }
@@ -207,7 +194,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
         position.topUpCollateral(
             ownerOf(positionId),
-            position.collateralToken == position.owedToken ? address(vault) : address(this),
+            position.collateralToken == position.owedToken ? position.lender : address(this),
             topUp,
             position.collateralToken == position.owedToken
         );
@@ -223,7 +210,9 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             address collateralToken
         )
     {
-        riskFactor = computePairRiskFactor(order.spentToken, order.obtainedToken);
+        uint256 risk0 = riskFactors[order.spentToken];
+        uint256 risk1 = riskFactors[order.obtainedToken];
+        riskFactor = interestRateModel.computePairRiskFactor(risk0, risk1);
 
         if (order.collateralIsSpentToken) {
             collateralToken = order.spentToken;
@@ -234,9 +223,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         }
 
         IERC20(collateralToken).safeTransferFrom(msg.sender, address(this), order.collateral);
-
-        if (order.collateral < vault.getMinimumMargin(collateralToken))
-            revert Strategy__Margin_Below_Minimum(order.collateral, vault.getMinimumMargin(collateralToken));
+        if (order.collateral < vault.getMinimumMargin(collateralToken)) revert Strategy__Margin_Below_Minimum();
 
         (interestRate, fees) = vault.borrow(order.spentToken, toBorrow, riskFactor, msg.sender);
     }
@@ -280,6 +267,19 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         emit PositionChangedOwner(positionId, oldOwner, newOwner);
     }
 
+    /// @dev must be reviewed
+    function securitisePosition(uint256 positionID, address newLender) external onlyOwner {
+        Position memory position = positions[positionID];
+        position.fees += interestRateModel.computeTimeFees(
+            position.principal,
+            position.interestRate,
+            block.timestamp - position.createdAt
+        );
+
+        IERC20(position.owedToken).safeTransferFrom(msg.sender, position.lender, position.principal + position.fees);
+        positions[positionID].lender = newLender;
+    }
+
     // Abstract strategy
 
     function _openPosition(Order calldata order) internal virtual returns (uint256);
@@ -308,7 +308,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         Position memory position = positions[tokenId];
 
         return
-            SVGImage.generateMetadata(
+            ISVGImageGenerator(generator).generateMetadata(
                 name(),
                 symbol(),
                 tokenId,

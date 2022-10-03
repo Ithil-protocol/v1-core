@@ -21,8 +21,10 @@ contract YearnStrategy is BaseStrategy {
     constructor(
         address _vault,
         address _liquidator,
+        address _generator,
+        address _interestRateModel,
         address _registry
-    ) BaseStrategy(_vault, _liquidator, "YearnStrategy", "ITHIL-YS-POS") {
+    ) BaseStrategy(_vault, _liquidator, _generator, _interestRateModel, "YearnStrategy", "ITHIL-YS-POS") {
         registry = IYearnRegistry(_registry);
     }
 
@@ -47,7 +49,7 @@ contract YearnStrategy is BaseStrategy {
             (10**IERC20Metadata(position.owedToken).decimals());
         uint256 maxLoss = (expectedObtained.positiveSub(maxOrMin) * 10000) / expectedObtained;
 
-        uint256 amountIn = yvault.withdraw(position.allowance, address(vault), maxLoss);
+        uint256 amountIn = yvault.withdraw(position.allowance, position.lender, maxLoss);
         uint256 amountOut = position.allowance;
 
         return (amountIn, amountOut);

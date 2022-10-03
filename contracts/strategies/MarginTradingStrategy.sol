@@ -20,8 +20,10 @@ contract MarginTradingStrategy is BaseStrategy {
     constructor(
         address _vault,
         address _liquidator,
+        address _generator,
+        address _interestRateModel,
         address _kyber
-    ) BaseStrategy(_vault, _liquidator, "MarginTradingStrategy", "ITHIL-MS-POS") {
+    ) BaseStrategy(_vault, _liquidator, _generator, _interestRateModel, "MarginTradingStrategy", "ITHIL-MS-POS") {
         kyberProxy = IKyberNetworkProxy(_kyber);
     }
 
@@ -46,7 +48,7 @@ contract MarginTradingStrategy is BaseStrategy {
             position.owedToken,
             spendAll ? position.allowance : maxOrMin,
             spendAll ? maxOrMin : position.principal + position.fees,
-            address(vault)
+            position.lender
         );
 
         return (amountIn, amountOut);

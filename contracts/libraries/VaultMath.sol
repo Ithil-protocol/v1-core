@@ -10,11 +10,8 @@ import { GeneralMath } from "./GeneralMath.sol";
 library VaultMath {
     using GeneralMath for uint256;
 
-    uint24 internal constant RESOLUTION = 10000;
-    uint24 internal constant TIME_FEE_PERIOD = 86400;
-    uint24 internal constant MAX_RATE = 500;
-
     uint256 internal constant DEGRADATION_COEFFICIENT = 21600; // six hours
+    uint24 internal constant TIME_FEE_WINDOW = 84600;
 
     /// @notice Computes the amount of native tokens to exchange for wrapped
     /// @param amount the number of native tokens to stake
@@ -40,17 +37,7 @@ library VaultMath {
         return (totalBalance != 0 && totalSupply != 0) ? (totalSupply * amount) / totalBalance : amount;
     }
 
-    /// @notice Computes the due time fees of a certain position
-    function computeTimeFees(
-        uint256 principal,
-        uint256 interestRate,
-        uint256 time
-    ) internal pure returns (uint256 dueFees) {
-        return (principal * interestRate * (time + 1)).ceilingDiv(uint32(TIME_FEE_PERIOD) * RESOLUTION);
-    }
-
-    /// @notice Computes the interest rate to apply to a position at its opening
-    function computeInterestRateNoLeverage(
+    function getLoanBaseFee(
         uint256 netLoans,
         uint256 freeLiquidity,
         uint256 insuranceReserveBalance,
@@ -58,14 +45,14 @@ library VaultMath {
         uint256 baseFee
     ) internal pure returns (uint256) {
         uint256 uncovered = netLoans.positiveSub(insuranceReserveBalance);
-        uint256 interestRate = (netLoans + uncovered) * riskFactor;
-        interestRate /= (netLoans + freeLiquidity);
-        interestRate += baseFee;
+        uint256 fee = (netLoans + uncovered) * riskFactor;
+        fee /= (netLoans + freeLiquidity);
+        fee += baseFee;
 
-        return interestRate;
+        return fee;
     }
 
-    function calculateLockedProfit(
+    function calculateLockedProfits(
         uint256 profits,
         uint256 time,
         uint256 latestRepay

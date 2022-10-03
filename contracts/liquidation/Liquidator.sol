@@ -77,8 +77,8 @@ contract Liquidator is Ownable {
     // rewardPercentage is computed as of the tokens staked
     function rewardPercentage() public view returns (uint256) {
         if (maximumStake > 0) {
-            uint256 stakePercentage = (stakes[address(token)][msg.sender] * VaultMath.RESOLUTION) / maximumStake;
-            if (stakePercentage > VaultMath.RESOLUTION) return VaultMath.RESOLUTION;
+            uint256 stakePercentage = (stakes[address(token)][msg.sender] * GeneralMath.RESOLUTION) / maximumStake;
+            if (stakePercentage > GeneralMath.RESOLUTION) return GeneralMath.RESOLUTION;
             else return stakePercentage;
         } else {
             return 0;
@@ -116,8 +116,8 @@ contract Liquidator is Ownable {
 
             // Computation of reward is done by adding to the dueFees
             dueFees +=
-                ((amountIn.positiveSub(position.principal + dueFees)) * (VaultMath.RESOLUTION - reward)) /
-                VaultMath.RESOLUTION;
+                ((amountIn.positiveSub(position.principal + dueFees)) * (GeneralMath.RESOLUTION - reward)) /
+                GeneralMath.RESOLUTION;
 
             // In a bad liquidation event, 5% of the paid amount is transferred
             // Linearly scales with reward (with 0 reward corresponding to 0 transfer)
@@ -128,7 +128,7 @@ contract Liquidator is Ownable {
             // then amountIn / 20 > amountIn - principal - dueFees and the liquidator may be better off
             // not liquidating the position and instead wait for it to become bad liquidation
             if (amountIn < (20 * (position.principal + dueFees)) / 19)
-                amountIn -= (amountIn * reward) / (20 * VaultMath.RESOLUTION);
+                amountIn -= (amountIn * reward) / (20 * GeneralMath.RESOLUTION);
 
             strategy.directRepay(
                 position.owedToken,
@@ -165,7 +165,7 @@ contract Liquidator is Ownable {
             fairPrice += dueFees;
             // Apply discount based on reward (max 5%)
             // In this case there is no distinction between good or bad liquidation
-            fairPrice -= (fairPrice * reward) / (VaultMath.RESOLUTION * 20);
+            fairPrice -= (fairPrice * reward) / (GeneralMath.RESOLUTION * 20);
             if (price < fairPrice) {
                 revert Liquidator__Below_Fair_Price(price, fairPrice);
             } else {
@@ -208,7 +208,7 @@ contract Liquidator is Ownable {
         if (score > 0) {
             strategy.transferNFT(positionId, liquidatorUser);
             // reduce due fees based on reward (max 50%)
-            position.fees += (dueFees * (2 * VaultMath.RESOLUTION - reward)) / (2 * VaultMath.RESOLUTION);
+            position.fees += (dueFees * (2 * GeneralMath.RESOLUTION - reward)) / (2 * GeneralMath.RESOLUTION);
             position.createdAt = block.timestamp;
             bool collateralInOwedToken = position.collateralToken != position.heldToken;
             if (collateralInOwedToken) {
@@ -246,7 +246,7 @@ contract Liquidator is Ownable {
 
         uint256 dueFees = position.fees +
             (position.interestRate * (block.timestamp - position.createdAt) * position.principal) /
-            (uint32(VaultMath.TIME_FEE_PERIOD) * VaultMath.RESOLUTION);
+            (uint32(VaultMath.TIME_FEE_WINDOW) * GeneralMath.RESOLUTION);
 
         if (collateralInOwedToken) {
             (expectedTokensOwed, ) = strategy.quote(position.heldToken, position.owedToken, position.allowance);
@@ -262,7 +262,7 @@ contract Liquidator is Ownable {
 
         int256 score = SafeCast.toInt256(position.collateral * position.riskFactor) -
             profitAndLoss *
-            int24(VaultMath.RESOLUTION);
+            int24(GeneralMath.RESOLUTION);
 
         return (score, dueFees, expectedTokensOwed, expectedTokensHeld);
     }
