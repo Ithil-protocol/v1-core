@@ -3,11 +3,12 @@ pragma solidity >=0.8.12;
 
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { ISVGImageGenerator } from "../interfaces/ISVGImageGenerator.sol";
 
-/// @title    SVGImage library
+/// @title    SVGImageGenerator
 /// @author   Ithil
-/// @notice   A library to create a SVG image on-chain
-library SVGImage {
+/// @notice   A contract to create an on-chain SVG image
+contract SVGImageGenerator is ISVGImageGenerator {
     /* solhint-disable quotes, max-line-length */
     function generateMetadata(
         string memory name,
@@ -17,7 +18,7 @@ library SVGImage {
         uint256 amount,
         uint256 createdAt,
         int256 score
-    ) internal pure returns (string memory) {
+    ) external pure override returns (string memory) {
         return
             string(
                 abi.encodePacked(

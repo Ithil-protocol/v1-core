@@ -21,9 +21,11 @@ contract EulerStrategy is BaseStrategy {
     constructor(
         address _vault,
         address _liquidator,
+        address _generator,
+        address _interestRateModel,
         address _markets,
         address _euler
-    ) BaseStrategy(_vault, _liquidator, "EulerStrategy", "ITHIL-ES-POS") {
+    ) BaseStrategy(_vault, _liquidator, _generator, _interestRateModel, "EulerStrategy", "ITHIL-ES-POS") {
         markets = IEulerMarkets(_markets);
         euler = _euler;
     }
@@ -49,10 +51,10 @@ contract EulerStrategy is BaseStrategy {
         uint256 amountOut = position.allowance;
         uint256 amountIn = eTkn.convertBalanceToUnderlying(position.allowance);
         // We only support underlying margin, therefore maxOrMin is always a min
-        if (amountIn < maxOrMin) revert Strategy__Insufficient_Amount_Out(amountIn, maxOrMin);
+        if (amountIn < maxOrMin) revert Strategy__Insufficient_Amount_Out();
         eTkn.withdraw(0, amountIn);
 
-        IERC20(position.owedToken).safeTransfer(address(vault), amountIn);
+        IERC20(position.owedToken).safeTransfer(position.lender, amountIn);
 
         return (amountIn, amountOut);
     }

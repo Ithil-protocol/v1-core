@@ -49,7 +49,12 @@ export const marginTradingFixture: Fixture<MarginTradingStrategyFixture> =
       createStrategy: async () => {
         const mtsArtifact: Artifact = await artifacts.readArtifact("MarginTradingStrategy");
         const strategy = <MarginTradingStrategy>(
-          await deployContract(admin, mtsArtifact, [vault.address, liquidatorContract.address, kyberNetwork])
+          await deployContract(admin, mtsArtifact, [
+            vault.address,
+            liquidatorContract.address,
+            "0x0000000000000000000000000000000000000000",
+            kyberNetwork,
+          ])
         );
         await vault.addStrategy(strategy.address);
         return strategy;

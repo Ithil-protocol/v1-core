@@ -9,9 +9,12 @@ import { BaseStrategy } from "../strategies/BaseStrategy.sol";
 contract TestStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
 
-    constructor(address _vault, address _liquidator)
-        BaseStrategy(_vault, _liquidator, "TestStrategy", "ITHIL-TS-POS")
-    {}
+    constructor(
+        address _vault,
+        address _liquidator,
+        address _generator,
+        address _interestRateModel
+    ) BaseStrategy(_vault, _liquidator, _generator, _interestRateModel, "TestStrategy", "ITHIL-TS-POS") {}
 
     function _openPosition(Order calldata order) internal override returns (uint256) {
         return order.maxSpent;
@@ -21,7 +24,7 @@ contract TestStrategy is BaseStrategy {
         Position memory position,
         uint256 /*expectedCost*/
     ) internal override returns (uint256, uint256) {
-        IERC20(position.owedToken).safeTransfer(address(vault), position.allowance);
+        IERC20(position.owedToken).safeTransfer(position.lender, position.allowance);
 
         return (position.allowance, position.allowance);
     }

@@ -7,6 +7,8 @@ import { VaultState } from "./VaultState.sol";
 /// @author   Ithil
 /// @notice   A library to perform the most common math operations
 library GeneralMath {
+    uint24 public constant RESOLUTION = 10000;
+
     function positiveSub(uint256 a, uint256 b) internal pure returns (uint256) {
         if (a > b) {
             return a - b;

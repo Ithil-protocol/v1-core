@@ -48,7 +48,12 @@ export const yearnFixture: Fixture<YearnStrategyFixture> = async function (): Pr
     createStrategy: async () => {
       const ysArtifact: Artifact = await artifacts.readArtifact("YearnStrategy");
       const strategy = <YearnStrategy>(
-        await deployContract(admin, ysArtifact, [vault.address, liquidatorContract.address, yearnRegistry])
+        await deployContract(admin, ysArtifact, [
+          vault.address,
+          liquidatorContract.address,
+          "0x0000000000000000000000000000000000000000",
+          yearnRegistry,
+        ])
       );
       await vault.addStrategy(strategy.address);
       return strategy;

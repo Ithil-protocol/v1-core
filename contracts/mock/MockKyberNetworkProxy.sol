@@ -4,8 +4,8 @@ pragma solidity >=0.8.12;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { GeneralMath } from "../libraries/GeneralMath.sol";
 import { IKyberNetworkProxy } from "../interfaces/external/IKyberNetworkProxy.sol";
-import { VaultMath } from "../libraries/VaultMath.sol";
 
 /// @dev Used for testing, unaudited
 contract MockKyberNetworkProxy is IKyberNetworkProxy, Ownable {
@@ -57,7 +57,7 @@ contract MockKyberNetworkProxy is IKyberNetworkProxy, Ownable {
         if (rate2 == 0) return (0, 0);
 
         uint256 res = (rate1 * srcDec) / rate2;
-        res = (res * (VaultMath.RESOLUTION - slippages[src])) / VaultMath.RESOLUTION;
+        res = (res * (GeneralMath.RESOLUTION - slippages[src])) / GeneralMath.RESOLUTION;
 
         if (res * rate2 < rate1 * srcDec) res++;
 

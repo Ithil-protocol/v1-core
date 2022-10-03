@@ -81,7 +81,7 @@ contract Vault is IVault, Ownable {
             vaultState.netLoans -
             vaultState.insuranceReserveBalance -
             vaultState.boostedAmount -
-            VaultMath.calculateLockedProfit(vaultState.currentProfits, block.timestamp, vaultState.latestRepay);
+            VaultMath.calculateLockedProfits(vaultState.currentProfits, block.timestamp, vaultState.latestRepay);
     }
 
     function claimable(address token) external view override returns (uint256) {
@@ -260,9 +260,10 @@ contract Vault is IVault, Ownable {
         uint256 baseInterestRate = 0;
         uint256 fees = vaultData.fixedFee;
         if (amount > 0) {
-            uint256 freeLiquidity = vaultData.takeLoan(IERC20(token), amount, riskFactor);
+            uint256 freeLiquidity = vaultData.takeLoan(token, amount, riskFactor);
+            IERC20(token).safeTransfer(msg.sender, amount);
 
-            baseInterestRate = VaultMath.computeInterestRateNoLeverage(
+            baseInterestRate = VaultMath.getLoanBaseFee(
                 vaultData.netLoans - amount,
                 freeLiquidity,
                 vaultData.insuranceReserveBalance,
@@ -288,8 +289,12 @@ contract Vault is IVault, Ownable {
 
         VaultState.VaultData storage vaultData = vaults[token];
 
+        IERC20 tkn = IERC20(token);
+        uint256 amountToTransfer = vaultData.repayLoan(tkn, debt, fees, amount, riskFactor);
+        tkn.safeTransfer(borrower, amountToTransfer);
+
         emit LoanRepaid(borrower, token, amount);
 
-        return vaultData.repayLoan(IERC20(token), borrower, debt, fees, amount, riskFactor);
+        return amountToTransfer;
     }
 }

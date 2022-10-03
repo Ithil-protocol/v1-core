@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.8.12;
 
-import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { GeneralMath } from "./GeneralMath.sol";
 import { VaultMath } from "./VaultMath.sol";
 
@@ -9,7 +9,6 @@ import { VaultMath } from "./VaultMath.sol";
 /// @author   Ithil
 /// @notice   A library to store the vault status
 library VaultState {
-    using SafeERC20 for IERC20;
     using GeneralMath for uint256;
 
     error Vault__Insufficient_Free_Liquidity(address token, uint256 requested, uint256 freeLiquidity);
@@ -45,22 +44,9 @@ library VaultState {
         uint256 currentProfits;
     }
 
-    function addInsuranceReserve(
-        VaultState.VaultData storage self,
-        uint256 totalBalance,
-        uint256 fees
-    ) internal returns (uint256) {
-        uint256 availableInsuranceBalance = self.insuranceReserveBalance.positiveSub(self.netLoans);
-        uint256 insurancePortion = (fees * self.optimalRatio * (totalBalance - availableInsuranceBalance)) /
-            (totalBalance * VaultMath.RESOLUTION);
-        self.insuranceReserveBalance += insurancePortion;
-
-        return insurancePortion;
-    }
-
     function takeLoan(
         VaultState.VaultData storage self,
-        IERC20 token,
+        address token,
         uint256 amount,
         uint256 riskFactor
     ) internal returns (uint256) {
@@ -70,28 +56,16 @@ library VaultState {
 
         // If the following fails drainage has occurred so we want failure
         uint256 freeLiquidity = IERC20(token).balanceOf(address(this)) - self.insuranceReserveBalance;
-
         if (amount > freeLiquidity) revert Vault__Insufficient_Free_Liquidity(address(token), amount, freeLiquidity);
 
-        token.safeTransfer(msg.sender, amount);
-        // We have transferred an amount <= freeLiquidity, therefore we now have
+        // We are transferring an amount <= freeLiquidity, therefore we now have
         // IERC20(token).balanceOf(address(this)) >= self.insuranceReserveBalance
         return freeLiquidity;
-    }
-
-    function subtractLoan(VaultState.VaultData storage self, uint256 b) private {
-        if (self.netLoans > b) self.netLoans -= b;
-        else self.netLoans = 0;
-    }
-
-    function subtractInsuranceReserve(VaultState.VaultData storage self, uint256 b) private {
-        self.insuranceReserveBalance = self.insuranceReserveBalance.positiveSub(b);
     }
 
     function repayLoan(
         VaultState.VaultData storage self,
         IERC20 token,
-        address borrower,
         uint256 debt,
         uint256 fees,
         uint256 amount,
@@ -99,14 +73,23 @@ library VaultState {
     ) internal returns (uint256) {
         uint256 amountToTransfer = 0;
         uint256 totalRisk = self.optimalRatio * self.netLoans;
-        subtractLoan(self, debt);
+
+        if (self.netLoans > debt) self.netLoans -= debt;
+        else self.netLoans = 0;
+
         self.optimalRatio = self.netLoans != 0 ? totalRisk.positiveSub(riskFactor * debt) / self.netLoans : 0;
         if (amount >= debt + fees) {
             // At this point amount has been transferred here
             // Insurance reserve increases by a portion of fees
-            uint256 insurancePortion = addInsuranceReserve(self, token.balanceOf(address(this)), fees);
+            uint256 totalBalance = token.balanceOf(address(this));
+            uint256 insurancePortion = (fees *
+                self.optimalRatio *
+                (totalBalance - self.insuranceReserveBalance.positiveSub(self.netLoans))) /
+                (totalBalance * GeneralMath.RESOLUTION);
+            self.insuranceReserveBalance += insurancePortion;
+
             self.currentProfits =
-                VaultMath.calculateLockedProfit(self.currentProfits, block.timestamp, self.latestRepay) +
+                VaultMath.calculateLockedProfits(self.currentProfits, block.timestamp, self.latestRepay) +
                 fees -
                 insurancePortion;
             self.latestRepay = block.timestamp;
@@ -116,11 +99,10 @@ library VaultState {
         } else {
             // Bad liquidation: rewards the liquidator with 5% of the amountIn
             // amount is already adjusted in BaseStrategy
-            if (amount < debt) subtractInsuranceReserve(self, debt - amount);
+            if (amount < debt) self.insuranceReserveBalance.positiveSub(debt - amount);
             amountToTransfer = amount / 19;
         }
 
-        token.safeTransfer(borrower, amountToTransfer);
         return amountToTransfer;
     }
 }

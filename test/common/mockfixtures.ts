@@ -12,7 +12,6 @@ import { TestStrategy } from "../../src/types/TestStrategy";
 import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
 import { YearnStrategy } from "../../src/types/YearnStrategy";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Console } from "console";
 
 interface MockVaultFixture {
   mockWETH: MockWETH;
@@ -115,6 +114,7 @@ export const mockMarginTradingFixture: Fixture<MockMarginTradingStrategyFixture>
           await deployContract(admin, mtsArtifact, [
             vault.address,
             liquidatorContract.address,
+            "0x0000000000000000000000000000000000000000",
             mockKyberNetworkProxy.address,
           ])
         );
@@ -164,6 +164,7 @@ export const mockYearnFixture: Fixture<MockYearnStrategyFixture> =
           await deployContract(admin, mtsArtifact, [
             vault.address,
             liquidatorContract.address,
+            "0x0000000000000000000000000000000000000000",
             mockYearnRegistry.address,
           ])
         );
@@ -202,7 +203,11 @@ export const mockTestFixture: Fixture<MockTestStrategyFixture> = async function 
     createStrategy: async () => {
       const mtsArtifact: Artifact = await artifacts.readArtifact("TestStrategy");
       const strategy = <TestStrategy>(
-        await deployContract(admin, mtsArtifact, [vault.address, liquidatorContract.address])
+        await deployContract(admin, mtsArtifact, [
+          vault.address,
+          liquidatorContract.address,
+          "0x0000000000000000000000000000000000000000",
+        ])
       );
       await vault.addStrategy(strategy.address);
       return strategy;
