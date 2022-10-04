@@ -54,7 +54,6 @@ contract BalancerStrategy is BaseStrategy {
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
-        /*
         BalancerHelper.PoolData memory pool = pools[position.heldToken];
         IERC20 owedToken = IERC20(position.owedToken);
         uint256 owedBalance = owedToken.balanceOf(address(vault));
@@ -66,7 +65,6 @@ contract BalancerStrategy is BaseStrategy {
         );
         balancerVault.exitPool(pool.id, address(this), payable(address(vault)), request);
         amountIn = owedToken.balanceOf(address(vault)) - owedBalance;
-        */
     }
 
     function quote(
@@ -74,8 +72,6 @@ contract BalancerStrategy is BaseStrategy {
         address dst,
         uint256 amount
     ) public view override returns (uint256, uint256) {
-        // weight of DAI in this pool and swap percentage fees
-        /// @dev needs to be fetched!
         uint256 quoted;
         bool isJoining = pools[dst].poolAddress != address(0);
         BalancerHelper.PoolData memory pool = isJoining ? pools[dst] : pools[src];
@@ -103,6 +99,57 @@ contract BalancerStrategy is BaseStrategy {
 
     function exposure(address token) public view override returns (uint256) {
         return IERC20(token).balanceOf(address(this));
+    }
+
+    function _sellRewards(address token, uint256 minOut) internal {
+        uint256 amount = bal.balanceOf(address(this));
+
+        IBalancerVault.SingleSwap memory swap = new IBalancerVault.SingleSwap({
+            poolId: "",
+            kind: IBalancerVault.SwapKind.GIVEN_IN,
+            assetIn: token,
+            assetOut: address(bal),
+            amount: amount,
+            userData: ""
+        });
+
+        balancerVault.swap(
+            swap,
+            IBalancerVault.FundManagement(address(this), false, payable(address(this)), false),
+            amount,
+            block.timestamp
+        );
+
+        uint256 obtained = bal.balanceOf(address(this)) - amount;
+
+        if(obtained < minOut) revert Strategy__Insufficient_Amount_Obtained();
+
+        /*
+        uint256 balance = balBalance();
+
+        uint256 length = pool.tokens.length;
+        IBalancerVault.BatchSwapStep[] memory steps = new IBalancerVault.BatchSwapStep[](length);
+        int256[] memory limits = new int256[](length + 1);
+        limits[0] = int256(balance);
+
+        for (uint256 j = 0; j < length; j++) {
+            steps[j] = IBalancerVault.BatchSwapStep(balSwaps.poolIds[j], j, j + 1, j == 0 ? balance : 0, abi.encode(0));
+        }
+
+        uint256 floatBefore = float();
+
+        balancerVault.batchSwap(
+            IBalancerVault.SwapKind.GIVEN_IN,
+            steps,
+            balSwaps.assets,
+            IBalancerVault.FundManagement(address(this), false, payable(address(this)), false),
+            limits,
+            block.timestamp + 1000
+        );
+
+        uint256 delta = float() - floatBefore;
+        require(delta >= minOut, "sellBal::SLIPPAGE");
+        */
     }
 
     function addPool(
@@ -138,21 +185,18 @@ contract BalancerStrategy is BaseStrategy {
         emit BalancerPoolWasAdded(poolAddress);
     }
 
-    /*
     function removePool(address poolAddress) external onlyOwner {
         BalancerHelper.PoolData memory pool = pools[poolAddress];
         delete pools[poolAddress];
 
-        for (uint8 i = 0; i < poolTokens.length; i++) {
+        for (uint8 i = 0; i < pool.tokens.length; i++) {
             // @todo check allowance first?
-            console.log(poolTokens[i]);
+            console.log(pool.tokens[i]);
 
-            IERC20(poolTokens[i]).approve(address(balancerVault), type(uint256).max);
+            IERC20(pool.tokens[i]).approve(address(balancerVault), 0);
             //IERC20(poolTokens[i]).approve(address(aura), type(uint256).max);
-            if(!weighted) weights[i] = 1;
         }
         
         emit BalancerPoolWasRemoved(poolAddress);
     }
-    */
 }
