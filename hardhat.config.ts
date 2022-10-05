@@ -42,7 +42,7 @@ const config: HardhatUserConfig = {
       forking: {
         enabled: process.env.FORKING == "true" ? true : false,
         url: "https://eth-mainnet.g.alchemy.com/v2/" + process.env.ALCHEMY_API_KEY,
-        blockNumber: 14967494,
+        blockNumber: 15681755,
       },
     },
   },

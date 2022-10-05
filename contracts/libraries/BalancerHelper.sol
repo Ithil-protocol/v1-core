@@ -13,15 +13,6 @@ import { VaultState } from "./VaultState.sol";
 library BalancerHelper {
     error BalancerStrategy__Token_Not_In_Pool(address token);
 
-    struct PoolData {
-        bytes32 id;
-        address poolAddress;
-        address[] tokens;
-        uint256[] weights;
-        uint8 length;
-        uint256 swapFee;
-    }
-
     function getTokenIndex(address[] memory tokens, address token) internal pure returns (uint8) {
         for (uint8 i = 0; i < tokens.length; i++) {
             if (tokens[i] == token) return i;
@@ -31,18 +22,18 @@ library BalancerHelper {
     }
 
     function joinPoolRequest(
-        PoolData memory pool,
+        address[] memory tokens,
         address token,
         uint256 amount,
         uint256 minimumBPTOut
     ) internal pure returns (IBalancerVault.JoinPoolRequest memory) {
-        uint256[] memory maxAmountsIn = new uint256[](pool.tokens.length);
-        uint8 tokenIndex = getTokenIndex(pool.tokens, token);
+        uint256[] memory maxAmountsIn = new uint256[](tokens.length);
+        uint8 tokenIndex = getTokenIndex(tokens, token);
         maxAmountsIn[tokenIndex] = amount;
 
         return
             IBalancerVault.JoinPoolRequest({
-                assets: pool.tokens,
+                assets: tokens,
                 maxAmountsIn: maxAmountsIn,
                 userData: abi.encode(IBalancerVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, maxAmountsIn, minimumBPTOut),
                 fromInternalBalance: false
@@ -50,18 +41,18 @@ library BalancerHelper {
     }
 
     function exitPoolRequest(
-        PoolData memory pool,
+        address[] memory tokens,
         address token,
         uint256 bptAmountIn,
         uint256 minObtained
     ) internal pure returns (IBalancerVault.ExitPoolRequest memory) {
-        uint256[] memory minAmountsOut = new uint256[](pool.tokens.length);
-        uint8 tokenIndex = getTokenIndex(pool.tokens, token);
+        uint256[] memory minAmountsOut = new uint256[](tokens.length);
+        uint8 tokenIndex = getTokenIndex(tokens, token);
         minAmountsOut[tokenIndex] = minObtained;
 
         return
             IBalancerVault.ExitPoolRequest({
-                assets: pool.tokens,
+                assets: tokens,
                 minAmountsOut: minAmountsOut,
                 userData: abi.encode(IBalancerVault.ExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT, bptAmountIn, tokenIndex),
                 toInternalBalance: false

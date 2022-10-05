@@ -9,7 +9,7 @@ export const tokens = {
     symbol: "DAI",
     address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
     decimals: 18,
-    whale: "0x503828976D22510aad0201ac7EC88293211D23Da",
+    whale: "0xaD0135AF20fa82E106607257143d0060A7eB5cBf",
   },
   USDC: {
     symbol: "USDC",

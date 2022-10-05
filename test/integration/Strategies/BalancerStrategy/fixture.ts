@@ -7,7 +7,7 @@ import type { ERC20 } from "../../../../src/types/ERC20";
 import { BalancerStrategy } from "../../../../src/types/BalancerStrategy";
 import { Vault } from "../../../../src/types/Vault";
 import { Liquidator } from "../../../../src/types/Liquidator";
-import { balancerVault } from "./constants";
+import { balancerVault, auraBooster } from "./constants";
 
 interface BalancerStrategyFixture {
   WETH: ERC20;
@@ -48,7 +48,7 @@ export const balancerFixture: Fixture<BalancerStrategyFixture> = async function 
     createStrategy: async () => {
       const esArtifact: Artifact = await artifacts.readArtifact("BalancerStrategy");
       const strategy = <BalancerStrategy>(
-        await deployContract(admin, esArtifact, [vault.address, liquidator.address, balancerVault])
+        await deployContract(admin, esArtifact, [vault.address, liquidator.address, balancerVault, auraBooster])
       );
       await vault.addStrategy(strategy.address);
       return strategy;

@@ -311,7 +311,7 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         //Position memory position = positions[tokenId];
 
         return "";
-            /*SVGImage.generateMetadata(
+        /*SVGImage.generateMetadata(
                 name(),
                 symbol(),
                 tokenId,

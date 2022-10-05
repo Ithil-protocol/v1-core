@@ -3,16 +3,6 @@ pragma solidity >=0.8.12;
 
 /// @title    Interface of Aura Booster contract
 interface IAuraBooster {
-    struct FeeDistro {
-        address distro;
-        address rewards;
-        bool active;
-    }
-
-    function feeTokens(address _token) external returns (FeeDistro memory);
-
-    function earmarkFees(address _feeToken) external returns (bool);
-
     struct PoolInfo {
         address lptoken;
         address token;
@@ -22,7 +12,18 @@ interface IAuraBooster {
         bool shutdown;
     }
 
-    function earmarkRewards(uint256 _pid) external returns (bool);
+    function poolInfo(uint256 _pid)
+        external
+        returns (
+            address lptoken,
+            address token,
+            address gauge,
+            address crvRewards,
+            address stash,
+            bool shutdown
+        );
 
-    function poolInfo(uint256 _pid) external returns (PoolInfo memory poolInfo);
+    function crv() external pure returns (address);
+
+    function minter() external pure returns (address);
 }

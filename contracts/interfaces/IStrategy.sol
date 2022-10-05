@@ -165,5 +165,4 @@ interface IStrategy {
     error Strategy__Locked();
     error Strategy__Only_Guardian();
     error Strategy__Incorrect_Obtained_Token();
-    error Strategy__Insufficient_Amount_Obtained();
 }
