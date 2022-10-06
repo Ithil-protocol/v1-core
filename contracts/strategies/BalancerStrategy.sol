@@ -26,10 +26,10 @@ contract BalancerStrategy is BaseStrategy {
         IAuraRewardPool4626 auraRewardPool;
     }
 
-    event BalancerPoolWasAdded(address indexed pool);
-    event BalancerPoolWasRemoved(address indexed pool);
-    event NewHarvest(address indexed pool);
-    error BalancerStrategy__Inexistent_Pool(address pool);
+    event PoolWasAdded(address indexed balancerPool);
+    event PoolWasRemoved(address indexed balancerPool);
+    event NewHarvest(address indexed balancerPool);
+    error BalancerStrategy__Inexistent_Pool(address balancerPool);
 
     mapping(address => PoolData) public pools;
     IBalancerVault internal immutable balancerVault;
@@ -126,6 +126,7 @@ contract BalancerStrategy is BaseStrategy {
     }
 
     function harvest(address poolAddress) external returns (uint256, uint256) {
+        /*
         PoolData memory pool = pools[poolAddress];
         if (pool.length == 0) revert BalancerStrategy__Inexistent_Pool(poolAddress);
 
@@ -134,8 +135,8 @@ contract BalancerStrategy is BaseStrategy {
 
         pool.auraRewardPool.getReward(address(this), true);
 
-        uint256 balReward = (bal.balanceOf(address(this)) - initialBalAmount) * rewardRate / 1000;
-        uint256 auraReward = (aura.balanceOf(address(this)) - initialAuraAmount) * rewardRate / 1000;
+        uint256 balReward = ((bal.balanceOf(address(this)) - initialBalAmount) * rewardRate) / 1000;
+        uint256 auraReward = ((aura.balanceOf(address(this)) - initialAuraAmount) * rewardRate) / 1000;
 
         bal.safeTransfer(msg.sender, balReward);
         aura.safeTransfer(msg.sender, auraReward);
@@ -143,6 +144,7 @@ contract BalancerStrategy is BaseStrategy {
         emit NewHarvest(poolAddress);
 
         return (balReward, auraReward);
+        */
     }
 
     function addPool(
@@ -152,6 +154,8 @@ contract BalancerStrategy is BaseStrategy {
     ) external onlyOwner {
         (address[] memory poolTokens, , ) = balancerVault.getPoolTokens(balancerPoolID);
         uint256 length = poolTokens.length;
+        assert(length > 0);
+
         IBalancerPool bpool = IBalancerPool(poolAddress);
         uint256 fee = bpool.getSwapFeePercentage();
         uint256[] memory weights = bpool.getNormalizedWeights();
@@ -177,7 +181,7 @@ contract BalancerStrategy is BaseStrategy {
             IAuraRewardPool4626(rewardsContract)
         );
 
-        emit BalancerPoolWasAdded(poolAddress);
+        emit PoolWasAdded(poolAddress);
     }
 
     function removePool(address poolAddress) external onlyOwner {
@@ -190,7 +194,7 @@ contract BalancerStrategy is BaseStrategy {
             token.approve(address(pool.auraRewardPool), 0);
         }
 
-        emit BalancerPoolWasRemoved(poolAddress);
+        emit PoolWasRemoved(poolAddress);
     }
 
     function setRewardRate(uint256 val) external onlyOwner {
