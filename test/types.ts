@@ -2,6 +2,7 @@ import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signe
 import type { Fixture } from "ethereum-waffle";
 
 import type { Liquidator } from "../src/types/Liquidator";
+import type { Staker } from "../src/types/Staker";
 import type { MockToken } from "../src/types/MockToken";
 import type { MockKyberNetworkProxy } from "../src/types/MockKyberNetworkProxy";
 import type { MockWETH } from "../src/types/MockWETH";
@@ -15,6 +16,7 @@ import type { Vault } from "../src/types/Vault";
 declare module "mocha" {
   export interface Context {
     liquidator: Liquidator;
+    staker: Staker;
     mockKyberNetworkProxy: MockKyberNetworkProxy;
     mockToken: MockToken;
     mockWETH: MockWETH;

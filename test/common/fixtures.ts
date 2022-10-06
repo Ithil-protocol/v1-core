@@ -2,9 +2,11 @@ import { artifacts, ethers } from "hardhat";
 import { Fixture, deployContract } from "ethereum-waffle";
 import type { Artifact } from "hardhat/types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { tokens } from "./mainnet";
+
 import type { ERC20 } from "../../src/types/ERC20";
 import { Vault } from "../../src/types/Vault";
+
+import { tokens } from "./mainnet";
 
 interface VaultFixture {
   WETH: ERC20;

@@ -35,11 +35,6 @@ contract Vault is IVault, Ownable {
         weth = _weth;
     }
 
-    modifier isValidAmount(uint256 amount) {
-        if (amount == 0) revert Vault__Null_Amount();
-        _;
-    }
-
     modifier unlocked(address token) {
         if (vaults[token].locked) revert Vault__Locked(token);
         _;
@@ -136,7 +131,7 @@ contract Vault is IVault, Ownable {
         emit MinimumMarginWasUpdated(token, minimumMargin);
     }
 
-    function boost(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
+    function boost(address token, uint256 amount) external override unlocked(token) {
         checkWhitelisted(token);
 
         vaults[token].boostedAmount += amount;
@@ -147,16 +142,19 @@ contract Vault is IVault, Ownable {
         emit Boosted(msg.sender, token, amount);
     }
 
-    function unboost(address token, uint256 amount) external override isValidAmount(amount) {
+    function unboost(address token, uint256 amount) external override {
         uint256 boosted = boosters[msg.sender][token];
         if (boosted < amount) revert Vault__Insufficient_Funds_Available(token, amount, boosted);
+
         vaults[token].boostedAmount -= amount;
         boosters[msg.sender][token] -= amount;
+
         IERC20(token).safeTransfer(msg.sender, amount);
+
         emit Unboosted(msg.sender, token, amount);
     }
 
-    function stake(address token, uint256 amount) external override unlocked(token) isValidAmount(amount) {
+    function stake(address token, uint256 amount) external override unlocked(token) {
         checkWhitelisted(token);
 
         uint256 toMint = _stake(token, amount, false);
@@ -171,7 +169,7 @@ contract Vault is IVault, Ownable {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external override unlocked(token) isValidAmount(amount) {
+    ) external override unlocked(token) {
         checkWhitelisted(token);
 
         IERC20Permit permitToken = IERC20Permit(token);
@@ -182,7 +180,7 @@ contract Vault is IVault, Ownable {
         emit Deposit(msg.sender, token, amount, toMint);
     }
 
-    function stakeETH(uint256 amount) external payable override unlocked(weth) isValidAmount(amount) {
+    function stakeETH(uint256 amount) external payable override unlocked(weth) {
         checkWhitelisted(weth);
 
         if (msg.value != amount) revert Vault__Insufficient_ETH(msg.value, amount);
@@ -212,7 +210,7 @@ contract Vault is IVault, Ownable {
         return toMint;
     }
 
-    function unstake(address token, uint256 amount) external override isValidAmount(amount) {
+    function unstake(address token, uint256 amount) external override {
         checkWhitelisted(token);
 
         IWrappedToken wToken = IWrappedToken(vaults[token].wrappedToken);
@@ -228,7 +226,7 @@ contract Vault is IVault, Ownable {
         emit Withdrawal(msg.sender, token, toWithdraw, toBurn);
     }
 
-    function unstakeETH(uint256 amount) external override isValidAmount(amount) {
+    function unstakeETH(uint256 amount) external override {
         checkWhitelisted(weth);
 
         IWrappedToken wToken = IWrappedToken(vaults[weth].wrappedToken);
@@ -241,7 +239,7 @@ contract Vault is IVault, Ownable {
         wToken.burn(msg.sender, toBurn);
         IWETH(weth).withdraw(toWithdraw);
 
-        // slither-disable-next-line reentrancy-events,arbitrary-send
+        // slither-disable-next-line reentrancy-events, arbitrary-send-eth
         (bool success, bytes memory data) = payable(msg.sender).call{ value: toWithdraw }("");
         if (!success) revert Vault__ETH_Unstake_Failed(data);
 

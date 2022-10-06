@@ -87,6 +87,8 @@ const config: HardhatUserConfig = {
       "Vault",
       "BaseStrategy",
       "Liquidator",
+      "Staker",
+      "Ithil",
       "MarginTradingStrategy",
       "TestStrategy",
       "YearnStrategy",

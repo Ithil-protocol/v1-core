@@ -130,6 +130,9 @@ interface IStrategy {
     /// @notice Emitted when a position is closed
     event PositionWasClosed(uint256 indexed id, uint256 amountIn, uint256 amountOut, uint256 fees);
 
+    /// @notice Emitted when a position is edited
+    event PositionWasToppedUp(uint256 indexed id, uint256 topUpAmount);
+
     /// @notice Emitted when the owner of a position is changed
     event PositionChangedOwner(uint256 indexed id, address oldOwner, address newOwner);
 

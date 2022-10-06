@@ -1,21 +1,22 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
 import type { Artifact } from "hardhat/types";
+import { expect } from "chai";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import type { Vault } from "../../../../src/types/Vault";
-import { Signers } from "../../../types";
-import type { ERC20 } from "../../../../src/types/ERC20";
 
 import { tokens } from "../../../common/mainnet";
-import { euler, eulerMarkets, etokenDAI } from "./constants";
 import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
 import { getTokens, expandToNDecimals, fundVault } from "../../../common/utils";
 
 import { EulerStrategy } from "../../../../src/types/EulerStrategy";
 import { Liquidator } from "../../../../src/types/Liquidator";
+import { Staker } from "../../../../src/types/Staker";
+import { Ithil } from "../../../../src/types/Ithil";
+import type { Vault } from "../../../../src/types/Vault";
+import type { ERC20 } from "../../../../src/types/ERC20";
 
 import { eulerFixture } from "./fixture";
-import { expect } from "chai";
+import { euler, eulerMarkets, etokenDAI } from "./constants";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -34,6 +35,8 @@ let createStrategy: ThenArg<ReturnType<typeof eulerFixture>>["createStrategy"];
 let loadFixture: ReturnType<typeof createFixtureLoader>;
 
 let vault: Vault;
+let ithilTokenContract: Ithil;
+let stakerContract: Staker;
 let liquidatorContract: Liquidator;
 let strategy: EulerStrategy;
 let tokensAmount: BigNumber;
@@ -60,9 +63,18 @@ describe("Euler strategy integration tests", function () {
   });
 
   before("load fixtures", async () => {
-    ({ WETH, admin, trader1, trader2, liquidator, vault, liquidatorContract, createStrategy } = await loadFixture(
-      eulerFixture,
-    ));
+    ({
+      WETH,
+      admin,
+      trader1,
+      trader2,
+      liquidator,
+      vault,
+      ithilTokenContract,
+      stakerContract,
+      liquidatorContract,
+      createStrategy,
+    } = await loadFixture(eulerFixture));
     strategy = await createStrategy();
   });
 

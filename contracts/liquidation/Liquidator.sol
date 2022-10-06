@@ -4,10 +4,11 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import { IVault } from "../interfaces/IVault.sol";
-import { IStrategy } from "../interfaces/IStrategy.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { GeneralMath } from "../libraries/GeneralMath.sol";
+import { IVault } from "../interfaces/IVault.sol";
+import { IStrategy } from "../interfaces/IStrategy.sol";
+import { IStaker } from "../interfaces/IStaker.sol";
 
 /// @title    Liquidator contract
 /// @author   Ithil
@@ -16,43 +17,22 @@ contract Liquidator is Ownable {
     using SafeERC20 for IERC20;
     using GeneralMath for uint256;
 
+    IStaker public staker;
+
     error Liquidator__Insufficient_Margin_Provided(int256 newScore);
     error Liquidator__Position_Not_Liquidable(uint256 positionId, int256 score);
     error Liquidator__Below_Fair_Price(uint256 price, uint256 fairPrice);
-    error Liquidator__Unstaking_Too_Much();
 
-    IERC20 public token;
-    mapping(address => mapping(address => uint256)) public stakes;
-    // maximumStake is always denominated in the token
-    uint256 public maximumStake;
-
-    constructor(address _token) {
-        token = IERC20(_token);
+    constructor(address _staker) {
+        staker = IStaker(_staker);
     }
 
-    function setMaximumStake(uint256 amount) external onlyOwner {
-        maximumStake = amount;
-    }
-
-    function setToken(address _token) external onlyOwner {
-        token = IERC20(_token);
-    }
-
-    function stake(uint256 amount) external {
-        stakes[address(token)][msg.sender] += amount;
-        token.safeTransferFrom(msg.sender, address(this), amount);
-    }
-
-    // When the token changes, people must be able to unstake the old one
-    function unstake(address _token, uint256 amount) external {
-        if (stakes[_token][msg.sender] < amount) revert Liquidator__Unstaking_Too_Much();
-
-        stakes[_token][msg.sender] -= amount;
-        IERC20(_token).safeTransfer(msg.sender, amount);
+    function setToken(address _staker) external onlyOwner {
+        staker = IStaker(_staker);
     }
 
     function liquidateSingle(IStrategy strategy, uint256 positionId) external {
-        uint256 reward = rewardPercentage();
+        uint256 reward = staker.rewardPercentage();
         _forcefullyClose(strategy, positionId, msg.sender, reward);
     }
 
@@ -61,7 +41,7 @@ contract Liquidator is Ownable {
         uint256 positionId,
         uint256 extraMargin
     ) external {
-        uint256 reward = rewardPercentage();
+        uint256 reward = staker.rewardPercentage();
         _modifyCollateralAndOwner(strategy, positionId, extraMargin, msg.sender, reward);
     }
 
@@ -70,19 +50,8 @@ contract Liquidator is Ownable {
         uint256 positionId,
         uint256 price
     ) external {
-        uint256 reward = rewardPercentage();
+        uint256 reward = staker.rewardPercentage();
         _transferAllowance(strategy, positionId, price, msg.sender, reward);
-    }
-
-    // rewardPercentage is computed as of the tokens staked
-    function rewardPercentage() public view returns (uint256) {
-        if (maximumStake > 0) {
-            uint256 stakePercentage = (stakes[address(token)][msg.sender] * VaultMath.RESOLUTION) / maximumStake;
-            if (stakePercentage > VaultMath.RESOLUTION) return VaultMath.RESOLUTION;
-            else return stakePercentage;
-        } else {
-            return 0;
-        }
     }
 
     // Liquidator
