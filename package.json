@@ -44,8 +44,8 @@
     "dotenv": "^15.0.0",
     "eslint": "^8.8.0",
     "eslint-config-prettier": "^8.3.0",
-    "ethereumjs-util": "^7.1.5",
     "ethereum-waffle": "^3.4.0",
+    "ethereumjs-util": "^7.1.5",
     "ethers": "^5.5.4",
     "fs-extra": "^10.0.0",
     "hardhat": "^2.8.3",
@@ -94,5 +94,8 @@
     "test": "yarn clean && yarn compile && hardhat test",
     "typechain": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat typechain",
     "verify": "hardhat verify"
+  },
+  "dependencies": {
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.6"
   }
 }
