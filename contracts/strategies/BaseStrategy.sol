@@ -134,13 +134,18 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         (uint256 interestRate, uint256 fees, uint256 riskFactor, uint256 toBorrow, address collateralToken) = _borrow(
             order
         );
+        
         uint256 amountIn = _openPosition(order, extraParams);
-        if (!order.collateralIsSpentToken) amountIn += order.collateral;
-        if (amountIn < order.minObtained) revert Strategy__Insufficient_Amount_Out();
+        if (amountIn < order.minObtained) revert Strategy__Insufficient_Amount_Out(amountIn, order.minObtained);
 
-        interestRate *= (toBorrow * (amountIn + 2 * initialExposure));
+        if (!order.collateralIsSpentToken) {
+            interestRate *= (amountIn * (amountIn + 2 * initialExposure));
+            amountIn += order.collateral;
+        } else {
+          interestRate *= (toBorrow * (amountIn + 2 * initialExposure));
+        }
+        
         interestRate /= (2 * order.collateral * (initialExposure + amountIn));
-
         if (interestRate > VaultMath.MAX_RATE) revert Strategy__Maximum_Leverage_Exceeded();
 
         positions[++id] = Position({
@@ -158,7 +163,6 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
 
         _safeMint(msg.sender, id);
 
-        /*
         emit PositionWasOpened(
             id,
             msg.sender,
@@ -172,7 +176,6 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
             fees,
             block.timestamp
         );
-*/
 
         return id;
     }

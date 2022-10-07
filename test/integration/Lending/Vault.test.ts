@@ -193,11 +193,6 @@ describe("Lending integration tests", function () {
       await vault.connect(investor2).unboost(WETH.address, amountToBoost);
     });
 
-    it("Vault: enable and disable OUSD feature", async function () {
-      await vault.toggleOusdRebase(true);
-      await vault.toggleOusdRebase(false);
-    });
-
     it("Vault: stake with permit", async function () {
       const amountToStake = BigNumber.from(10);
 

@@ -3,7 +3,6 @@ pragma solidity >=0.8.12;
 
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IVault } from "./interfaces/IVault.sol";
 import { IWrappedToken } from "./interfaces/IWrappedToken.sol";
@@ -16,7 +15,7 @@ import { WrappedToken } from "./WrappedToken.sol";
 /// @title    Vault contract
 /// @author   Ithil
 /// @notice   Stores staked funds, issues loans and handles repayments to strategies
-contract Vault is IVault, ReentrancyGuard, Ownable {
+contract Vault is IVault, Ownable {
     using SafeERC20 for IERC20;
     using SafeERC20 for IERC20Permit;
     using VaultMath for uint256;
@@ -65,20 +64,6 @@ contract Vault is IVault, ReentrancyGuard, Ownable {
         guardian = _guardian;
 
         emit GuardianWasUpdated(_guardian);
-    }
-
-    function toggleOusdRebase(bool enabled) external onlyOwner {
-        if (enabled) {
-            (bool success, ) = address(0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86).call(
-                abi.encodeWithSignature("rebaseOptIn()")
-            );
-            assert(success);
-        } else {
-            (bool success, ) = address(0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86).call(
-                abi.encodeWithSignature("rebaseOptOut()")
-            );
-            assert(success);
-        }
     }
 
     function checkWhitelisted(address token) public view override {
