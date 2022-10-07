@@ -239,7 +239,7 @@ contract Vault is IVault, Ownable {
         wToken.burn(msg.sender, toBurn);
         IWETH(weth).withdraw(toWithdraw);
 
-        // slither-disable-next-line reentrancy-events, arbitrary-send-eth
+        // slither-disable-next-line arbitrary-send-eth
         (bool success, bytes memory data) = payable(msg.sender).call{ value: toWithdraw }("");
         if (!success) revert Vault__ETH_Unstake_Failed(data);
 

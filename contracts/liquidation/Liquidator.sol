@@ -139,8 +139,12 @@ contract Liquidator is Ownable {
                 revert Liquidator__Below_Fair_Price(price, fairPrice);
             } else {
                 strategy.approveAllowance(position);
+
+                // slither-disable-next-line arbitrary-send-erc20
                 IERC20(position.owedToken).safeTransferFrom(liquidatorUser, address(strategy.vault()), price);
+                // slither-disable-next-line arbitrary-send-erc20
                 IERC20(position.heldToken).safeTransferFrom(address(strategy), liquidatorUser, position.allowance);
+                
                 // The following is necessary to avoid residual transfers during the repay
                 // It means that everything "extra" from principal is fees
                 dueFees = price.positiveSub(position.principal);
