@@ -1,9 +1,8 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import type { Artifact } from "hardhat/types";
 import { BigNumber, Wallet } from "ethers";
+import { expect } from "chai";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import type { Vault } from "../../../../src/types/Vault";
-import type { ERC20 } from "../../../../src/types/ERC20";
 
 import { tokens } from "../../../common/mainnet";
 import { getTokens, expandToNDecimals, fundVault } from "../../../common/utils";
@@ -11,11 +10,13 @@ import { marginTokenLiquidity, marginTokenMargin, leverage, investmentTokenLiqui
 
 import { YearnStrategy } from "../../../../src/types/YearnStrategy";
 import { Liquidator } from "../../../../src/types/Liquidator";
+import type { Vault } from "../../../../src/types/Vault";
+import type { ERC20 } from "../../../../src/types/ERC20";
+import { Ithil } from "../../../../src/types/Ithil";
+import { Staker } from "../../../../src/types/Staker";
 
 import { yvaultDAI, yvaultWETH } from "./constants";
 import { yearnFixture } from "./fixture";
-
-import { expect } from "chai";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -34,6 +35,8 @@ let createStrategy: ThenArg<ReturnType<typeof yearnFixture>>["createStrategy"];
 let loadFixture: ReturnType<typeof createFixtureLoader>;
 
 let vault: Vault;
+let ithilTokenContract: Ithil;
+let stakerContract: Staker;
 let liquidatorContract: Liquidator;
 let strategy: YearnStrategy;
 let tokensAmount: BigNumber;
@@ -60,9 +63,18 @@ describe("Yearn Strategy integration test", function () {
   });
 
   before("load fixtures", async () => {
-    ({ WETH, admin, trader1, trader2, liquidator, vault, liquidatorContract, createStrategy } = await loadFixture(
-      yearnFixture,
-    ));
+    ({
+      WETH,
+      admin,
+      trader1,
+      trader2,
+      liquidator,
+      vault,
+      ithilTokenContract,
+      stakerContract,
+      liquidatorContract,
+      createStrategy,
+    } = await loadFixture(yearnFixture));
     strategy = await createStrategy();
   });
 

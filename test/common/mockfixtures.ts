@@ -1,18 +1,20 @@
 import { artifacts, ethers } from "hardhat";
 import { Fixture, deployContract } from "ethereum-waffle";
 import type { Artifact } from "hardhat/types";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+
 import { MockWETH } from "../../src/types/MockWETH";
 import { MockToken } from "../../src/types/MockToken";
 import { MockYearnRegistry } from "../../src/types/MockYearnRegistry";
-
 import { Vault } from "../../src/types/Vault";
 import { Liquidator } from "../../src/types/Liquidator";
+import { Staker } from "../../src/types/Staker";
+import { Ithil } from "../../src/types/Ithil";
+
 import { MarginTradingStrategy } from "../../src/types/MarginTradingStrategy";
 import { TestStrategy } from "../../src/types/TestStrategy";
 import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
 import { YearnStrategy } from "../../src/types/YearnStrategy";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Console } from "console";
 
 interface MockVaultFixture {
   mockWETH: MockWETH;
@@ -30,6 +32,8 @@ interface MockMarginTradingStrategyFixture {
   liquidator: SignerWithAddress;
   vault: Vault;
   mockKyberNetworkProxy: MockKyberNetworkProxy;
+  ithilTokenContract: Ithil;
+  stakerContract: Staker;
   liquidatorContract: Liquidator;
   createStrategy(): Promise<MarginTradingStrategy>;
 }
@@ -41,6 +45,8 @@ interface MockTestStrategyFixture {
   trader2: SignerWithAddress;
   liquidator: SignerWithAddress;
   vault: Vault;
+  ithilTokenContract: Ithil;
+  stakerContract: Staker;
   liquidatorContract: Liquidator;
   createStrategy(): Promise<TestStrategy>;
 }
@@ -53,6 +59,8 @@ interface MockYearnStrategyFixture {
   liquidator: SignerWithAddress;
   vault: Vault;
   mockYearnRegistry: MockYearnRegistry;
+  ithilTokenContract: Ithil;
+  stakerContract: Staker;
   liquidatorContract: Liquidator;
   createStrategy(): Promise<YearnStrategy>;
 }
@@ -95,10 +103,14 @@ export const mockMarginTradingFixture: Fixture<MockMarginTradingStrategyFixture>
     const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
     const vault = <Vault>await deployContract(admin, vaultArtifact, [mockWETH.address]);
 
+    const ithilTokenArtifact: Artifact = await artifacts.readArtifact("Ithil");
+    const ithilTokenContract = <Ithil>await deployContract(admin, ithilTokenArtifact);
+
+    const stakerArtifact: Artifact = await artifacts.readArtifact("Staker");
+    const stakerContract = <Staker>await deployContract(admin, stakerArtifact, [ithilTokenContract.address]);
+
     const liquidatorArtifact: Artifact = await artifacts.readArtifact("Liquidator");
-    const liquidatorContract = <Liquidator>(
-      await deployContract(admin, liquidatorArtifact, ["0x0000000000000000000000000000000000000000"])
-    );
+    const liquidatorContract = <Liquidator>await deployContract(admin, liquidatorArtifact, [stakerContract.address]);
 
     return {
       mockWETH,
@@ -108,6 +120,8 @@ export const mockMarginTradingFixture: Fixture<MockMarginTradingStrategyFixture>
       liquidator,
       vault,
       mockKyberNetworkProxy,
+      ithilTokenContract,
+      stakerContract,
       liquidatorContract,
       createStrategy: async () => {
         const mtsArtifact: Artifact = await artifacts.readArtifact("MarginTradingStrategy");
@@ -141,10 +155,14 @@ export const mockYearnFixture: Fixture<MockYearnStrategyFixture> =
     const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
     const vault = <Vault>await deployContract(admin, vaultArtifact, [mockWETH.address]);
 
+    const ithilTokenArtifact: Artifact = await artifacts.readArtifact("Ithil");
+    const ithilTokenContract = <Ithil>await deployContract(admin, ithilTokenArtifact);
+
+    const stakerArtifact: Artifact = await artifacts.readArtifact("Staker");
+    const stakerContract = <Staker>await deployContract(admin, stakerArtifact, [ithilTokenContract.address]);
+
     const liquidatorArtifact: Artifact = await artifacts.readArtifact("Liquidator");
-    const liquidatorContract = <Liquidator>(
-      await deployContract(admin, liquidatorArtifact, ["0x0000000000000000000000000000000000000000"])
-    );
+    const liquidatorContract = <Liquidator>await deployContract(admin, liquidatorArtifact, [stakerContract.address]);
 
     const yearnArtifact: Artifact = await artifacts.readArtifact("MockYearnRegistry");
     const mockYearnRegistry = <MockYearnRegistry>await deployContract(admin, yearnArtifact, []);
@@ -157,6 +175,8 @@ export const mockYearnFixture: Fixture<MockYearnStrategyFixture> =
       liquidator,
       vault,
       mockYearnRegistry,
+      ithilTokenContract,
+      stakerContract,
       liquidatorContract,
       createStrategy: async () => {
         const mtsArtifact: Artifact = await artifacts.readArtifact("YearnStrategy");
@@ -186,10 +206,14 @@ export const mockTestFixture: Fixture<MockTestStrategyFixture> = async function 
   const vaultArtifact: Artifact = await artifacts.readArtifact("Vault");
   const vault = <Vault>await deployContract(admin, vaultArtifact, [mockWETH.address]);
 
+  const ithilTokenArtifact: Artifact = await artifacts.readArtifact("Ithil");
+  const ithilTokenContract = <Ithil>await deployContract(admin, ithilTokenArtifact);
+
+  const stakerArtifact: Artifact = await artifacts.readArtifact("Staker");
+  const stakerContract = <Staker>await deployContract(admin, stakerArtifact, [ithilTokenContract.address]);
+
   const liquidatorArtifact: Artifact = await artifacts.readArtifact("Liquidator");
-  const liquidatorContract = <Liquidator>(
-    await deployContract(admin, liquidatorArtifact, ["0x0000000000000000000000000000000000000000"])
-  );
+  const liquidatorContract = <Liquidator>await deployContract(admin, liquidatorArtifact, [stakerContract.address]);
 
   return {
     mockWETH,
@@ -198,6 +222,8 @@ export const mockTestFixture: Fixture<MockTestStrategyFixture> = async function 
     trader2,
     liquidator,
     vault,
+    ithilTokenContract,
+    stakerContract,
     liquidatorContract,
     createStrategy: async () => {
       const mtsArtifact: Artifact = await artifacts.readArtifact("TestStrategy");

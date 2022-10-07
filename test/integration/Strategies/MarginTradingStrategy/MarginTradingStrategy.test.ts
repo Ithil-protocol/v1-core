@@ -1,18 +1,21 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import type { Artifact } from "hardhat/types";
-import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { BigNumber, Wallet } from "ethers";
 import { expect } from "chai";
+import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 
 import { tokens } from "../../../common/mainnet";
 import { getTokens, expandToNDecimals, fundVault } from "../../../common/utils";
 import { marginTokenLiquidity, investmentTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
-import { marginTradingFixture } from "./fixture";
 
 import type { ERC20 } from "../../../../src/types/ERC20";
 import type { Vault } from "../../../../src/types/Vault";
 import { MarginTradingStrategy } from "../../../../src/types/MarginTradingStrategy";
 import { Liquidator } from "../../../../src/types/Liquidator";
+import { Ithil } from "../../../../src/types/Ithil";
+import { Staker } from "../../../../src/types/Staker";
+
+import { marginTradingFixture } from "./fixture";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -31,6 +34,8 @@ let createStrategy: ThenArg<ReturnType<typeof marginTradingFixture>>["createStra
 let loadFixture: ReturnType<typeof createFixtureLoader>;
 
 let vault: Vault;
+let ithilTokenContract: Ithil;
+let stakerContract: Staker;
 let liquidatorContract: Liquidator;
 let strategy: MarginTradingStrategy;
 let tokensAmount: BigNumber;
@@ -60,9 +65,18 @@ describe("MarginTradingStrategy integration test", function () {
   });
 
   before("load fixtures", async () => {
-    ({ WETH, admin, trader1, trader2, liquidator, vault, liquidatorContract, createStrategy } = await loadFixture(
-      marginTradingFixture,
-    ));
+    ({
+      WETH,
+      admin,
+      trader1,
+      trader2,
+      liquidator,
+      vault,
+      ithilTokenContract,
+      stakerContract,
+      liquidatorContract,
+      createStrategy,
+    } = await loadFixture(marginTradingFixture));
     strategy = await createStrategy();
   });
 

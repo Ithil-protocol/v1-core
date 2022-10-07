@@ -9,7 +9,6 @@ import { IStrategy } from "../interfaces/IStrategy.sol";
 import { IVault } from "../interfaces/IVault.sol";
 import { VaultMath } from "../libraries/VaultMath.sol";
 import { GeneralMath } from "../libraries/GeneralMath.sol";
-import { PositionHelper } from "../libraries/PositionHelper.sol";
 import { SVGImage } from "../libraries/SVGImage.sol";
 
 /// @title    BaseStrategy contract
@@ -17,7 +16,6 @@ import { SVGImage } from "../libraries/SVGImage.sol";
 /// @notice   Base contract to inherit to keep status updates consistent
 abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     using SafeERC20 for IERC20;
-    using PositionHelper for Position;
     using GeneralMath for uint256;
 
     address public immutable liquidator;
@@ -207,12 +205,16 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
     function editPosition(uint256 positionId, uint256 topUp) external override unlocked isPositionEditable(positionId) {
         Position storage position = positions[positionId];
 
-        position.topUpCollateral(
-            ownerOf(positionId),
-            position.collateralToken == position.owedToken ? address(vault) : address(this),
-            topUp,
-            position.collateralToken == position.owedToken
-        );
+        if (position.collateralToken == position.owedToken) {
+            position.principal -= topUp;
+        } else {
+            position.allowance += topUp;
+        }
+
+        address to = position.collateralToken == position.owedToken ? address(vault) : address(this);
+        IERC20(position.collateralToken).safeTransferFrom(ownerOf(positionId), to, topUp);
+
+        emit PositionWasToppedUp(positionId, topUp);
     }
 
     function _borrow(Order calldata order)
