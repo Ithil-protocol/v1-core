@@ -5,6 +5,8 @@ import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/I
 import { ERC20, ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import { ERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
+/// @title    ITHIL token contract
+/// @author   Ithil
 contract Ithil is ERC20, ERC20Permit, ERC20Votes {
     constructor() ERC20("Ithil", "ITHIL") ERC20Permit("Ithil") {
         _mint(msg.sender, 100000000 * 10**decimals());

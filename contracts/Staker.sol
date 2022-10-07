@@ -9,6 +9,9 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { VaultMath } from "./libraries/VaultMath.sol";
 import { IStaker } from "./interfaces/IStaker.sol";
 
+/// @title    Staker contract
+/// @author   Ithil
+/// @notice   Enables staking for ITHIL tokens
 contract Staker is ERC20, ERC20Permit, ERC20Votes, Ownable, IStaker {
     using SafeERC20 for IERC20;
 
