@@ -8,7 +8,6 @@ import { IAuraBooster } from "../interfaces/external/IAuraBooster.sol";
 import { IAuraRewardPool4626 } from "../interfaces/external/IAuraRewardPool4626.sol";
 import { BalancerHelper } from "../libraries/BalancerHelper.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
-import "hardhat/console.sol";
 
 /// @title    BalancerStrategy contract
 /// @author   Ithil

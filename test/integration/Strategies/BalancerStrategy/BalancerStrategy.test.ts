@@ -8,6 +8,8 @@ import type { Vault } from "../../../../src/types/Vault";
 import type { ERC20 } from "../../../../src/types/ERC20";
 import { BalancerStrategy } from "../../../../src/types/BalancerStrategy";
 import { Liquidator } from "../../../../src/types/Liquidator";
+import { Staker } from "../../../../src/types/Staker";
+import { Ithil } from "../../../../src/types/Ithil";
 
 import { tokens } from "../../../common/mainnet";
 import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
@@ -33,6 +35,8 @@ let createStrategy: ThenArg<ReturnType<typeof balancerFixture>>["createStrategy"
 let loadFixture: ReturnType<typeof createFixtureLoader>;
 
 let vault: Vault;
+let ithilTokenContract: Ithil;
+let stakerContract: Staker;
 let liquidatorContract: Liquidator;
 let strategy: BalancerStrategy;
 let tokensAmount: BigNumber;
@@ -57,9 +61,18 @@ describe("Balancer strategy integration tests", function () {
   });
 
   before("load fixtures", async () => {
-    ({ WETH, admin, trader1, trader2, liquidator, vault, liquidatorContract, createStrategy } = await loadFixture(
-      balancerFixture,
-    ));
+    ({
+      WETH,
+      admin,
+      trader1,
+      trader2,
+      liquidator,
+      vault,
+      ithilTokenContract,
+      stakerContract,
+      liquidatorContract,
+      createStrategy,
+    } = await loadFixture(balancerFixture));
     strategy = await createStrategy();
   });
 
@@ -147,7 +160,7 @@ describe("Balancer strategy integration tests", function () {
     //await expect(strategy.connect(trader1).closePosition(1, minObtained)).to.be.reverted;
 
     // 0.1% slippage
-    let minObtained = obtained.mul(999).div(1000);
+    const minObtained = obtained.mul(999).div(1000);
     const tx = await strategy.connect(trader1).closePosition(1, minObtained);
     const receipt = await tx.wait();
     const amountIn = receipt.events?.[receipt.events?.length - 1].args?.amountIn as BigNumber;

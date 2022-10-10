@@ -46,7 +46,7 @@ export const changeRate = async (kyber: MockKyberNetworkProxy, token: any, rate:
   await kyber.setRate(token.address, rate);
 };
 
-export const getTokens = async (user: string, token: any, whale: string, amount: BigNumber) => {
+export const getTokens = async (user: string, token: string, whale: string, amount: BigNumber) => {
   const contract = await ethers.getContractAt(ERC20.abi, token);
 
   const balance = await contract.balanceOf(whale);
