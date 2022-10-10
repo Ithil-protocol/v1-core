@@ -1,21 +1,22 @@
 import { artifacts, ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
 import type { Artifact } from "hardhat/types";
+import { expect } from "chai";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import type { Vault } from "../../../../src/types/Vault";
-import { Signers } from "../../../types";
-import type { ERC20 } from "../../../../src/types/ERC20";
 
 import { tokens } from "../../../common/mainnet";
-import { aave, aDAI } from "./constants";
 import { marginTokenLiquidity, marginTokenMargin, leverage } from "../../../common/params";
 import { getTokens, expandToNDecimals, fundVault } from "../../../common/utils";
 
 import { AaveStrategy } from "../../../../src/types/AaveStrategy";
 import { Liquidator } from "../../../../src/types/Liquidator";
+import { Staker } from "../../../../src/types/Staker";
+import { Ithil } from "../../../../src/types/Ithil";
+import type { Vault } from "../../../../src/types/Vault";
+import type { ERC20 } from "../../../../src/types/ERC20";
 
 import { aaveFixture } from "./fixture";
-import { expect } from "chai";
+import { aDAI } from "./constants";
 
 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
 
@@ -34,6 +35,8 @@ let createStrategy: ThenArg<ReturnType<typeof aaveFixture>>["createStrategy"];
 let loadFixture: ReturnType<typeof createFixtureLoader>;
 
 let vault: Vault;
+let ithilTokenContract: Ithil;
+let stakerContract: Staker;
 let liquidatorContract: Liquidator;
 let strategy: AaveStrategy;
 let tokensAmount: BigNumber;
@@ -60,9 +63,18 @@ describe("Aave strategy integration tests", function () {
   });
 
   before("load fixtures", async () => {
-    ({ WETH, admin, trader1, trader2, liquidator, vault, liquidatorContract, createStrategy } = await loadFixture(
-      aaveFixture,
-    ));
+    ({
+      WETH,
+      admin,
+      trader1,
+      trader2,
+      liquidator,
+      vault,
+      ithilTokenContract,
+      stakerContract,
+      liquidatorContract,
+      createStrategy,
+    } = await loadFixture(aaveFixture));
     strategy = await createStrategy();
   });
 
@@ -76,6 +88,9 @@ describe("Aave strategy integration tests", function () {
 
     await vault.whitelistToken(marginTokenDAI.address, 10, 10, 1000);
     await vault.whitelistToken(investmentTokenDAI.address, 10, 10, 1);
+
+    await strategy.setRiskFactor(marginTokenDAI.address, 3000);
+    await strategy.setRiskFactor(investmentTokenDAI.address, 4000);
 
     await getTokens(staker.address, marginTokenDAI.address, tokens.DAI.whale, marginTokenLiquidity);
     await getTokens(trader1.address, marginTokenDAI.address, tokens.DAI.whale, marginTokenLiquidity);
@@ -150,4 +165,6 @@ describe("Aave strategy integration tests", function () {
       initialTraderBalance.add(amountIn).sub(position.principal).sub(dueFees),
     );
   });
+
+  // todo: test the same but with WETH
 });

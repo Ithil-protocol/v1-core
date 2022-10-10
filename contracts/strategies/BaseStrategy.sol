@@ -245,6 +245,10 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         (interestRate, fees) = vault.borrow(order.spentToken, toBorrow, riskFactor, msg.sender);
     }
 
+    function _maxApprove(IERC20 token, address dest) internal {
+        if (token.allowance(address(this), dest) == 0) token.approve(dest, type(uint256).max);
+    }
+
     // Only liquidator
 
     function deleteAndBurn(uint256 positionId) external override onlyLiquidator {

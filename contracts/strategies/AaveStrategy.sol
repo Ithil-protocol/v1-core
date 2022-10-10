@@ -27,7 +27,9 @@ contract AaveStrategy is BaseStrategy {
         address underlying = aToken.UNDERLYING_ASSET_ADDRESS();
         if (underlying != order.spentToken) revert Strategy__Incorrect_Obtained_Token();
 
-        super._maxApprove(IERC20(order.spentToken), address(aave));
+        IERC20 spentToken = IERC20(order.spentToken);
+        super._maxApprove(spentToken, address(aave));
+
         uint256 initialBalance = aToken.balanceOf(address(this));
         aave.deposit(order.spentToken, order.maxSpent, address(this), 0);
         amountIn = aToken.balanceOf(address(this)) - initialBalance;
@@ -58,5 +60,9 @@ contract AaveStrategy is BaseStrategy {
         } catch {
             return (amount, amount);
         }
+    }
+
+    function exposure(address token) public view override returns (uint256) {
+        return IERC20(token).balanceOf(address(this));
     }
 }
