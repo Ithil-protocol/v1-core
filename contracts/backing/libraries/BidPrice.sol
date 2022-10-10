@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.9;
+pragma solidity >=0.8.12;
 
 library BidPrice {
     /// @notice computes bid price, in numeraire tokens, of an amount of native tokens with floor division
@@ -23,7 +23,6 @@ library BidPrice {
     /// @notice returns a number with native token decimals
     /// @dev throws if nativeSupply <= nativeBalance (impossible to redeem: no tokens outside)
     /// @dev throws if numBalance = 0 (bid price 0 would mean free tokens);
-    /// @dev throws if amount = 0;
     function computeBidPriceCeil(
         uint256 amount,
         uint256 numBalance,

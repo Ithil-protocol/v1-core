@@ -64,6 +64,7 @@ describe("Backer", function () {
         redeemer,
       ];
     });
+    
     describe("Validations", function () {
       it("Non-admin cannot set purchaser", async function () {
         await expect(backerContract.connect(buyer).togglePurchaser(buyer.address)).to.be.reverted;
