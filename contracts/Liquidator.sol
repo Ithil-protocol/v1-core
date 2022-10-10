@@ -4,11 +4,11 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import { VaultMath } from "../libraries/VaultMath.sol";
-import { GeneralMath } from "../libraries/GeneralMath.sol";
-import { IVault } from "../interfaces/IVault.sol";
-import { IStrategy } from "../interfaces/IStrategy.sol";
-import { IStaker } from "../interfaces/IStaker.sol";
+import { VaultMath } from "./libraries/VaultMath.sol";
+import { GeneralMath } from "./libraries/GeneralMath.sol";
+import { IVault } from "./interfaces/IVault.sol";
+import { IStrategy } from "./interfaces/IStrategy.sol";
+import { IStaker } from "./interfaces/IStaker.sol";
 
 /// @title    Liquidator contract
 /// @author   Ithil
@@ -144,7 +144,7 @@ contract Liquidator is Ownable {
                 IERC20(position.owedToken).safeTransferFrom(liquidatorUser, address(strategy.vault()), price);
                 // slither-disable-next-line arbitrary-send-erc20
                 IERC20(position.heldToken).safeTransferFrom(address(strategy), liquidatorUser, position.allowance);
-                
+
                 // The following is necessary to avoid residual transfers during the repay
                 // It means that everything "extra" from principal is fees
                 dueFees = price.positiveSub(position.principal);
