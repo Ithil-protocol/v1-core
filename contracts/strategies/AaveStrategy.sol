@@ -6,6 +6,8 @@ import { IAaveLendingPool } from "../interfaces/external/IAaveLendingPool.sol";
 import { IAaveAToken } from "../interfaces/external/IAaveAToken.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 
+import "hardhat/console.sol";
+
 /// @title    AaveStrategy contract
 /// @author   Ithil
 /// @notice   A strategy to perform leveraged staking on any Aave markets
@@ -40,13 +42,9 @@ contract AaveStrategy is BaseStrategy {
         override
         returns (uint256 amountIn, uint256 amountOut)
     {
-        IAaveAToken aTkn = IAaveAToken(position.heldToken);
         amountOut = position.allowance;
-        amountIn = aTkn.scaledBalanceOf(address(this)) / position.allowance; /// @todo check it
+        amountIn = aave.withdraw(position.owedToken, position.allowance, address(vault));
         if (amountIn < maxOrMin) revert Strategy__Insufficient_Amount_Out(amountIn, maxOrMin);
-
-        aave.withdraw(position.owedToken, position.allowance, address(vault));
-        amountIn = position.allowance;
     }
 
     function quote(
@@ -54,12 +52,7 @@ contract AaveStrategy is BaseStrategy {
         address dst,
         uint256 amount
     ) public view override returns (uint256, uint256) {
-        IAaveAToken aTkn = IAaveAToken(src);
-        try aTkn.scaledBalanceOf(address(this)) returns (uint256 val) {
-            return (val / amount, val / amount); /// @todo check it
-        } catch {
-            return (amount, amount);
-        }
+        return (amount,amount);
     }
 
     function exposure(address token) public view override returns (uint256) {
