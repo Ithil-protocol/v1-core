@@ -48,9 +48,9 @@ cp .env.example .env
 and add the following content:
 
 ```text
-ALCHEMY_API_KEY=needed to run mainnet fork tests
-FORKING=true to enable mainnet fork
-REPORT_GAS=true to enable gas report at the end of tests
+ALCHEMY_API_KEY="ABC..." needed to run mainnet fork tests
+FORKING="true" to enable mainnet fork
+REPORT_GAS="true" to enable gas report at the end of tests, otherwise leave blank
 ```
 
 Load it in your local env with `source .env` and finally you can compile the contracts:
@@ -65,6 +65,12 @@ This project uses `hardhat`, `typechain` to produce TypeScript bindings and `waf
 
 ```bash
 yarn test
+```
+
+and to view in details the specific transactions happening
+
+```bash
+yarn test --trace
 ```
 
 You can also check code coverage with the following command:

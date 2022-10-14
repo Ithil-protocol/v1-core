@@ -5,7 +5,6 @@ import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/Saf
 import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IYearnRegistry } from "../interfaces/external/IYearnRegistry.sol";
 import { IYearnVault } from "../interfaces/external/IYearnVault.sol";
-import { VaultMath } from "../libraries/VaultMath.sol";
 import { GeneralMath } from "../libraries/GeneralMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 

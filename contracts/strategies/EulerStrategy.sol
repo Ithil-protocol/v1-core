@@ -4,7 +4,6 @@ pragma solidity >=0.8.12;
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IEulerMarkets } from "../interfaces/external/IEulerMarkets.sol";
 import { IEulerEToken } from "../interfaces/external/IEulerEToken.sol";
-import { VaultMath } from "../libraries/VaultMath.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 
 /// @title    EulerStrategy contract

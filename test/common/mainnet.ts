@@ -3,19 +3,18 @@ export const tokens = {
     symbol: "ETH",
     address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     decimals: 18,
-    whale: "0x503828976D22510aad0201ac7EC88293211D23Da",
   },
   DAI: {
     symbol: "DAI",
     address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
     decimals: 18,
-    whale: "0x503828976D22510aad0201ac7EC88293211D23Da",
+    whale: "0xaD0135AF20fa82E106607257143d0060A7eB5cBf",
   },
   USDC: {
     symbol: "USDC",
     address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
     decimals: 6,
-    whale: "0x7abE0cE388281d2aCF297Cb089caef3819b13448",
+    whale: "0xaD0135AF20fa82E106607257143d0060A7eB5cBf",
   },
   USDT: {
     symbol: "USDT",
@@ -51,13 +50,13 @@ export const tokens = {
     symbol: "WETH",
     address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     decimals: 18,
-    whale: "0x6555e1CC97d3cbA6eAddebBCD7Ca51d75771e0B8",
+    whale: "0x06920C9fC643De77B99cB7670A944AD31eaAA260",
   },
   WBTC: {
     symbol: "WBTC",
     address: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
     decimals: 8,
-    whale: "0xf584F8728B874a6a5c7A8d4d387C9aae9172D621",
+    whale: "0x6555e1CC97d3cbA6eAddebBCD7Ca51d75771e0B8",
   },
   SHIBA: {
     symbol: "SHIBA",

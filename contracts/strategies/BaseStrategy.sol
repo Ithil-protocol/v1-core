@@ -194,7 +194,6 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         );
         if (position.collateralToken != position.owedToken && amountOut <= position.allowance)
             IERC20(position.heldToken).safeTransfer(owner, position.allowance - amountOut);
-
         /// The following check is important to prevent users from triggering bad liquidations
         if (amountIn - repaid < position.principal + position.fees)
             revert Strategy__Loan_Not_Repaid(amountIn - repaid, position.principal + position.fees);
@@ -309,10 +308,10 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
         assert(success);
         int256 score = abi.decode(data, (int256));
 
-        Position memory position = positions[tokenId];
+        //Position memory position = positions[tokenId];
 
-        return
-            SVGImage.generateMetadata(
+        return "";
+        /*SVGImage.generateMetadata(
                 name(),
                 symbol(),
                 tokenId,
@@ -320,6 +319,6 @@ abstract contract BaseStrategy is Ownable, IStrategy, ERC721 {
                 position.collateral,
                 position.createdAt,
                 score
-            );
+            );*/
     }
 }

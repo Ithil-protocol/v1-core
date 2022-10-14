@@ -25,6 +25,3 @@ jobs:
 
       - name: Run yarn install
         run: yarn install
-
-      - name: Run yarn lint
-        run: yarn lint --quiet
