@@ -29,11 +29,11 @@ contract EulerStrategy is BaseStrategy {
 
     function _openPosition(Order calldata order) internal override returns (uint256) {
         address eToken = markets.underlyingToEToken(order.spentToken);
-        IERC20 spentToken = IERC20(order.spentToken);
         if (eToken == address(0)) revert EulerStrategy__Inexistent_Market(order.spentToken);
         if (eToken != order.obtainedToken) revert Strategy__Incorrect_Obtained_Token();
 
-        if (spentToken.allowance(address(this), euler) < order.maxSpent) spentToken.approve(euler, type(uint256).max);
+        IERC20 spentToken = IERC20(order.spentToken);
+        super._maxApprove(spentToken, address(euler));
 
         IEulerEToken eTkn = IEulerEToken(eToken);
         // must be called before, the deposit affects the exchange rate
