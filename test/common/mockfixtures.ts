@@ -7,6 +7,7 @@ import { MockWETH } from "../../src/types/MockWETH";
 import { MockToken } from "../../src/types/MockToken";
 import { MockYearnRegistry } from "../../src/types/MockYearnRegistry";
 import { Vault } from "../../src/types/Vault";
+import { TokenizedVault } from "../../src/types/TokenizedVault";
 import { Liquidator } from "../../src/types/Liquidator";
 import { Staker } from "../../src/types/Staker";
 import { Ithil } from "../../src/types/Ithil";
@@ -63,6 +64,14 @@ interface MockYearnStrategyFixture {
   stakerContract: Staker;
   liquidatorContract: Liquidator;
   createStrategy(): Promise<YearnStrategy>;
+}
+
+interface TokenizedVaultFixture {
+  native: MockToken;
+  admin: SignerWithAddress;
+  investor1: SignerWithAddress;
+  investor2: SignerWithAddress;
+  createVault(): Promise<TokenizedVault>;
 }
 
 export const mockVaultFixture: Fixture<MockVaultFixture> = async function (): Promise<MockVaultFixture> {
@@ -232,6 +241,28 @@ export const mockTestFixture: Fixture<MockTestStrategyFixture> = async function 
       );
       await vault.addStrategy(strategy.address);
       return strategy;
+    },
+  };
+};
+
+export const tokenizedVaultFixture: Fixture<TokenizedVaultFixture> = async function (): Promise<TokenizedVaultFixture> {
+  const signers: SignerWithAddress[] = await ethers.getSigners();
+  const admin = signers[0];
+  const investor1 = signers[1];
+  const investor2 = signers[2];
+
+  const tokenArtifact: Artifact = await artifacts.readArtifact("MockToken");
+  const native = <MockToken>await deployContract(admin, tokenArtifact, ["Native", "NAT", 18]);
+
+  return {
+    native,
+    admin,
+    investor1,
+    investor2,
+    createVault: async () => {
+      const vaultArtifact: Artifact = await artifacts.readArtifact("TokenizedVault");
+      const vault = <TokenizedVault>await deployContract(admin, vaultArtifact, [native.address]);
+      return vault;
     },
   };
 };
