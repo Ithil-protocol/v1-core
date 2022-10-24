@@ -4,10 +4,13 @@ import { ethers } from "hardhat";
 import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../src/types/MockWETH";
 import { Vault } from "../../src/types/Vault";
+import { MockTimeTokenizedVault } from "../../src/types/MockTimeTokenizedVault";
 import ERC20 from "@openzeppelin/contracts/build/contracts/ERC20.json";
 import { expect } from "chai";
 import { BindOptions } from "dgram";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import type { MockToken } from "../../src/types/MockToken";
+import { isNativeError } from "util/types";
 
 export const INITIAL_VAULT_STATE = {
   supported: false,
@@ -102,3 +105,20 @@ export function equalWithTolerance(a: BigNumber, b: BigNumber, decimals: number)
   expect(a).to.be.above(b.sub(BigNumber.from(10).pow(decimals)));
   expect(a).to.be.below(b.add(BigNumber.from(10).pow(decimals)));
 }
+
+export const matchStateTokenizedVault = (state1: any, state2: any) => {
+  expect(state1.netLoans).to.equal(state2.netLoans);
+  expect(state1.latestRepay).to.equal(state2.latestRepay);
+  expect(state1.currentProfits).to.equal(state2.currentProfits);
+  expect(state1.blockTimestamp).to.equal(state2.blockTimestamp);
+  expect(state1.balance).to.equal(state2.balance);
+};
+
+export const verifyStateTokenizedVault = async (vault: MockTimeTokenizedVault, native: MockToken, state2: any) => {
+  const vaultAccounting = await vault.vaultAccounting();
+  expect(vaultAccounting.netLoans).to.equal(state2.netLoans);
+  expect(vaultAccounting.latestRepay).to.equal(state2.latestRepay);
+  expect(vaultAccounting.currentProfits).to.equal(state2.currentProfits);
+  expect(await vault.time()).to.equal(state2.blockTimestamp);
+  expect(await native.balanceOf(vault.address)).to.equal(state2.balance);
+};

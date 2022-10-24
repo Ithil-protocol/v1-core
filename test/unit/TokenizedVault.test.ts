@@ -4,11 +4,13 @@ import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signe
 import { expect } from "chai";
 
 import type { TokenizedVault } from "../../src/types/TokenizedVault";
+import type { MockTimeTokenizedVault } from "../../src/types/MockTimeTokenizedVault";
 import type { MockToken } from "../../src/types/MockToken";
-import { tokenizedVaultFixture } from "../common/mockfixtures";
+import { tokenizedVaultFixture, mockTimeTokenizedVaultFixture } from "../common/mockfixtures";
 import exp from "constants";
+import { FunctionFragment } from "@ethersproject/abi";
 
-describe("Tokenized Vault tests", function () {
+describe("Tokenized Vault tests: basis", function () {
   const createFixtureLoader = waffle.createFixtureLoader;
 
   type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
@@ -113,12 +115,6 @@ describe("Tokenized Vault tests", function () {
         // Unlock vault to proceed with other tests
         await vault.connect(admin).toggleLock();
       });
-
-      it("Non admin cannot boost", async function () {
-        await expect(vault.connect(investor1).boost(investor1.address, amountToDeposit)).to.be.revertedWith(
-          "Ownable: caller is not the owner",
-        );
-      });
     });
 
     describe("Deposit and withdraw", function () {
@@ -202,141 +198,10 @@ describe("Tokenized Vault tests", function () {
       });
     });
 
-    describe("Boosting", function () {
-      let amountToBoost: BigNumber;
-      before("Refill tokens to admin", async () => {
-        await native.connect(admin).mint();
-        amountToBoost = await native.balanceOf(admin.address);
-        expect(amountToBoost).to.be.above(0);
-      });
-
-      it("Boost", async function () {
-        const initialBoostAmount = (await vault.vaultAccounting()).boostedAmount;
-        const initialAdminBalance = await native.balanceOf(admin.address);
-        const initialVaultBalance = await native.balanceOf(vault.address);
-        const initialAssets = await vault.totalAssets();
-
-        // Fail without approval
-
-        await expect(vault.connect(admin).boost(admin.address, amountToBoost)).to.be.revertedWith(
-          "ERC20: insufficient allowance",
-        );
-
-        await native.connect(admin).approve(vault.address, amountToBoost);
-        await vault.connect(admin).boost(admin.address, amountToBoost);
-        // Boosted amount increased
-        expect((await vault.vaultAccounting()).boostedAmount).to.equal(initialBoostAmount.add(amountToBoost));
-        // Vault balance increased
-        expect(await native.balanceOf(vault.address)).to.equal(initialVaultBalance.add(amountToBoost));
-        // Admin balance decreased
-        expect(await native.balanceOf(admin.address)).to.equal(initialAdminBalance.sub(amountToBoost));
-        // Assets stay constant
-        expect(await vault.totalAssets()).to.equal(initialAssets);
-      });
-
-      it("Boost on behalf of investor1", async function () {
-        // Refill tokens to investor
-        await native.connect(investor1).mint();
-
-        const initialAdminBalance = await native.balanceOf(admin.address);
-        const initialVaultBalance = await native.balanceOf(vault.address);
-        const initialAssets = await vault.totalAssets();
-        const initialInvestorBalance = await native.balanceOf(investor1.address);
-        const initialBoostAmount = (await vault.vaultAccounting()).boostedAmount;
-
-        // Fail without approval
-
-        await expect(vault.connect(admin).boost(investor1.address, initialInvestorBalance)).to.be.revertedWith(
-          "ERC20: insufficient allowance",
-        );
-
-        await native.connect(investor1).approve(vault.address, initialInvestorBalance);
-        await vault.connect(admin).boost(investor1.address, initialInvestorBalance);
-
-        // Boosted amount increased
-        expect((await vault.vaultAccounting()).boostedAmount).to.equal(initialBoostAmount.add(initialInvestorBalance));
-        // Vault balance increased
-        expect(await native.balanceOf(vault.address)).to.equal(initialVaultBalance.add(initialInvestorBalance));
-        // Investor balance decreased
-        expect(await native.balanceOf(investor1.address)).to.equal(initialInvestorBalance.sub(initialInvestorBalance));
-        // Admin balance stay constant
-        expect(await native.balanceOf(admin.address)).to.equal(initialAdminBalance);
-        // Assets stay constant
-        expect(await vault.totalAssets()).to.equal(initialAssets);
-      });
-
-      it("Unboost", async function () {
-        const initialBoostAmount = (await vault.vaultAccounting()).boostedAmount;
-        const initialAdminBalance = await native.balanceOf(admin.address);
-        const initialVaultBalance = await native.balanceOf(vault.address);
-        const initialAssets = await vault.totalAssets();
-        await vault.connect(admin).unboost(admin.address, amountToBoost);
-        expect((await vault.vaultAccounting()).boostedAmount).to.equal(initialBoostAmount.sub(amountToBoost));
-
-        // Boosted amount decreased
-        expect((await vault.vaultAccounting()).boostedAmount).to.equal(initialBoostAmount.sub(amountToBoost));
-        // Vault balance decreased
-        expect(await native.balanceOf(vault.address)).to.equal(initialVaultBalance.sub(amountToBoost));
-        // Admin balance increased
-        expect(await native.balanceOf(admin.address)).to.equal(initialAdminBalance.add(amountToBoost));
-        // Assets stay constant
-        expect(await vault.totalAssets()).to.equal(initialAssets);
-      });
-
-      it("Unboost on behalf of investor1", async function () {
-        const initialAdminBalance = await native.balanceOf(admin.address);
-        const initialVaultBalance = await native.balanceOf(vault.address);
-        const initialAssets = await vault.totalAssets();
-        const initialInvestorBalance = await native.balanceOf(investor1.address);
-        const initialBoostAmount = (await vault.vaultAccounting()).boostedAmount;
-        const toUnboost = initialBoostAmount.div(2);
-
-        // Unboos and give to investor1
-        await vault.connect(admin).unboost(investor1.address, toUnboost);
-
-        // Boosted amount decreased
-        expect((await vault.vaultAccounting()).boostedAmount).to.equal(initialBoostAmount.sub(toUnboost));
-        // Vault balance decreased
-        expect(await native.balanceOf(vault.address)).to.equal(initialVaultBalance.sub(toUnboost));
-        // Investor balance increased
-        expect(await native.balanceOf(investor1.address)).to.equal(initialInvestorBalance.add(toUnboost));
-        // Admin balance stays constant
-        expect(await native.balanceOf(admin.address)).to.equal(initialAdminBalance);
-        // Assets stay constant
-        expect(await vault.totalAssets()).to.equal(initialAssets);
-      });
-
-      it("Unboost more than current boosting", async function () {
-        const initialBoostAmount = (await vault.vaultAccounting()).boostedAmount;
-        const initialAdminBalance = await native.balanceOf(admin.address);
-        const initialVaultBalance = await native.balanceOf(vault.address);
-        const amountToUnboost = initialBoostAmount.add(1);
-        const initialAssets = await vault.totalAssets();
-
-        await vault.connect(admin).unboost(admin.address, amountToUnboost);
-
-        let expectedUnboost;
-        if (amountToUnboost.lte(initialBoostAmount)) expectedUnboost = amountToUnboost;
-        else expectedUnboost = initialBoostAmount;
-
-        // Boosted amount decreased to zero (no loans at this point)
-        expect((await vault.vaultAccounting()).boostedAmount).to.equal(initialBoostAmount.sub(expectedUnboost));
-        // Vault balance decreased
-        expect(await native.balanceOf(vault.address)).to.equal(initialVaultBalance.sub(expectedUnboost));
-        // Admin balance increased
-        expect(await native.balanceOf(admin.address)).to.equal(initialAdminBalance.add(expectedUnboost));
-        // Assets stay constant
-        expect(await vault.totalAssets()).to.equal(initialAssets);
-      });
-    });
-
     describe("Borrow and repay", function () {
       let initialShares: BigNumber;
       let initialAssets: BigNumber;
-      before("Start with an unboosted, filled vault", async () => {
-        const initialBoostedAmount = (await vault.vaultAccounting()).boostedAmount;
-        if (initialBoostedAmount.gt(0)) await vault.connect(admin).unboost(admin.address, initialBoostedAmount);
-        expect((await vault.vaultAccounting()).boostedAmount).to.equal(0);
+      before("Start with a filled vault", async () => {
         expect(await vault.totalAssets()).to.equal(0);
 
         // Refill investor1 and deposit
@@ -543,30 +408,241 @@ describe("Tokenized Vault tests", function () {
         expect(await native.balanceOf(investor1.address)).to.equal(totalAssets);
         // Vault balance is zero
         expect(await native.balanceOf(vault.address)).to.equal(0);
+        // Total assets are zero
+        expect(await vault.totalAssets()).to.equal(0);
       });
 
-      it("Withdraw with open loans (insufficient balance)", async function (){
+      it("Withdraw with open loans (insufficient balance)", async function () {
+        // Refill investor
+        await native.connect(investor1).mint();
 
+        const initialInvestorBalance = await native.balanceOf(investor1.address);
+        // Approve and deposit
+        await native.connect(investor1).approve(vault.address, initialInvestorBalance);
+        await vault.connect(investor1).deposit(initialInvestorBalance, investor1.address);
+
+        // Open a loan
+        const toBorrow = initialInvestorBalance.div(2);
+        await vault.connect(admin).borrow(toBorrow, admin.address);
+
+        const maximumWithdraw = await vault.maxWithdraw(investor1.address);
+        // Maximum withdraw should be the current vault balance
+        expect(maximumWithdraw).to.equal(await native.balanceOf(vault.address));
+        // Withdrawing now should fail
+        await expect(
+          vault.connect(investor1).withdraw(initialInvestorBalance, investor1.address, investor1.address),
+        ).to.be.revertedWith(
+          "ERROR_Vault__Insufficient_Liquidity(" + ethers.utils.formatUnits(maximumWithdraw, 0) + ")",
+        );
       });
 
-      it("Withdraw with open loans (sufficient balance)", async function (){
-        
+      it("Withdraw with open loans (sufficient balance)", async function () {
+        // Withdraw maximum available
+        const initialAssets = await vault.totalAssets();
+        const maximumWithdraw = await vault.connect(investor1).maxWithdraw(investor1.address);
+        const initialInvestorBalance = await native.balanceOf(investor1.address);
+        await vault.connect(investor1).withdraw(maximumWithdraw, investor1.address, investor1.address);
+
+        // Investor balance increased
+        expect(await native.balanceOf(investor1.address)).to.equal(initialInvestorBalance.add(maximumWithdraw));
+        // Maximum withdraw is now zero
+        expect(await vault.maxWithdraw(investor1.address)).to.equal(0);
+        // Assets decreased
+        const assets = await vault.totalAssets();
+        // Assets are equal to both initialAssets - maximumWithdraw and totalLoans
+        expect(assets).to.equal(initialAssets.sub(maximumWithdraw));
+        expect(assets).to.equal((await vault.vaultAccounting()).netLoans);
+        // Investors shares are still worth total assets
+        expect(await vault.convertToAssets(await vault.balanceOf(investor1.address))).to.equal(assets);
       });
 
-      it("Repay more than netLoans", async function (){
-        
-      });
+      it("Repay more than netLoans", async function () {
+        // Refill admin
+        await native.connect(admin).mint();
+        const netLoans = (await vault.vaultAccounting()).netLoans;
+        const amountToRepay = netLoans.add(1);
 
-      it("Borrow with boosts", async function (){
-        
-      });
-      
-      it("Borrow with boosts", async function (){
-        
+        // Repay one more than netLoans
+        await native.connect(admin).approve(vault.address, amountToRepay);
+        await vault.connect(admin).repay(netLoans, amountToRepay, admin.address);
+
+        // Net loans are now zero
+        expect((await vault.vaultAccounting()).netLoans).to.equal(0);
       });
     });
-    // Todo: repay with amount higher than netLoans
-    // Todo: withdraw when netLoans are not zero
-    // Todo: withdra
+  });
+});
+describe("Tokenized Vault tests: mock time for fees testing", function () {
+  const createFixtureLoader = waffle.createFixtureLoader;
+
+  type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
+
+  let wallet: Wallet, other: Wallet;
+
+  let native: MockToken;
+  let admin: SignerWithAddress;
+  let investor1: SignerWithAddress;
+  let investor2: SignerWithAddress;
+  let createVault: ThenArg<ReturnType<typeof mockTimeTokenizedVaultFixture>>["createVault"];
+  let loadFixture: ReturnType<typeof createFixtureLoader>;
+
+  let vault: MockTimeTokenizedVault;
+
+  before("load fixture", async () => {
+    [wallet, other] = await (ethers as any).getSigners();
+    loadFixture = createFixtureLoader([wallet, other]);
+    ({ native, admin, investor1, investor2, createVault } = await loadFixture(mockTimeTokenizedVaultFixture));
+    vault = await createVault();
+  });
+
+  describe("Deployment", function () {
+    describe("Validations", function () {
+      const initialTime = BigNumber.from(1601906400);
+      it("Vault time should be 1601906400", async function () {
+        expect(await vault.time()).to.equal(initialTime);
+      });
+
+      it("Properly advance time", async function () {
+        await vault.advanceTime(10);
+        expect(await vault.time()).to.equal(initialTime.add(10));
+      });
+    });
+  });
+
+  describe("Fees unlock", function () {
+    it("Generate fees with zero loans", async function () {
+      // Refill investor and deposit
+      await native.connect(investor1).mint();
+      const initialInvestorBalance = await native.balanceOf(investor1.address);
+      await native.connect(investor1).approve(vault.address, initialInvestorBalance);
+      await vault.connect(investor1).deposit(initialInvestorBalance, investor1.address);
+
+      // Everything is free liquidity
+      const initialFreeLiquidity = await vault.freeLiquidity();
+      expect(initialFreeLiquidity).to.equal(initialInvestorBalance);
+
+      // Refill admin for fees generation
+      await native.connect(admin).mint();
+
+      const initialAdminBalance = await native.balanceOf(admin.address);
+      const initialVaultAssets = await vault.totalAssets();
+      const toRepay = initialAdminBalance.div(2);
+      // Repay even for zero loans should not be a problem
+      await native.connect(admin).approve(vault.address, toRepay);
+      await vault.connect(admin).repay(toRepay, 0, admin.address);
+      // Assets stay constant (fees still locked)
+      expect(await vault.totalAssets()).to.equal(initialVaultAssets);
+      // Free liquidity is constant
+      expect(await vault.freeLiquidity()).to.equal(initialFreeLiquidity);
+      // Check there is no dust
+      const vaultAccounting = await vault.vaultAccounting();
+      expect(vaultAccounting.netLoans).to.equal(0);
+      // Current profits increased
+      expect(vaultAccounting.currentProfits).to.equal(toRepay);
+      // Latest repay is time
+      expect(vaultAccounting.latestRepay).to.equal(await vault.time());
+    });
+
+    it("Unlock one-third of the fees", async function () {
+      const unlockTime = await vault.unlockTime();
+      const initialAssets = await vault.totalAssets();
+      const initialFreeLiquidity = await vault.freeLiquidity();
+      const vaultAccounting = await vault.vaultAccounting();
+      await vault.advanceTime(unlockTime.div(3));
+
+      const unlockedProfits = vaultAccounting.currentProfits
+        .mul((await vault.time()).sub(vaultAccounting.latestRepay))
+        .div(unlockTime);
+
+      // Assets increased
+      expect(await vault.totalAssets()).to.equal(initialAssets.add(unlockedProfits));
+      // Free liquidity increased
+      expect(await vault.freeLiquidity()).to.equal(initialFreeLiquidity.add(unlockedProfits));
+    });
+
+    it("Cannot withdraw more than free liquidity", async function () {
+      const currentBalance = await native.balanceOf(vault.address);
+      const freeLiquidity = await vault.freeLiquidity();
+      await expect(vault.withdraw(currentBalance, investor1.address, investor1.address)).to.be.revertedWith(
+        "ERROR_Vault__Insufficient_Liquidity(" + ethers.utils.formatUnits(freeLiquidity, 0) + ")",
+      );
+    });
+
+    it("Cannot borrow more than free liquidity", async function () {
+      const currentBalance = await native.balanceOf(vault.address);
+      const freeLiquidity = await vault.freeLiquidity();
+      await expect(vault.connect(admin).borrow(currentBalance, admin.address)).to.be.revertedWith(
+        "ERROR_Vault__Insufficient_Free_Liquidity(" + ethers.utils.formatUnits(freeLiquidity, 0) + ")",
+      );
+    });
+
+    it("Unlock remaining part of fees and withdraw", async function () {
+      const unlockTime = await vault.unlockTime();
+      const vaultAccounting = await vault.vaultAccounting();
+      await vault.advanceTime(vaultAccounting.latestRepay.add(unlockTime).sub(await vault.time()));
+
+      const currentLiquidity = await native.balanceOf(vault.address);
+      // All profits are now unlocked
+      expect(await vault.totalAssets()).to.equal(currentLiquidity);
+      // All liquidity is free
+      expect(await vault.freeLiquidity()).to.equal(currentLiquidity);
+      // Withdraw
+      await vault.connect(investor1).withdraw(currentLiquidity, investor1.address, investor1.address);
+      expect(await native.balanceOf(investor1.address)).to.equal(currentLiquidity);
+      expect(await vault.totalAssets()).to.equal(0);
+    });
+  });
+
+  describe("Direct minting and burning", function () {
+    let amountToDeposit;
+    before("Refill investors and deposit", async () => {
+      await native.connect(investor1).mint();
+      amountToDeposit = await native.balanceOf(investor1.address);
+      await native.connect(investor1).approve(vault.address, amountToDeposit);
+      await vault.connect(investor1).deposit(amountToDeposit, investor1.address);
+      const amountToMint = amountToDeposit.sub(await native.balanceOf(investor2.address));
+      await native.connect(admin).mintTo(investor2.address,amountToMint);
+      await native.connect(investor2).approve(vault.address, amountToDeposit);
+      await vault.connect(investor2).deposit(amountToDeposit, investor2.address);
+
+      expect(await vault.maxWithdraw(investor1.address)).to.equal(await vault.maxWithdraw(investor2.address));
+    });
+
+    it("Direct mint dilutes the other investor", async function () {
+      const investorShares = await vault.balanceOf(investor2.address);
+      const initialMaximumWithdraw1 = await vault.maxWithdraw(investor1.address);
+      const initialMaximumWithdraw2 = await vault.maxWithdraw(investor2.address);
+      await vault.connect(admin).directMint(investorShares, investor2.address);
+      const finalMaximumWithdraw1 = await vault.maxWithdraw(investor1.address);
+      const finalMaximumWithdraw2 = await vault.maxWithdraw(investor2.address);
+
+      // Initially with the same shares, now investor2 has twice as many as investor1
+      // Therefore investor1 can withdraw only one-third of the total amount
+
+      expect(finalMaximumWithdraw1).to.equal(initialMaximumWithdraw1.mul(2).div(3));
+      expect(finalMaximumWithdraw2).to.equal(initialMaximumWithdraw2.mul(4).div(3));
+
+      // The total amount is very close to be constant, but there are rounding errors (not avoidable)
+    });
+    
+    it("Direct burn boosts the other investor", async function () {
+      const investorShares = await vault.balanceOf(investor2.address);
+      const initialMaximumWithdraw1 = await vault.maxWithdraw(investor1.address);
+      const initialMaximumWithdraw2 = await vault.maxWithdraw(investor2.address);
+      // Burn three-quarters of the shares (approve first!!)
+      await vault.connect(investor2).approve(admin.address, investorShares.mul(3).div(4))
+      await vault.connect(admin).directBurn(investorShares.mul(3).div(4), investor2.address);
+      expect(await vault.balanceOf(investor1.address)).to.equal((await vault.balanceOf(investor2.address)).mul(2));
+      const finalMaximumWithdraw1 = await vault.maxWithdraw(investor1.address);
+      const finalMaximumWithdraw2 = await vault.maxWithdraw(investor2.address);
+
+      // Initially shares2 = 2 * shares1, now shares1 = 2 * shares2
+      // So shares1 passed from 1/3 to 2/3 -> doubled, similarly shares2 halved (-1 for rounding errors)
+
+      expect(finalMaximumWithdraw1.sub(1)).to.equal(initialMaximumWithdraw1.mul(2));
+      expect(finalMaximumWithdraw2).to.equal(initialMaximumWithdraw2.div(2));
+
+      // The total amount is very close to be constant, but there are rounding errors (not avoidable)
+    });
   });
 });
