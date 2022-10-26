@@ -337,21 +337,19 @@ describe("Tokenized Vault tests: basis", function () {
         const unlockTime = await vault.unlockTime();
         const initialVaultBalance = await native.balanceOf(vault.address);
         const initialInvestorBalance = await native.balanceOf(investor2.address);
-        const initialTotalAssets = await vault.totalAssets();
-        const currentLoans = (await vault.vaultAccounting()).netLoans;
-        const currentProfits = (await vault.vaultAccounting()).currentProfits;
-        const latestRepay = (await vault.vaultAccounting()).latestRepay;
+        const vaultAccounting = await vault.vaultAccounting();
+        const currentLoans = vaultAccounting.netLoans;
+        let blockNumBefore = await ethers.provider.getBlockNumber();
+        let blockBefore = await ethers.provider.getBlock(blockNumBefore);
+        let timestampBefore = BigNumber.from(blockBefore.timestamp);
 
-        const blockNumBefore = await ethers.provider.getBlockNumber();
-        const blockBefore = await ethers.provider.getBlock(blockNumBefore);
-        const timestampBefore = BigNumber.from(blockBefore.timestamp);
-
-        const unlockedProfits = timestampBefore.sub(latestRepay).mul(currentProfits).div(unlockTime);
-        const lockedProfits = currentProfits.sub(unlockedProfits);
+        const initialLockedProfits = vaultAccounting.currentProfits
+          .mul(unlockTime.sub(timestampBefore.sub(vaultAccounting.latestRepay)))
+          .div(unlockTime);
         // Repay current loans but losing more than locked profits
         const debtToRepay = currentLoans.div(2);
-        const extraLoss = BigNumber.from(1);
-        const loss = lockedProfits.add(extraLoss);
+        const extraLoss = BigNumber.from(42);
+        const loss = initialLockedProfits.add(extraLoss);
 
         // Fail without approval
 
@@ -359,6 +357,7 @@ describe("Tokenized Vault tests: basis", function () {
           vault.connect(admin).repay(debtToRepay.sub(loss), debtToRepay, investor2.address),
         ).to.be.revertedWith("ERC20: insufficient allowance");
 
+        const predictedProfits = initialLockedProfits.sub(loss);
         // Approve vault for repay
         await native.connect(investor2).approve(vault.address, debtToRepay.sub(loss));
         await vault.connect(admin).repay(debtToRepay.sub(loss), debtToRepay, investor2.address);
@@ -369,10 +368,11 @@ describe("Tokenized Vault tests: basis", function () {
         expect(await native.balanceOf(investor2.address)).to.equal(initialInvestorBalance.sub(debtToRepay.sub(loss)));
         // Vault balance increased
         expect(await native.balanceOf(vault.address)).to.equal(initialVaultBalance.add(debtToRepay.sub(loss)));
-        // Current profits become 0
-        expect((await vault.vaultAccounting()).currentProfits).to.equal(0);
-        // Vault assets lose the extra loss
-        expect(await vault.totalAssets()).to.equal(initialTotalAssets.sub(extraLoss));
+        // Current profits are less than the previous locked profits and now negative
+        // Precise calculation cannot be done because timestamp is not controllable in TS (use mockTime to do precise tests)
+        // But since we calculated initialLockedProfits time increased -> less locked profits
+        expect((await vault.vaultAccounting()).currentProfits).to.be.lte(predictedProfits);
+        // Todo: check with mock time that assets stay constant (here they change very slightly)
       });
 
       it("Repay full debt (zero fees)", async function () {
@@ -546,18 +546,24 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
     it("Unlock one-third of the fees", async function () {
       const unlockTime = await vault.unlockTime();
       const initialAssets = await vault.totalAssets();
-      const initialFreeLiquidity = await vault.freeLiquidity();
       const vaultAccounting = await vault.vaultAccounting();
+      // Check assets
+      expect(initialAssets).to.equal(
+        (await native.balanceOf(vault.address)).add(vaultAccounting.netLoans).sub(vaultAccounting.currentProfits),
+      );
+      const initialFreeLiquidity = await vault.freeLiquidity();
       await vault.advanceTime(unlockTime.div(3));
 
-      const unlockedProfits = vaultAccounting.currentProfits
-        .mul((await vault.time()).sub(vaultAccounting.latestRepay))
+      const lockedProfits = vaultAccounting.currentProfits
+        .mul(unlockTime.sub((await vault.time()).sub(vaultAccounting.latestRepay)))
         .div(unlockTime);
 
       // Assets increased
-      expect(await vault.totalAssets()).to.equal(initialAssets.add(unlockedProfits));
+      expect(await vault.totalAssets()).to.equal(initialAssets.add(vaultAccounting.currentProfits).sub(lockedProfits));
       // Free liquidity increased
-      expect(await vault.freeLiquidity()).to.equal(initialFreeLiquidity.add(unlockedProfits));
+      expect(await vault.freeLiquidity()).to.equal(
+        initialFreeLiquidity.add(vaultAccounting.currentProfits).sub(lockedProfits),
+      );
     });
 
     it("Cannot withdraw more than free liquidity", async function () {
@@ -601,7 +607,7 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
       await native.connect(investor1).approve(vault.address, amountToDeposit);
       await vault.connect(investor1).deposit(amountToDeposit, investor1.address);
       const amountToMint = amountToDeposit.sub(await native.balanceOf(investor2.address));
-      await native.connect(admin).mintTo(investor2.address,amountToMint);
+      await native.connect(admin).mintTo(investor2.address, amountToMint);
       await native.connect(investor2).approve(vault.address, amountToDeposit);
       await vault.connect(investor2).deposit(amountToDeposit, investor2.address);
 
@@ -612,7 +618,13 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
       const investorShares = await vault.balanceOf(investor2.address);
       const initialMaximumWithdraw1 = await vault.maxWithdraw(investor1.address);
       const initialMaximumWithdraw2 = await vault.maxWithdraw(investor2.address);
+
+      // Check maximum withdraw stay the same while direct minting
       await vault.connect(admin).directMint(investorShares, investor2.address);
+      expect(initialMaximumWithdraw1).to.equal(await vault.maxWithdraw(investor1.address));
+
+      // Advance time to unlock the loss
+      await vault.advanceTime(await vault.unlockTime());
       const finalMaximumWithdraw1 = await vault.maxWithdraw(investor1.address);
       const finalMaximumWithdraw2 = await vault.maxWithdraw(investor2.address);
 
@@ -624,15 +636,22 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
 
       // The total amount is very close to be constant, but there are rounding errors (not avoidable)
     });
-    
+
     it("Direct burn boosts the other investor", async function () {
       const investorShares = await vault.balanceOf(investor2.address);
       const initialMaximumWithdraw1 = await vault.maxWithdraw(investor1.address);
       const initialMaximumWithdraw2 = await vault.maxWithdraw(investor2.address);
       // Burn three-quarters of the shares (approve first!!)
-      await vault.connect(investor2).approve(admin.address, investorShares.mul(3).div(4))
+      await vault.connect(investor2).approve(admin.address, investorShares.mul(3).div(4));
+
+      // Check maximum withdraw stay the same while direct burning
       await vault.connect(admin).directBurn(investorShares.mul(3).div(4), investor2.address);
+      expect(initialMaximumWithdraw1).to.equal(await vault.maxWithdraw(investor1.address));
+
       expect(await vault.balanceOf(investor1.address)).to.equal((await vault.balanceOf(investor2.address)).mul(2));
+
+      // Unlock fees
+      await vault.advanceTime(await vault.unlockTime());
       const finalMaximumWithdraw1 = await vault.maxWithdraw(investor1.address);
       const finalMaximumWithdraw2 = await vault.maxWithdraw(investor2.address);
 
@@ -643,6 +662,23 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
       expect(finalMaximumWithdraw2).to.equal(initialMaximumWithdraw2.div(2));
 
       // The total amount is very close to be constant, but there are rounding errors (not avoidable)
+    });
+
+    it("Burning all supply should fail", async function () {
+      // Burn everything
+      const investor1Shares = await vault.balanceOf(investor1.address);
+      const investor2Shares = await vault.balanceOf(investor2.address);
+      await vault.connect(investor1).approve(admin.address, investor1Shares);
+      await vault.connect(investor2).approve(admin.address, investor2Shares);
+      await vault.connect(admin).directBurn(investor1Shares, investor1.address);
+
+      await expect(vault.connect(admin).directBurn(investor2Shares, investor2.address)).to.be.revertedWith(
+        "ERROR_Vault__Supply_Burned()",
+      );
+    });
+
+    it("Assets can be withdrawn after burning", async function () {
+      // At this point, investor2 has all shares
     });
   });
 });

@@ -23,7 +23,7 @@ contract MockTimeTokenizedVault is TokenizedVault {
     function setAccounting(
         uint256 netLoans,
         uint256 latestRepay,
-        uint256 currentProfits
+        int256 currentProfits
     ) external {
         vaultAccounting.netLoans = netLoans;
         vaultAccounting.latestRepay = latestRepay;

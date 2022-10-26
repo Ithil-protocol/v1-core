@@ -14,7 +14,7 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
     struct VaultAccounting {
         uint256 netLoans;
         uint256 latestRepay;
-        uint256 currentProfits;
+        int256 currentProfits;
     }
 
     uint256 public unlockTime;
@@ -55,15 +55,27 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
     }
 
     // Total assets are used to calculate shares to mint and redeem
-    // They represent the deposited (minted) and the unlocked fees
+    // They represent the deposited amount, the loans and the unlocked fees
+    // As per ERC4626 standard this must never throw, thus we use protected math
+    // totalAssets() must adjust so that maxWithdraw() is an invariant for all functions
+    // As profits unlock, assets increase or decrease
     function totalAssets() public view virtual override returns (uint256) {
-        return super.totalAssets().protectedAdd(vaultAccounting.netLoans).positiveSub(_calculateLockedProfits());
+        int256 lockedProfits = _calculateLockedProfits();
+        return
+            lockedProfits > 0
+                ? super.totalAssets().protectedAdd(vaultAccounting.netLoans).positiveSub(uint256(lockedProfits))
+                : super.totalAssets().protectedAdd(vaultAccounting.netLoans).protectedAdd(uint256(-lockedProfits));
     }
 
     // Free liquidity available to withdraw or borrow
     // Locked profits are locked for every operation
+    // We do not consider negative profits since they are not true liquidity
     function freeLiquidity() public view returns (uint256) {
-        return IERC20(asset()).balanceOf(address(this)).positiveSub(_calculateLockedProfits());
+        int256 lockedProfits = _calculateLockedProfits();
+        return
+            lockedProfits > 0
+                ? IERC20(asset()).balanceOf(address(this)).positiveSub(uint256(lockedProfits))
+                : IERC20(asset()).balanceOf(address(this));
     }
 
     // Assets include netLoans but they are not available for withdraw
@@ -125,19 +137,42 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
     // Minting during a loss is equivalent to declaring the receiver senior
     // Minting dilutes stakers (damping)
     // Use case: treasury, backing contract...
+    // Invariant: maximumWithdraw(account) for account != receiver
     function directMint(uint256 shares, address receiver) external onlyOwner {
+        // When minting, the receiver assets increase
+        // Thus we produce negative profits and we need to lock them
+        uint256 increasedAssets = convertToAssets(shares);
         _mint(receiver, shares);
+
+        vaultAccounting.currentProfits = _calculateLockedProfits() - int256(increasedAssets);
+        vaultAccounting.latestRepay = _blockTimestamp();
     }
 
     // Burning during a loss is equivalent to declaring the owner junior
     // Burning undilutes stakers (boosting)
     // Use case: insurance reserve...
+    // Invariant: maximumWithdraw(account) for account != receiver
     function directBurn(uint256 shares, address owner) external onlyOwner {
+        // Burning the entire supply would trigger an _initialConvertToShares at next deposit
+        // Meaning that the first to deposit will get everything
+        // To avoid overriding _initialConvertToShares, we make the following check
+        if (shares >= totalSupply()) revert ERROR_Vault__Supply_Burned();
+
+        // When burning, the owner assets are distributed to others
+        // Thus we need to lock them in order to avoid flashloan attacks
+        uint256 distributedAssets = convertToAssets(shares);
+
         _spendAllowance(owner, _msgSender(), shares);
         _burn(owner, shares);
+
+        // Since this is onlyOwner we are not worried about reentrancy
+        // So we can modify the state here
+        vaultAccounting.currentProfits = _calculateLockedProfits() + int256(distributedAssets);
+        vaultAccounting.latestRepay = _blockTimestamp();
     }
 
     // Owner is the only trusted borrower
+    // Invariant: totalAssets()
     function borrow(uint256 assets, address receiver) external onlyOwner {
         uint256 freeLiq = freeLiquidity();
         if (assets > freeLiq) revert ERROR_Vault__Insufficient_Free_Liquidity(freeLiq);
@@ -152,6 +187,7 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
     // Throws if repayer did not approve the vault
     // Throws if repayer does not have amount assets
     // _calculateLockedProfits() = vaultAccounting.currentProfits immediately after
+    // Invariant: totalAssets()
     function repay(
         uint256 amount,
         uint256 debt,
@@ -161,10 +197,8 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
 
         // any excess amount is considered to be fees
         // if a bad debt has beed repaid, we recover part from the locked profits
-        // totalAssets() stay constant unless debt - amount > _calculateLockedProfits()
-        vaultAccounting.currentProfits = amount > debt
-            ? _calculateLockedProfits() + amount - debt
-            : _calculateLockedProfits().positiveSub(debt - amount);
+        // similarly, if lockedProfits < 0, a good repay can recover them
+        vaultAccounting.currentProfits = _calculateLockedProfits() + int256(amount) - int256(debt);
         vaultAccounting.latestRepay = _blockTimestamp();
 
         // the vault is not responsible for any payoff
@@ -173,9 +207,12 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
         emit Repaid(repayer, amount, debt);
     }
 
-    function _calculateLockedProfits() internal view returns (uint256) {
-        uint256 profits = vaultAccounting.currentProfits;
-        return profits.positiveSub(((_blockTimestamp() - vaultAccounting.latestRepay) * profits) / unlockTime);
+    // Starts from currentProfits and go linearly to 0
+    // It is zero when _blockTimestamp()-latestRepay > unlockTime
+    function _calculateLockedProfits() internal view returns (int256) {
+        return
+            (vaultAccounting.currentProfits *
+                int256(unlockTime.positiveSub(_blockTimestamp() - vaultAccounting.latestRepay))) / int256(unlockTime);
     }
 
     // overridden in tests
@@ -208,6 +245,7 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
     // Errors
     error ERROR_Vault__Insufficient_Liquidity(uint256 balance);
     error ERROR_Vault__Insufficient_Free_Liquidity(uint256 freeLiquidity);
+    error ERROR_Vault__Supply_Burned();
     error ERROR_Vault__Unlock_Out_Of_Range();
     error ERROR_Vault__Only_Guardian();
     error ERROR_Vault__Locked();
