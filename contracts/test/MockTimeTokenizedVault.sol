@@ -29,12 +29,4 @@ contract MockTimeTokenizedVault is TokenizedVault {
         vaultAccounting.latestRepay = latestRepay;
         vaultAccounting.currentProfits = currentProfits;
     }
-
-    function burnNatives(uint256 amount) external {
-        IERC20(asset()).transfer(address(0), amount);
-    }
-
-    function burnWrapped(address account, uint256 amount) external {
-        _burn(account, amount);
-    }
 }

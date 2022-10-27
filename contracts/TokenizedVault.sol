@@ -85,7 +85,7 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
     }
 
     // Deposit and mint are overridden to check locking and emit events
-
+    // Throws if IERC20(asset()).allowance(_msgSender(), vault) < assets
     function deposit(uint256 assets, address receiver) public virtual override unlocked returns (uint256) {
         uint256 shares = super.deposit(assets, receiver);
 
@@ -94,6 +94,8 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
         return shares;
     }
 
+    // Depositor must first approve the vault to spend IERC20(asset())
+    // Throws if IERC20(asset()).allowance(_msgSender(), vault) < assets
     function mint(uint256 shares, address receiver) public virtual override unlocked returns (uint256) {
         uint256 assets = super.mint(shares, receiver);
 
@@ -104,13 +106,16 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
 
     // Throws 'ERC20: transfer amount exceeds balance' if
     // IERC20(asset()).balanceOf(address(this)) < assets
+    // Needs approvals if caller is not owner
     function withdraw(
         uint256 assets,
         address receiver,
         address owner
     ) public virtual override returns (uint256) {
-        uint256 maximum = maxWithdraw(owner);
-        if (assets > maximum) revert ERROR_Vault__Insufficient_Liquidity(maximum);
+        // Due to ERC4626 collateralization constraint, we must enforce impossibility of zero balance
+        // Therefore we need to revert if assets >= freeLiq rather than assets > freeLiq
+        uint256 freeLiq = freeLiquidity();
+        if (assets >= freeLiq) revert ERROR_Vault__Insufficient_Liquidity(freeLiq);
         uint256 shares = super.withdraw(assets, receiver, owner);
 
         emit Withdrawn(_msgSender(), receiver, owner, assets, shares);
@@ -118,14 +123,15 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
         return shares;
     }
 
+    // Needs approvals if caller is not owner
     function redeem(
         uint256 shares,
         address receiver,
         address owner
     ) public virtual override returns (uint256) {
-        uint256 maximum = maxWithdraw(owner);
+        uint256 freeLiq = freeLiquidity();
         uint256 assets = super.redeem(shares, receiver, owner);
-        if (assets > maximum) revert ERROR_Vault__Insufficient_Liquidity(maximum);
+        if (assets >= freeLiq) revert ERROR_Vault__Insufficient_Liquidity(freeLiq);
 
         emit Withdrawn(_msgSender(), receiver, owner, assets, shares);
 
@@ -172,10 +178,12 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
     }
 
     // Owner is the only trusted borrower
-    // Invariant: totalAssets()
+    // Invariant: totalAssets(), maxWithdraw()
     function borrow(uint256 assets, address receiver) external onlyOwner {
         uint256 freeLiq = freeLiquidity();
-        if (assets > freeLiq) revert ERROR_Vault__Insufficient_Free_Liquidity(freeLiq);
+        // At the very worst case, the borrower repays nothing
+        // In this case we need to avoid division by zero by putting >= rather than >
+        if (assets >= freeLiq) revert ERROR_Vault__Insufficient_Free_Liquidity(freeLiq);
         vaultAccounting.netLoans += assets;
         IERC20(asset()).transfer(receiver, assets);
 
@@ -183,11 +191,13 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
     }
 
     // Owner is the only trusted repayer
+    // Transfers amount from repayer to the vault
     // amount may be greater or less than debt
     // Throws if repayer did not approve the vault
     // Throws if repayer does not have amount assets
     // _calculateLockedProfits() = vaultAccounting.currentProfits immediately after
     // Invariant: totalAssets()
+    // maxWithdraw() is invariant as long as totalAssets()-currentProfits >= native.balanceOf(this)
     function repay(
         uint256 amount,
         uint256 debt,

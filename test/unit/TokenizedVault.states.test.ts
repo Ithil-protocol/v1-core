@@ -34,17 +34,6 @@ describe("Tokenized Vault state test", function () {
   });
 
   describe("One-dimensional state modifications", function () {
-    it("Boost", async function () {
-      const amount = unit;
-      const targetState = {
-        boostedAmount: amount,
-        netLoans: BigNumber.from(0),
-        latestRepay: BigNumber.from(0),
-        currentProfits: BigNumber.from(0),
-        blockTimestamp: BigNumber.from(1601906400),
-        balance: BigNumber.from(0),
-      };
-      await verifyStateTokenizedVault(vault, native, targetState);
-    });
+    
   });
 });
