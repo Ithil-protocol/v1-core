@@ -416,11 +416,10 @@ describe("Tokenized Vault tests: basis", function () {
         const totalAssets = await vault.totalAssets();
         // No loans, no boost and no locked fees -> we expect total assets to be equal to balance
         expect(totalAssets).to.equal(await native.balanceOf(vault.address));
-        
+
         let toWithdraw = await vault.maxWithdraw(investor1.address);
         // We cannot withdraw the entire free liquidity
-        if (toWithdraw.eq(await vault.freeLiquidity()))
-          toWithdraw = toWithdraw.sub(1);
+        if (toWithdraw.eq(await vault.freeLiquidity())) toWithdraw = toWithdraw.sub(1);
         await vault.connect(investor1).withdraw(toWithdraw, investor1.address, investor1.address);
 
         // Investor1 has total assets
@@ -458,8 +457,7 @@ describe("Tokenized Vault tests: basis", function () {
         const initialAssets = await vault.totalAssets();
         let maximumWithdraw = await vault.connect(investor1).maxWithdraw(investor1.address);
         // Cannot withdraw entirety of free liquidity
-        if(maximumWithdraw.eq(await vault.freeLiquidity()))
-          maximumWithdraw = maximumWithdraw.sub(1)
+        if (maximumWithdraw.eq(await vault.freeLiquidity())) maximumWithdraw = maximumWithdraw.sub(1);
         const initialInvestorBalance = await native.balanceOf(investor1.address);
         await vault.connect(investor1).withdraw(maximumWithdraw, investor1.address, investor1.address);
 
@@ -624,12 +622,12 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
 
       // Repays only half of the borrowed amount
       // Cannot borrow the entire liquidity
-      const toBorrow = investorBalance.sub(1)
+      const toBorrow = investorBalance.sub(1);
       await vault.connect(admin).borrow(toBorrow, admin.address);
       await native.connect(admin).approve(vault.address, toBorrow.div(2));
       await vault.connect(admin).repay(toBorrow.div(2), toBorrow, admin.address);
 
-      // Total assets stay constant  
+      // Total assets stay constant
       expect(initialAssets).to.equal(await vault.totalAssets());
       // But maximum withdraw is not (the first .sub(1) is because 1 is still counted from before, the second .add(1) is for rounding error)
       expect((await vault.maxWithdraw(investor1.address)).sub(1)).to.equal(investorBalance.div(2).add(1));
@@ -647,7 +645,7 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
 
       // Check assets have increased
       expect(await vault.totalAssets()).to.equal(middleAssets.add(investor2Balance));
-      
+
       // Investor2 sees its expected maximum withdraw
       expect(await vault.maxWithdraw(investor2.address)).to.equal(investor2Balance.sub(1));
       // Unlocking fees does not change what investor2 withdraws
@@ -662,7 +660,9 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
       expect(finalMaximumWithdraw1).to.be.lt(investor2Balance.sub(1));
       // Withdraw everything
       await vault.connect(investor2).withdraw(finalMaximumWithdraw1.sub(1), investor2.address, investor2.address);
-      await vault.connect(investor1).withdraw((await vault.maxWithdraw(investor1.address)).sub(1), investor1.address, investor1.address);
+      await vault
+        .connect(investor1)
+        .withdraw((await vault.maxWithdraw(investor1.address)).sub(1), investor1.address, investor1.address);
     });
   });
 
@@ -749,7 +749,7 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
 
     it("Assets can be withdrawn after burning", async function () {
       // At this point, investor2 has all shares
-      
+
       expect(await vault.balanceOf(investor1.address)).to.equal(0);
       const vaultBalance = await native.balanceOf(vault.address);
       // Unlock fees
