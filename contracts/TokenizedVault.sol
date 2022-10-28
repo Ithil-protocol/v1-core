@@ -152,6 +152,8 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
 
         vaultAccounting.currentProfits = _calculateLockedProfits() - int256(increasedAssets);
         vaultAccounting.latestRepay = _blockTimestamp();
+
+        emit DirectMint(receiver, shares, increasedAssets);
     }
 
     // Burning during a loss is equivalent to declaring the owner junior
@@ -175,6 +177,8 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
         // So we can modify the state here
         vaultAccounting.currentProfits = _calculateLockedProfits() + int256(distributedAssets);
         vaultAccounting.latestRepay = _blockTimestamp();
+
+        emit DirectBurn(owner, shares, distributedAssets);
     }
 
     // Owner is the only trusted borrower
@@ -252,6 +256,9 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
 
     event Repaid(address indexed repayer, uint256 amount, uint256 debt);
 
+    event DirectMint(address indexed receiver, uint256 shares, uint256 increasedAssets);
+
+    event DirectBurn(address indexed receiver, uint256 shares, uint256 distributedAssets);
     // Errors
     error ERROR_Vault__Insufficient_Liquidity(uint256 balance);
     error ERROR_Vault__Insufficient_Free_Liquidity(uint256 freeLiquidity);

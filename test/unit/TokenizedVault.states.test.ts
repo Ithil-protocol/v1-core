@@ -72,7 +72,7 @@ describe("Tokenized Vault state test", function () {
       it("Decrease currentProfits (stay positive)", async function () {
         await decreaseCurrentProfits(vault, native, BigNumber.from(1));
       });
-      
+
       it("Decrease currentProfits (go negative)", async function () {
         await decreaseCurrentProfits(vault, native, (await vault.vaultAccounting()).currentProfits.mul(2));
       });
