@@ -3,6 +3,7 @@ pragma solidity >=0.8.12;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20, IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC20, ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import { ERC4626 } from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
@@ -10,6 +11,7 @@ import { GeneralMath } from "./libraries/GeneralMath.sol";
 
 contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
     using GeneralMath for uint256;
+    using SafeERC20 for IERC20;
 
     struct VaultAccounting {
         uint256 netLoans;
@@ -189,7 +191,7 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
         // In this case we need to avoid division by zero by putting >= rather than >
         if (assets >= freeLiq) revert ERROR_Vault__Insufficient_Free_Liquidity(freeLiq);
         vaultAccounting.netLoans += assets;
-        IERC20(asset()).transfer(receiver, assets);
+        IERC20(asset()).safeTransfer(receiver, assets);
 
         emit Borrowed(receiver, assets);
     }
@@ -216,7 +218,8 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
         vaultAccounting.latestRepay = _blockTimestamp();
 
         // the vault is not responsible for any payoff
-        IERC20(asset()).transferFrom(repayer, address(this), amount);
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(asset()).safeTransferFrom(repayer, address(this), amount);
 
         emit Repaid(repayer, amount, debt);
     }
