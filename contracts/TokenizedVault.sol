@@ -24,13 +24,13 @@ contract TokenizedVault is ERC4626, ERC20Permit, Ownable {
     bool public locked;
     VaultAccounting public vaultAccounting;
 
-    constructor(address _token)
+    constructor(IERC20Metadata _token)
         ERC20(
-            string(abi.encodePacked("Ithil ", IERC20Metadata(_token).name())),
-            string(abi.encodePacked("i", IERC20Metadata(_token).symbol()))
+            string(abi.encodePacked("Ithil ", _token.name())),
+            string(abi.encodePacked("i", _token.symbol()))
         )
-        ERC20Permit(string(abi.encodePacked("Ithil ", IERC20Metadata(_token).name())))
-        ERC4626(IERC20Metadata(_token))
+        ERC20Permit(string(abi.encodePacked("Ithil ", _token.name())))
+        ERC4626(_token)
     {
         creationTime = _blockTimestamp();
         unlockTime = 21600; // six hours
