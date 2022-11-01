@@ -4,10 +4,13 @@ import { ethers } from "hardhat";
 import { MockKyberNetworkProxy } from "../../src/types/MockKyberNetworkProxy";
 import { MockWETH } from "../../src/types/MockWETH";
 import { Vault } from "../../src/types/Vault";
+import { MockTimeTokenizedVault } from "../../src/types/MockTimeTokenizedVault";
 import ERC20 from "@openzeppelin/contracts/build/contracts/ERC20.json";
 import { expect } from "chai";
 import { BindOptions } from "dgram";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import type { MockToken } from "../../src/types/MockToken";
+import { isNativeError } from "util/types";
 
 export const INITIAL_VAULT_STATE = {
   supported: false,
@@ -102,3 +105,131 @@ export function equalWithTolerance(a: BigNumber, b: BigNumber, decimals: number)
   expect(a).to.be.above(b.sub(BigNumber.from(10).pow(decimals)));
   expect(a).to.be.below(b.add(BigNumber.from(10).pow(decimals)));
 }
+
+export const matchStateTokenizedVault = (state1: any, state2: any) => {
+  expect(state1.netLoans).to.equal(state2.netLoans);
+  expect(state1.latestRepay).to.equal(state2.latestRepay);
+  expect(state1.currentProfits).to.equal(state2.currentProfits);
+  expect(state1.blockTimestamp).to.equal(state2.blockTimestamp);
+  expect(state1.balance).to.equal(state2.balance);
+};
+
+export const verifyStateTokenizedVault = async (vault: MockTimeTokenizedVault, native: MockToken, state2: any) => {
+  const vaultAccounting = await vault.vaultAccounting();
+  expect(vaultAccounting.netLoans).to.equal(state2.netLoans);
+  expect(vaultAccounting.latestRepay).to.equal(state2.latestRepay);
+  expect(vaultAccounting.currentProfits).to.equal(state2.currentProfits);
+  expect(await vault.time()).to.equal(state2.blockTimestamp);
+  expect(await native.balanceOf(vault.address)).to.equal(state2.balance);
+};
+
+export const increaseLoans = async (vault: MockTimeTokenizedVault, native: MockToken, amount: BigNumber) => {
+  const vaultAccounting = await vault.vaultAccounting();
+  const initialBalance = await native.balanceOf(vault.address);
+  const initialTime = await vault.time();
+  let newLoans = vaultAccounting.netLoans.add(amount);
+  await vault.setAccounting(newLoans, vaultAccounting.latestRepay, vaultAccounting.currentProfits);
+  const state = {
+    netLoans: vaultAccounting.netLoans.add(amount),
+    latestRepay: vaultAccounting.latestRepay,
+    currentProfits: vaultAccounting.currentProfits,
+    blockTimestamp: initialTime,
+    balance: initialBalance,
+  };
+  await verifyStateTokenizedVault(vault, native, state);
+};
+
+export const decreaseLoans = async (vault: MockTimeTokenizedVault, native: MockToken, amount: BigNumber) => {
+  const vaultAccounting = await vault.vaultAccounting();
+  const initialBalance = await native.balanceOf(vault.address);
+  const initialTime = await vault.time();
+  let newLoans = BigNumber.from(0);
+  if (vaultAccounting.netLoans.gt(amount)) newLoans = vaultAccounting.netLoans.sub(amount);
+  await vault.setAccounting(newLoans, vaultAccounting.latestRepay, vaultAccounting.currentProfits);
+  const state = {
+    netLoans: vaultAccounting.netLoans.sub(amount),
+    latestRepay: vaultAccounting.latestRepay,
+    currentProfits: vaultAccounting.currentProfits,
+    blockTimestamp: initialTime,
+    balance: initialBalance,
+  };
+  await verifyStateTokenizedVault(vault, native, state);
+};
+
+export const increaseLatestRepay = async (vault: MockTimeTokenizedVault, native: MockToken, amount: BigNumber) => {
+  const vaultAccounting = await vault.vaultAccounting();
+  const initialBalance = await native.balanceOf(vault.address);
+  const initialTime = await vault.time();
+  let newLatestRepay = vaultAccounting.latestRepay.add(amount);
+  await vault.setAccounting(vaultAccounting.netLoans, newLatestRepay, vaultAccounting.currentProfits);
+  const state = {
+    netLoans: vaultAccounting.netLoans,
+    latestRepay: newLatestRepay,
+    currentProfits: vaultAccounting.currentProfits,
+    blockTimestamp: initialTime,
+    balance: initialBalance,
+  };
+  await verifyStateTokenizedVault(vault, native, state);
+};
+
+export const increaseCurrentProfits = async (vault: MockTimeTokenizedVault, native: MockToken, amount: BigNumber) => {
+  const vaultAccounting = await vault.vaultAccounting();
+  const initialBalance = await native.balanceOf(vault.address);
+  const initialTime = await vault.time();
+  let newProfits = vaultAccounting.currentProfits.add(amount);
+  await vault.setAccounting(vaultAccounting.currentProfits, vaultAccounting.latestRepay, newProfits);
+  const state = {
+    netLoans: vaultAccounting.netLoans,
+    latestRepay: vaultAccounting.latestRepay,
+    currentProfits: vaultAccounting.currentProfits.add(amount),
+    blockTimestamp: initialTime,
+    balance: initialBalance,
+  };
+  await verifyStateTokenizedVault(vault, native, state);
+};
+
+export const decreaseCurrentProfits = async (vault: MockTimeTokenizedVault, native: MockToken, amount: BigNumber) => {
+  const vaultAccounting = await vault.vaultAccounting();
+  const initialBalance = await native.balanceOf(vault.address);
+  const initialTime = await vault.time();
+  let newProfits = vaultAccounting.currentProfits.sub(amount);
+  await vault.setAccounting(vaultAccounting.netLoans, vaultAccounting.latestRepay, newProfits);
+  const state = {
+    netLoans: vaultAccounting.netLoans,
+    latestRepay: vaultAccounting.latestRepay,
+    currentProfits: vaultAccounting.currentProfits.sub(amount),
+    blockTimestamp: initialTime,
+    balance: initialBalance,
+  };
+  await verifyStateTokenizedVault(vault, native, state);
+};
+
+export const increaseBalance = async (vault: MockTimeTokenizedVault, native: MockToken, amount: BigNumber) => {
+  const initialBalance = await native.balanceOf(vault.address);
+  const initialTime = await vault.time();
+  await native.mintTo(vault.address, amount);
+  const vaultAccounting = await vault.vaultAccounting();
+  const state = {
+    netLoans: vaultAccounting.netLoans,
+    latestRepay: vaultAccounting.latestRepay,
+    currentProfits: vaultAccounting.currentProfits,
+    blockTimestamp: initialTime,
+    balance: initialBalance.add(amount),
+  };
+  await verifyStateTokenizedVault(vault, native, state);
+};
+
+export const advanceTime = async (vault: MockTimeTokenizedVault, native: MockToken, amount: BigNumber) => {
+  const vaultAccounting = await vault.vaultAccounting();
+  const newTime = (await vault.time()).add(amount);
+  const initialBalance = await native.balanceOf(vault.address);
+  await vault.advanceTime(amount);
+  const state = {
+    netLoans: vaultAccounting.netLoans,
+    latestRepay: vaultAccounting.latestRepay,
+    currentProfits: vaultAccounting.currentProfits,
+    blockTimestamp: newTime,
+    balance: initialBalance,
+  };
+  await verifyStateTokenizedVault(vault, native, state);
+};
