@@ -85,6 +85,7 @@ const config: HardhatUserConfig = {
     strict: false,
     only: [
       "Vault",
+      "TokenisedVault",
       "BaseStrategy",
       "Liquidator",
       "Staker",

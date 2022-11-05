@@ -3,9 +3,9 @@ import { BigNumber, Wallet } from "ethers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { expect } from "chai";
 
-import type { MockTimeTokenizedVault } from "../../src/types/MockTimeTokenizedVault";
+import type { MockTokenisedVault } from "../../src/types/MockTokenisedVault";
 import type { MockToken } from "../../src/types/MockToken";
-import { tokenizedVaultFixture, mockTimeTokenizedVaultFixture } from "../common/mockfixtures";
+import { tokenisedVaultFixture, MockTokenisedVaultFixture } from "../common/mockfixtures";
 import {
   increaseLatestRepay,
   increaseLoans,
@@ -13,12 +13,12 @@ import {
   increaseBalance,
   increaseCurrentProfits,
   decreaseCurrentProfits,
-  verifyStateTokenizedVault,
+  verifyStateTokenisedVault,
   advanceTime,
 } from "../common/utils";
 import exp from "constants";
 
-describe("Tokenized Vault state test", function () {
+describe("Tokenised Vault state test", function () {
   const createFixtureLoader = waffle.createFixtureLoader;
 
   type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
@@ -30,15 +30,15 @@ describe("Tokenized Vault state test", function () {
   let admin: SignerWithAddress;
   let investor1: SignerWithAddress;
   let investor2: SignerWithAddress;
-  let createVault: ThenArg<ReturnType<typeof mockTimeTokenizedVaultFixture>>["createVault"];
+  let createVault: ThenArg<ReturnType<typeof MockTokenisedVaultFixture>>["createVault"];
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
-  let vault: MockTimeTokenizedVault;
+  let vault: MockTokenisedVault;
   let unit: BigNumber;
   before("load fixture", async () => {
     [wallet, other] = await (ethers as any).getSigners();
     loadFixture = createFixtureLoader([wallet, other]);
-    ({ native, admin, investor1, investor2, createVault } = await loadFixture(mockTimeTokenizedVaultFixture));
+    ({ native, admin, investor1, investor2, createVault } = await loadFixture(MockTokenisedVaultFixture));
     vault = await createVault();
     initialTime = await vault.time();
   });
@@ -47,7 +47,7 @@ describe("Tokenized Vault state test", function () {
     before("load fixture", async () => {
       [wallet, other] = await (ethers as any).getSigners();
       loadFixture = createFixtureLoader([wallet, other]);
-      ({ native, admin, investor1, investor2, createVault } = await loadFixture(mockTimeTokenizedVaultFixture));
+      ({ native, admin, investor1, investor2, createVault } = await loadFixture(MockTokenisedVaultFixture));
       vault = await createVault();
       unit = BigNumber.from(10).pow(await native.decimals());
     });
@@ -74,7 +74,7 @@ describe("Tokenized Vault state test", function () {
       });
 
       it("Decrease currentProfits (go negative)", async function () {
-        await decreaseCurrentProfits(vault, native, (await vault.vaultAccounting()).currentProfits.mul(2));
+        await decreaseCurrentProfits(vault, native, (await vault.currentProfits()).mul(2));
       });
 
       it("Advance time", async function () {

@@ -3,15 +3,15 @@ import { BigNumber, Wallet } from "ethers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { expect } from "chai";
 
-import type { TokenizedVault } from "../../src/types/TokenizedVault";
-import type { MockTimeTokenizedVault } from "../../src/types/MockTimeTokenizedVault";
+import type { TokenisedVault } from "../../src/types/TokenisedVault";
+import type { MockTokenisedVault } from "../../src/types/MockTokenisedVault";
 import type { MockToken } from "../../src/types/MockToken";
-import { tokenizedVaultFixture, mockTimeTokenizedVaultFixture } from "../common/mockfixtures";
+import { tokenisedVaultFixture, MockTokenisedVaultFixture } from "../common/mockfixtures";
 import exp from "constants";
 import { ConstructorFragment, FunctionFragment } from "@ethersproject/abi";
 import { CONNREFUSED } from "dns";
 
-describe("Tokenized Vault tests: basis", function () {
+describe("Tokenised Vault tests: basis", function () {
   const createFixtureLoader = waffle.createFixtureLoader;
 
   type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
@@ -22,15 +22,15 @@ describe("Tokenized Vault tests: basis", function () {
   let admin: SignerWithAddress;
   let investor1: SignerWithAddress;
   let investor2: SignerWithAddress;
-  let createVault: ThenArg<ReturnType<typeof tokenizedVaultFixture>>["createVault"];
+  let createVault: ThenArg<ReturnType<typeof tokenisedVaultFixture>>["createVault"];
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
-  let vault: TokenizedVault;
+  let vault: TokenisedVault;
 
   before("load fixture", async () => {
     [wallet, other] = await (ethers as any).getSigners();
     loadFixture = createFixtureLoader([wallet, other]);
-    ({ native, admin, investor1, investor2, createVault } = await loadFixture(tokenizedVaultFixture));
+    ({ native, admin, investor1, investor2, createVault } = await loadFixture(tokenisedVaultFixture));
     vault = await createVault();
   });
 
@@ -77,12 +77,12 @@ describe("Tokenized Vault tests: basis", function () {
       });
 
       it("Non owner cannot change unlock time", async function () {
-        await expect(vault.connect(investor2).setUnlockTime(BigNumber.from(1000))).to.be.reverted;
+        await expect(vault.connect(investor2).setfeeUnlockTime(BigNumber.from(1000))).to.be.reverted;
       });
 
       it("Change unlock time", async function () {
-        await vault.connect(admin).setUnlockTime(BigNumber.from(1000));
-        expect(await vault.unlockTime()).to.equal(BigNumber.from(1000));
+        await vault.connect(admin).setfeeUnlockTime(BigNumber.from(1000));
+        expect(await vault.feeUnlockTime()).to.equal(BigNumber.from(1000));
       });
     });
     describe("Events", function () {});
@@ -107,10 +107,10 @@ describe("Tokenized Vault tests: basis", function () {
         if (!(await vault.locked())) await vault.connect(admin).toggleLock();
 
         await expect(vault.connect(investor1).deposit(amountToDeposit, investor1.address)).to.be.revertedWith(
-          "ERROR_Vault__Locked()",
+          "Vault__Locked()",
         );
         await expect(vault.connect(investor1).mint(amountToDeposit, investor1.address)).to.be.revertedWith(
-          "ERROR_Vault__Locked()",
+          "Vault__Locked()",
         );
 
         // Unlock vault to proceed with other tests
@@ -245,7 +245,7 @@ describe("Tokenized Vault tests: basis", function () {
 
         await vault.connect(admin).borrow(toBorrow, investor2.address);
         // Net loans increased
-        expect((await vault.vaultAccounting()).netLoans).to.equal(toBorrow);
+        expect(await vault.netLoans()).to.equal(toBorrow);
         // Investor2 balance increased
         expect(await native.balanceOf(investor2.address)).to.equal(initialInvestorBalance.add(toBorrow));
         // Vault balance decreased
@@ -269,7 +269,7 @@ describe("Tokenized Vault tests: basis", function () {
         const initialVaultBalance = await native.balanceOf(vault.address);
         const initialInvestorBalance = await native.balanceOf(investor2.address);
         const initialTotalAssets = await vault.totalAssets();
-        const currentLoans = (await vault.vaultAccounting()).netLoans;
+        const currentLoans = await vault.netLoans();
         // Repay half of the loans + 10% fees
         const debtToRepay = currentLoans.div(2);
         fees = currentLoans.div(10);
@@ -285,13 +285,13 @@ describe("Tokenized Vault tests: basis", function () {
         await vault.connect(admin).repay(debtToRepay.add(fees), debtToRepay, investor2.address);
 
         // Net loans decreased
-        expect((await vault.vaultAccounting()).netLoans).to.equal(currentLoans.sub(debtToRepay));
+        expect(await vault.netLoans()).to.equal(currentLoans.sub(debtToRepay));
         // Investor2 balance decreased
         expect(await native.balanceOf(investor2.address)).to.equal(initialInvestorBalance.sub(debtToRepay.add(fees)));
         // Vault balance increased
         expect(await native.balanceOf(vault.address)).to.equal(initialVaultBalance.add(debtToRepay.add(fees)));
         // Current profits increased
-        expect((await vault.vaultAccounting()).currentProfits).to.equal(fees);
+        expect(await vault.currentProfits()).to.equal(fees);
         // Vault assets stay constant
         expect(await vault.totalAssets()).to.equal(initialTotalAssets);
       });
@@ -299,8 +299,8 @@ describe("Tokenized Vault tests: basis", function () {
       it("Check fees unlocking", async function () {
         const initialTotalAssets = await vault.totalAssets();
         // Unlock half of the fees after half unlock time
-        const unlockTime = await vault.unlockTime();
-        const latestRepay = (await vault.vaultAccounting()).latestRepay;
+        const unlockTime = await vault.feeUnlockTime();
+        const latestRepay = await vault.latestRepay();
         let nextTimestapm = parseInt(latestRepay.add(unlockTime.div(2)).toString());
         await network.provider.send("evm_setNextBlockTimestamp", [nextTimestapm]);
         await network.provider.send("evm_mine");
@@ -311,12 +311,12 @@ describe("Tokenized Vault tests: basis", function () {
       });
 
       it("Repay assets with a loss, coverable with locked fees", async function () {
-        const unlockTime = await vault.unlockTime();
+        const unlockTime = await vault.feeUnlockTime();
         const initialVaultBalance = await native.balanceOf(vault.address);
         const initialInvestorBalance = await native.balanceOf(investor2.address);
-        const currentLoans = (await vault.vaultAccounting()).netLoans;
-        const currentProfits = (await vault.vaultAccounting()).currentProfits;
-        const latestRepay = (await vault.vaultAccounting()).latestRepay;
+        const currentLoans = await vault.netLoans();
+        const currentProfits = await vault.currentProfits();
+        const latestRepay = await vault.latestRepay();
 
         const expectedLockedProfits = currentProfits.sub(expectedUnlock);
         // Repay half of the loans with a 10% loss
@@ -334,7 +334,7 @@ describe("Tokenized Vault tests: basis", function () {
         await vault.connect(admin).repay(debtToRepay.sub(loss), debtToRepay, investor2.address);
 
         // Net loans decreased
-        expect((await vault.vaultAccounting()).netLoans).to.equal(currentLoans.sub(debtToRepay));
+        expect(await vault.netLoans()).to.equal(currentLoans.sub(debtToRepay));
         // Investor2 balance decreased
         expect(await native.balanceOf(investor2.address)).to.equal(initialInvestorBalance.sub(debtToRepay.sub(loss)));
         // Vault balance increased
@@ -345,21 +345,22 @@ describe("Tokenized Vault tests: basis", function () {
         const timestampBefore = BigNumber.from(blockBefore.timestamp);
         const unlockedProfits = timestampBefore.sub(latestRepay).mul(currentProfits).div(unlockTime);
         const lockedProfits = currentProfits.sub(unlockedProfits);
-        expect((await vault.vaultAccounting()).currentProfits).to.equal(lockedProfits.sub(loss).sub(1)); // -1 for rounding errors
+        expect(await vault.currentProfits()).to.equal(lockedProfits.sub(loss).sub(1)); // -1 for rounding errors
       });
 
       it("Repay assets with a loss, not coverable with locked fees", async function () {
-        const unlockTime = await vault.unlockTime();
+        const unlockTime = await vault.feeUnlockTime();
         const initialVaultBalance = await native.balanceOf(vault.address);
         const initialInvestorBalance = await native.balanceOf(investor2.address);
-        const vaultAccounting = await vault.vaultAccounting();
-        const currentLoans = vaultAccounting.netLoans;
+        const currentLoans = await vault.netLoans();
+        const latestRepay = await vault.latestRepay();
+        const currentProfits = await vault.currentProfits();
         let blockNumBefore = await ethers.provider.getBlockNumber();
         let blockBefore = await ethers.provider.getBlock(blockNumBefore);
         let timestampBefore = BigNumber.from(blockBefore.timestamp);
 
-        const initialLockedProfits = vaultAccounting.currentProfits
-          .mul(unlockTime.sub(timestampBefore.sub(vaultAccounting.latestRepay)))
+        const initialLockedProfits = currentProfits
+          .mul(unlockTime.sub(timestampBefore.sub(latestRepay)))
           .div(unlockTime);
         // Repay current loans but losing more than locked profits
         const debtToRepay = currentLoans.div(2);
@@ -378,7 +379,7 @@ describe("Tokenized Vault tests: basis", function () {
         await vault.connect(admin).repay(debtToRepay.sub(loss), debtToRepay, investor2.address);
 
         // Net loans decreased
-        expect((await vault.vaultAccounting()).netLoans).to.equal(currentLoans.sub(debtToRepay));
+        expect(await vault.netLoans()).to.equal(currentLoans.sub(debtToRepay));
         // Investor2 balance decreased
         expect(await native.balanceOf(investor2.address)).to.equal(initialInvestorBalance.sub(debtToRepay.sub(loss)));
         // Vault balance increased
@@ -386,20 +387,20 @@ describe("Tokenized Vault tests: basis", function () {
         // Current profits are less than the previous locked profits and now negative
         // Precise calculation cannot be done because timestamp is not controllable in TS (use mockTime to do precise tests)
         // But since we calculated initialLockedProfits time increased -> less locked profits
-        expect((await vault.vaultAccounting()).currentProfits).to.be.lte(predictedProfits);
+        expect(await vault.currentProfits()).to.be.lte(predictedProfits);
         // Todo: check with mock time that assets stay constant (here they change very slightly)
       });
 
       it("Repay full debt (zero fees)", async function () {
         const initialInvestorBalance = await native.balanceOf(investor2.address);
         const initialVaultBalance = await native.balanceOf(vault.address);
-        const currentLoans = (await vault.vaultAccounting()).netLoans;
+        const currentLoans = await vault.netLoans();
         // Approve vault for repay
         await native.connect(investor2).approve(vault.address, currentLoans);
         await vault.connect(admin).repay(currentLoans, currentLoans, investor2.address);
 
         // Net loans are zero
-        expect((await vault.vaultAccounting()).netLoans).to.equal(0);
+        expect(await vault.netLoans()).to.equal(0);
         // Investor2 balance decreased
         expect(await native.balanceOf(investor2.address)).to.equal(initialInvestorBalance.sub(currentLoans));
         // Vault balance increased
@@ -407,8 +408,8 @@ describe("Tokenized Vault tests: basis", function () {
       });
 
       it("Unlock all fees and withdraw assets", async function () {
-        const unlockTime = await vault.unlockTime();
-        const latestRepay = (await vault.vaultAccounting()).latestRepay;
+        const unlockTime = await vault.feeUnlockTime();
+        const latestRepay = await vault.latestRepay();
         let nextTimestapm = parseInt(latestRepay.add(unlockTime).toString());
         await network.provider.send("evm_setNextBlockTimestamp", [nextTimestapm]);
         await network.provider.send("evm_mine");
@@ -448,7 +449,7 @@ describe("Tokenized Vault tests: basis", function () {
         await expect(
           vault.connect(investor1).withdraw(initialInvestorBalance, investor1.address, investor1.address),
         ).to.be.revertedWith(
-          "ERROR_Vault__Insufficient_Liquidity(" + ethers.utils.formatUnits(maximumWithdraw, 0) + ")",
+          "Vault__Insufficient_Liquidity(" + ethers.utils.formatUnits(maximumWithdraw, 0) + ")",
         );
       });
 
@@ -474,7 +475,7 @@ describe("Tokenized Vault tests: basis", function () {
       it("Repay more than netLoans", async function () {
         // Refill admin
         await native.connect(admin).mint();
-        const netLoans = (await vault.vaultAccounting()).netLoans;
+        const netLoans = await vault.netLoans();
         const amountToRepay = netLoans.add(1);
 
         // Repay one more than netLoans
@@ -482,12 +483,12 @@ describe("Tokenized Vault tests: basis", function () {
         await vault.connect(admin).repay(netLoans, amountToRepay, admin.address);
 
         // Net loans are now zero
-        expect((await vault.vaultAccounting()).netLoans).to.equal(0);
+        expect(await vault.netLoans()).to.equal(0);
       });
     });
   });
 });
-describe("Tokenized Vault tests: mock time for fees testing", function () {
+describe("Tokenised Vault tests: mock time for fees testing", function () {
   const createFixtureLoader = waffle.createFixtureLoader;
 
   type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
@@ -498,15 +499,15 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
   let admin: SignerWithAddress;
   let investor1: SignerWithAddress;
   let investor2: SignerWithAddress;
-  let createVault: ThenArg<ReturnType<typeof mockTimeTokenizedVaultFixture>>["createVault"];
+  let createVault: ThenArg<ReturnType<typeof MockTokenisedVaultFixture>>["createVault"];
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
-  let vault: MockTimeTokenizedVault;
+  let vault: MockTokenisedVault;
 
   before("load fixture", async () => {
     [wallet, other] = await (ethers as any).getSigners();
     loadFixture = createFixtureLoader([wallet, other]);
-    ({ native, admin, investor1, investor2, createVault } = await loadFixture(mockTimeTokenizedVaultFixture));
+    ({ native, admin, investor1, investor2, createVault } = await loadFixture(MockTokenisedVaultFixture));
     vault = await createVault();
   });
 
@@ -550,42 +551,37 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
       // Free liquidity is constant
       expect(await vault.freeLiquidity()).to.equal(initialFreeLiquidity);
       // Check there is no dust
-      const vaultAccounting = await vault.vaultAccounting();
-      expect(vaultAccounting.netLoans).to.equal(0);
+      expect(await vault.netLoans()).to.equal(0);
       // Current profits increased
-      expect(vaultAccounting.currentProfits).to.equal(toRepay);
+      expect(await vault.currentProfits()).to.equal(toRepay);
       // Latest repay is time
-      expect(vaultAccounting.latestRepay).to.equal(await vault.time());
+      expect(await vault.latestRepay()).to.equal(await vault.time());
     });
 
     it("Unlock one-third of the fees", async function () {
-      const unlockTime = await vault.unlockTime();
+      const unlockTime = await vault.feeUnlockTime();
       const initialAssets = await vault.totalAssets();
-      const vaultAccounting = await vault.vaultAccounting();
+      const netLoans = await vault.netLoans();
+      const latestRepay = await vault.latestRepay();
+      const currentProfits = await vault.currentProfits();
       // Check assets
-      expect(initialAssets).to.equal(
-        (await native.balanceOf(vault.address)).add(vaultAccounting.netLoans).sub(vaultAccounting.currentProfits),
-      );
+      expect(initialAssets).to.equal((await native.balanceOf(vault.address)).add(netLoans).sub(currentProfits));
       const initialFreeLiquidity = await vault.freeLiquidity();
       await vault.advanceTime(unlockTime.div(3));
 
-      const lockedProfits = vaultAccounting.currentProfits
-        .mul(unlockTime.sub((await vault.time()).sub(vaultAccounting.latestRepay)))
-        .div(unlockTime);
+      const lockedProfits = currentProfits.mul(unlockTime.sub((await vault.time()).sub(latestRepay))).div(unlockTime);
 
       // Assets increased
-      expect(await vault.totalAssets()).to.equal(initialAssets.add(vaultAccounting.currentProfits).sub(lockedProfits));
+      expect(await vault.totalAssets()).to.equal(initialAssets.add(currentProfits).sub(lockedProfits));
       // Free liquidity increased
-      expect(await vault.freeLiquidity()).to.equal(
-        initialFreeLiquidity.add(vaultAccounting.currentProfits).sub(lockedProfits),
-      );
+      expect(await vault.freeLiquidity()).to.equal(initialFreeLiquidity.add(currentProfits).sub(lockedProfits));
     });
 
     it("Cannot withdraw more than free liquidity", async function () {
       const currentBalance = await native.balanceOf(vault.address);
       const freeLiquidity = await vault.freeLiquidity();
       await expect(vault.withdraw(currentBalance, investor1.address, investor1.address)).to.be.revertedWith(
-        "ERROR_Vault__Insufficient_Liquidity(" + ethers.utils.formatUnits(freeLiquidity, 0) + ")",
+        "Vault__Insufficient_Liquidity(" + ethers.utils.formatUnits(freeLiquidity, 0) + ")",
       );
     });
 
@@ -593,14 +589,13 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
       const currentBalance = await native.balanceOf(vault.address);
       const freeLiquidity = await vault.freeLiquidity();
       await expect(vault.connect(admin).borrow(currentBalance, admin.address)).to.be.revertedWith(
-        "ERROR_Vault__Insufficient_Free_Liquidity(" + ethers.utils.formatUnits(freeLiquidity, 0) + ")",
+        "Vault__Insufficient_Free_Liquidity(" + ethers.utils.formatUnits(freeLiquidity, 0) + ")",
       );
     });
 
     it("Unlock remaining part of fees and withdraw", async function () {
-      const unlockTime = await vault.unlockTime();
-      const vaultAccounting = await vault.vaultAccounting();
-      await vault.advanceTime(vaultAccounting.latestRepay.add(unlockTime).sub(await vault.time()));
+      const unlockTime = await vault.feeUnlockTime();
+      await vault.advanceTime((await vault.latestRepay()).add(unlockTime).sub(await vault.time()));
 
       const currentLiquidity = await native.balanceOf(vault.address);
       // All profits are now unlocked
@@ -649,7 +644,7 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
       // Investor2 sees its expected maximum withdraw
       expect(await vault.maxWithdraw(investor2.address)).to.equal(investor2Balance.sub(1));
       // Unlocking fees does not change what investor2 withdraws
-      await vault.advanceTime(await vault.unlockTime());
+      await vault.advanceTime(await vault.feeUnlockTime());
       // Assets are now equal to investor2Balance and to the vault balance
       const finalAssets = await vault.totalAssets();
       // There are two carried tokens here
@@ -692,7 +687,7 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
       expect(initialMaximumWithdraw1).to.equal(await vault.maxWithdraw(investor1.address));
 
       // Advance time to unlock the loss
-      await vault.advanceTime(await vault.unlockTime());
+      await vault.advanceTime(await vault.feeUnlockTime());
       const finalMaximumWithdraw1 = await vault.maxWithdraw(investor1.address);
       const finalMaximumWithdraw2 = await vault.maxWithdraw(investor2.address);
 
@@ -721,7 +716,7 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
       expect(await vault.balanceOf(investor1.address)).to.equal((await vault.balanceOf(investor2.address)).mul(2));
 
       // Unlock fees
-      await vault.advanceTime(await vault.unlockTime());
+      await vault.advanceTime(await vault.feeUnlockTime());
       const finalMaximumWithdraw1 = await vault.maxWithdraw(investor1.address);
       const finalMaximumWithdraw2 = await vault.maxWithdraw(investor2.address);
 
@@ -743,7 +738,7 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
       await vault.connect(admin).directBurn(investor1Shares, investor1.address);
 
       await expect(vault.connect(admin).directBurn(investor2Shares, investor2.address)).to.be.revertedWith(
-        "ERROR_Vault__Supply_Burned()",
+        "Vault__Supply_Burned()",
       );
     });
 
@@ -753,7 +748,7 @@ describe("Tokenized Vault tests: mock time for fees testing", function () {
       expect(await vault.balanceOf(investor1.address)).to.equal(0);
       const vaultBalance = await native.balanceOf(vault.address);
       // Unlock fees
-      await vault.advanceTime(await vault.unlockTime());
+      await vault.advanceTime(await vault.feeUnlockTime());
       // Max withdraw value is correct
       expect(await vault.maxWithdraw(investor2.address)).to.equal(vaultBalance);
       // Withdraw everything

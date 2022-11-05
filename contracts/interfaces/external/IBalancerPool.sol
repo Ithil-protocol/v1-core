@@ -7,9 +7,9 @@ import { IBalancerVault } from "./IBalancerVault.sol";
 /// @title    Interface of Balancer BasePool contract
 interface IBalancerPool is IERC20 {
     /**
-     * @dev Returns all normalized weights, in the same order as the Pool's tokens.
+     * @dev Returns all normalised weights, in the same order as the Pool's tokens.
      */
-    function getNormalizedWeights() external view returns (uint256[] memory);
+    function getNormalisedWeights() external view returns (uint256[] memory);
 
     function getSwapFeePercentage() external view returns (uint256);
 }

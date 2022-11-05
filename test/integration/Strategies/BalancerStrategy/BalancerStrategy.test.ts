@@ -83,14 +83,16 @@ describe("Balancer strategy integration tests", function () {
     const tokenArtifact: Artifact = await artifacts.readArtifact("ERC20");
     marginToken = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.DAI.address);
     investmentTokenBPT = <ERC20>await ethers.getContractAt(tokenArtifact.abi, balancerPoolAddress);
-
+    
     await vault.whitelistToken(marginToken.address, 10, 10, 1000);
     await vault.whitelistToken(investmentTokenBPT.address, 10, 10, 1);
 
     await strategy.setRiskFactor(marginToken.address, 3000);
     await strategy.setRiskFactor(investmentTokenBPT.address, 4000);
 
+    console.log(111111);
     await strategy.addPool(balancerPoolAddress, balancerPoolID, auraPoolID);
+    console.log(222222);
 
     await getTokens(staker.address, marginToken.address, tokens.DAI.whale, marginTokenLiquidity);
     await getTokens(trader1.address, marginToken.address, tokens.DAI.whale, marginTokenLiquidity);
@@ -109,7 +111,7 @@ describe("Balancer strategy integration tests", function () {
     };
   });
 
-  xit("Balancer Strategy: quoter", async function () {
+  it("Balancer Strategy: quoter", async function () {
     const [enter] = await strategy.quote(order.spentToken, order.obtainedToken, order.maxSpent);
     expect(enter).to.be.gt(0);
     const [exit] = await strategy.quote(order.obtainedToken, order.spentToken, order.maxSpent);

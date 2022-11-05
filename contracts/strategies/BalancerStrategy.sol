@@ -157,7 +157,7 @@ contract BalancerStrategy is BaseStrategy {
 
         IBalancerPool bpool = IBalancerPool(poolAddress);
         uint256 fee = bpool.getSwapFeePercentage();
-        uint256[] memory weights = bpool.getNormalizedWeights();
+        uint256[] memory weights = bpool.getNormalisedWeights();
 
         (address lptoken, , , address rewardsContract, , bool shutdown) = auraBooster.poolInfo(auraPoolID);
         assert(!shutdown);

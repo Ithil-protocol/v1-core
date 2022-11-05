@@ -63,15 +63,15 @@ library BalancerHelper {
         uint256 amountIn,
         uint256 totalBptSupply,
         uint256 totalTokenBalance,
-        uint256 normalizedWeight,
+        uint256 normalisedWeight,
         uint256 swapPercentageFee
     ) internal pure returns (uint256) {
         uint256 swapFee = FloatingPointMath.mul(
-            FloatingPointMath.mul(amountIn, FloatingPointMath.REFERENCE - normalizedWeight),
+            FloatingPointMath.mul(amountIn, FloatingPointMath.REFERENCE - normalisedWeight),
             swapPercentageFee
         );
         uint256 balanceRatio = FloatingPointMath.div(totalTokenBalance + amountIn - swapFee, totalTokenBalance);
-        uint256 invariantRatio = FloatingPointMath.power(balanceRatio, normalizedWeight);
+        uint256 invariantRatio = FloatingPointMath.power(balanceRatio, normalisedWeight);
         return
             invariantRatio > FloatingPointMath.REFERENCE
                 ? FloatingPointMath.mul(totalBptSupply, invariantRatio - FloatingPointMath.REFERENCE)
@@ -82,13 +82,13 @@ library BalancerHelper {
         uint256 amountIn,
         uint256 totalBptSupply,
         uint256 totalTokenBalance,
-        uint256 normalizedWeight,
+        uint256 normalisedWeight,
         uint256 swapPercentageFee
     ) internal pure returns (uint256) {
         uint256 invariantRatio = FloatingPointMath.div(totalBptSupply - amountIn, totalBptSupply);
         uint256 balanceRatio = FloatingPointMath.power(
             invariantRatio,
-            FloatingPointMath.div(FloatingPointMath.REFERENCE, normalizedWeight)
+            FloatingPointMath.div(FloatingPointMath.REFERENCE, normalisedWeight)
         );
         uint256 amountOutWithoutFee = FloatingPointMath.mul(
             totalTokenBalance,
@@ -96,7 +96,7 @@ library BalancerHelper {
         );
         uint256 taxableAmount = FloatingPointMath.mul(
             amountOutWithoutFee,
-            FloatingPointMath.complement(normalizedWeight)
+            FloatingPointMath.complement(normalisedWeight)
         );
         uint256 nonTaxableAmount = FloatingPointMath.sub(amountOutWithoutFee, taxableAmount);
         uint256 taxableAmountMinusFees = FloatingPointMath.mul(
