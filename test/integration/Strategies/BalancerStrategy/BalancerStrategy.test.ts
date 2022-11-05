@@ -83,7 +83,7 @@ describe("Balancer strategy integration tests", function () {
     const tokenArtifact: Artifact = await artifacts.readArtifact("ERC20");
     marginToken = <ERC20>await ethers.getContractAt(tokenArtifact.abi, tokens.DAI.address);
     investmentTokenBPT = <ERC20>await ethers.getContractAt(tokenArtifact.abi, balancerPoolAddress);
-    
+
     await vault.whitelistToken(marginToken.address, 10, 10, 1000);
     await vault.whitelistToken(investmentTokenBPT.address, 10, 10, 1);
 

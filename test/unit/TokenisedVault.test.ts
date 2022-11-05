@@ -77,11 +77,11 @@ describe("Tokenised Vault tests: basis", function () {
       });
 
       it("Non owner cannot change unlock time", async function () {
-        await expect(vault.connect(investor2).setfeeUnlockTime(BigNumber.from(1000))).to.be.reverted;
+        await expect(vault.connect(investor2).setFeeUnlockTime(BigNumber.from(1000))).to.be.reverted;
       });
 
       it("Change unlock time", async function () {
-        await vault.connect(admin).setfeeUnlockTime(BigNumber.from(1000));
+        await vault.connect(admin).setFeeUnlockTime(BigNumber.from(1000));
         expect(await vault.feeUnlockTime()).to.equal(BigNumber.from(1000));
       });
     });
@@ -448,9 +448,7 @@ describe("Tokenised Vault tests: basis", function () {
         // Withdrawing now should fail
         await expect(
           vault.connect(investor1).withdraw(initialInvestorBalance, investor1.address, investor1.address),
-        ).to.be.revertedWith(
-          "Vault__Insufficient_Liquidity(" + ethers.utils.formatUnits(maximumWithdraw, 0) + ")",
-        );
+        ).to.be.revertedWith("Vault__Insufficient_Liquidity(" + ethers.utils.formatUnits(maximumWithdraw, 0) + ")");
       });
 
       it("Withdraw with open loans (sufficient balance)", async function () {
