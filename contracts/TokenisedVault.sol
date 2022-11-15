@@ -40,10 +40,10 @@ contract TokenisedVault is ITokenisedVault, ERC4626, ERC20Permit, Ownable {
         emit VaultLockWasToggled(locked);
     }
 
-    function setFeeUnlockTime(uint256 _feeUnlockTime) external onlyOwner {
+    function setfeeUnlockTime(uint256 _feeUnlockTime) external onlyOwner {
         // Minimum 30 seconds, maximum 7 days
         // This also avoids division by zero in _calculateLockedProfits()
-        if (_feeUnlockTime < 30 || _feeUnlockTime > 604800) revert Vault__Fee_Unlock_Out_Of_Range();
+        if (_feeUnlockTime < 30 seconds || _feeUnlockTime > 7 days) revert Vault__Fee_Unlock_Out_Of_Range();
         feeUnlockTime = _feeUnlockTime;
 
         emit DegradationCoefficientWasChanged(feeUnlockTime);
