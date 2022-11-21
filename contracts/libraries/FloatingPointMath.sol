@@ -27,7 +27,7 @@ library FloatingPointMath {
 
     // Assumes base is "near 10^18", as it will be the case for the typical Balancer pools
     // Balancer's math module also uses Taylor expansion, thus they also assume small numbers
-    // exp is also a floating number, as the normalized weights of Balancer pools
+    // exp is also a floating number, as the normalised weights of Balancer pools
     // 2-th order Taylor expansion
     function power(uint256 base, uint256 exp) internal pure returns (uint256) {
         uint256 mantissa = base > REFERENCE ? base - REFERENCE : REFERENCE - base;

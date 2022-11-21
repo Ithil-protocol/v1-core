@@ -96,7 +96,7 @@ interface IBalancerVault {
      * and plain ERC20 transfers using the Vault's allowance. This last feature is particularly useful for relayers, as
      * it lets integrators reuse a user's Vault allowance.
      *
-     * For each operation, if the caller is not `sender`, it must be an authorized relayer for them.
+     * For each operation, if the caller is not `sender`, it must be an authorised relayer for them.
      */
     function manageUserBalance(UserBalanceOp[] memory ops) external payable;
 
@@ -182,7 +182,7 @@ interface IBalancerVault {
     //
     //  - Minimal Swap Info: IMinimalSwapInfoPool is used instead of IGeneralPool, which saves gas by only passing the
     // balance of the two tokens involved in the swap. This is suitable for some pricing algorithms, like the weighted
-    // constant product one popularized by Balancer V1. Swap costs are smaller compared to general Pools, and are
+    // constant product one popularised by Balancer V1. Swap costs are smaller compared to general Pools, and are
     // independent of the number of registered tokens.
     //
     //  - Two Token: only allows two tokens to be registered. This achieves the lowest possible swap gas cost. Like
@@ -322,10 +322,10 @@ interface IBalancerVault {
 
     /**
      * @dev Called by users to join a Pool, which transfers tokens from `sender` into the Pool's balance. This will
-     * trigger custom Pool behavior, which will typically grant something in return to `recipient` - often tokenized
+     * trigger custom Pool behavior, which will typically grant something in return to `recipient` - often tokenised
      * Pool shares.
      *
-     * If the caller is not `sender`, it must be an authorized relayer for them.
+     * If the caller is not `sender`, it must be an authorised relayer for them.
      *
      * The `assets` and `maxAmountsIn` arrays must have the same length, and each entry indicates the maximum amount
      * to send for each asset. The amounts to send are decided by the Pool and not the Vault: it just enforces
@@ -368,11 +368,11 @@ interface IBalancerVault {
 
     /**
      * @dev Called by users to exit a Pool, which transfers tokens from the Pool's balance to `recipient`. This will
-     * trigger custom Pool behavior, which will typically ask for something in return from `sender` - often tokenized
+     * trigger custom Pool behavior, which will typically ask for something in return from `sender` - often tokenised
      * Pool shares. The amount of tokens that can be withdrawn is limited by the Pool's `cash` balance (see
      * `getPoolTokenInfo`).
      *
-     * If the caller is not `sender`, it must be an authorized relayer for them.
+     * If the caller is not `sender`, it must be an authorised relayer for them.
      *
      * The `tokens` and `minAmountsOut` arrays must have the same length, and each entry in these indicates the minimum
      * token amount to receive for each token contract. The amounts to send are decided by the Pool and not the Vault:
@@ -593,7 +593,7 @@ interface IBalancerVault {
      * @dev All tokens in a swap are either sent from the `sender` account to the Vault, or from the Vault to the
      * `recipient` account.
      *
-     * If the caller is not `sender`, it must be an authorized relayer for them.
+     * If the caller is not `sender`, it must be an authorised relayer for them.
      *
      * If `fromInternalBalance` is true, the `sender`'s Internal Balance will be preferred, performing an ERC20
      * transfer for the difference between the requested amount and the User's Internal Balance (if any). The `sender`

@@ -44,7 +44,7 @@ A detailed report of a vulnerability increases the likelihood of a reward and ma
 - The steps needed to reproduce the bug or, preferably, a proof of concept.
 - The potential implications of the vulnerability being abused.
 
-Anyone who reports a unique, previously-unreported vulnerability that results in a change to the code or a configuration change and who keeps such vulnerability confidential until it has been resolved by our engineers will be recognized publicly for their contribution if they wish so.
+Anyone who reports a unique, previously-unreported vulnerability that results in a change to the code or a configuration change and who keeps such vulnerability confidential until it has been resolved by our engineers will be recognised publicly for their contribution if they wish so.
 
 ## Other Terms
 

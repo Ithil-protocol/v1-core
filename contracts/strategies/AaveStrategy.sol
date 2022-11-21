@@ -6,8 +6,6 @@ import { IAaveLendingPool } from "../interfaces/external/IAaveLendingPool.sol";
 import { IAaveAToken } from "../interfaces/external/IAaveAToken.sol";
 import { BaseStrategy } from "./BaseStrategy.sol";
 
-import "hardhat/console.sol";
-
 /// @title    AaveStrategy contract
 /// @author   Ithil
 /// @notice   A strategy to perform leveraged staking on any Aave markets

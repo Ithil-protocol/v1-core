@@ -7,8 +7,8 @@ import { MockWETH } from "../../src/types/MockWETH";
 import { MockToken } from "../../src/types/MockToken";
 import { MockYearnRegistry } from "../../src/types/MockYearnRegistry";
 import { Vault } from "../../src/types/Vault";
-import { TokenizedVault } from "../../src/types/TokenizedVault";
-import { MockTimeTokenizedVault } from "../../src/types/MockTimeTokenizedVault";
+import { TokenisedVault } from "../../src/types/TokenisedVault";
+import { MockTokenisedVault } from "../../src/types/MockTokenisedVault";
 import { Liquidator } from "../../src/types/Liquidator";
 import { Staker } from "../../src/types/Staker";
 import { Ithil } from "../../src/types/Ithil";
@@ -67,20 +67,20 @@ interface MockYearnStrategyFixture {
   createStrategy(): Promise<YearnStrategy>;
 }
 
-interface TokenizedVaultFixture {
+interface TokenisedVaultFixture {
   native: MockToken;
   admin: SignerWithAddress;
   investor1: SignerWithAddress;
   investor2: SignerWithAddress;
-  createVault(): Promise<TokenizedVault>;
+  createVault(): Promise<TokenisedVault>;
 }
 
-interface MockTimeTokenizedVaultFixture {
+interface MockTokenisedVaultFixture {
   native: MockToken;
   admin: SignerWithAddress;
   investor1: SignerWithAddress;
   investor2: SignerWithAddress;
-  createVault(): Promise<MockTimeTokenizedVault>;
+  createVault(): Promise<MockTokenisedVault>;
 }
 
 export const mockVaultFixture: Fixture<MockVaultFixture> = async function (): Promise<MockVaultFixture> {
@@ -254,7 +254,7 @@ export const mockTestFixture: Fixture<MockTestStrategyFixture> = async function 
   };
 };
 
-export const tokenizedVaultFixture: Fixture<TokenizedVaultFixture> = async function (): Promise<TokenizedVaultFixture> {
+export const tokenisedVaultFixture: Fixture<TokenisedVaultFixture> = async function (): Promise<TokenisedVaultFixture> {
   const signers: SignerWithAddress[] = await ethers.getSigners();
   const admin = signers[0];
   const investor1 = signers[1];
@@ -269,15 +269,15 @@ export const tokenizedVaultFixture: Fixture<TokenizedVaultFixture> = async funct
     investor1,
     investor2,
     createVault: async () => {
-      const vaultArtifact: Artifact = await artifacts.readArtifact("TokenizedVault");
-      const vault = <TokenizedVault>await deployContract(admin, vaultArtifact, [native.address]);
+      const vaultArtifact: Artifact = await artifacts.readArtifact("TokenisedVault");
+      const vault = <TokenisedVault>await deployContract(admin, vaultArtifact, [native.address]);
       return vault;
     },
   };
 };
 
-export const mockTimeTokenizedVaultFixture: Fixture<MockTimeTokenizedVaultFixture> =
-  async function (): Promise<MockTimeTokenizedVaultFixture> {
+export const MockTokenisedVaultFixture: Fixture<MockTokenisedVaultFixture> =
+  async function (): Promise<MockTokenisedVaultFixture> {
     const signers: SignerWithAddress[] = await ethers.getSigners();
     const admin = signers[0];
     const investor1 = signers[1];
@@ -292,8 +292,8 @@ export const mockTimeTokenizedVaultFixture: Fixture<MockTimeTokenizedVaultFixtur
       investor1,
       investor2,
       createVault: async () => {
-        const vaultArtifact: Artifact = await artifacts.readArtifact("MockTimeTokenizedVault");
-        const vault = <MockTimeTokenizedVault>await deployContract(admin, vaultArtifact, [native.address]);
+        const vaultArtifact: Artifact = await artifacts.readArtifact("MockTokenisedVault");
+        const vault = <MockTokenisedVault>await deployContract(admin, vaultArtifact, [native.address]);
         return vault;
       },
     };
