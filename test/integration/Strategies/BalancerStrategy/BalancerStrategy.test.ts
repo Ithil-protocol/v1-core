@@ -111,14 +111,14 @@ describe("Balancer strategy integration tests", function () {
     };
   });
 
-  it("Balancer Strategy: quoter", async function () {
+  xit("Balancer Strategy: quoter", async function () {
     const [enter] = await strategy.quote(order.spentToken, order.obtainedToken, order.maxSpent);
     expect(enter).to.be.gt(0);
     const [exit] = await strategy.quote(order.obtainedToken, order.spentToken, order.maxSpent);
     expect(exit).to.be.gt(0);
   });
 
-  it("Balancer Strategy: open position on DAI", async function () {
+  xit("Balancer Strategy: open position on DAI", async function () {
     const initialVaultBalance = await marginToken.balanceOf(vault.address);
     // First call should revert since minObtained is too high
 
@@ -146,11 +146,11 @@ describe("Balancer strategy integration tests", function () {
     );*/
   });
 
-  it("Balancer Strategy: harvest", async function () {
+  xit("Balancer Strategy: harvest", async function () {
     await strategy.harvest(order.obtainedToken);
   });
 
-  it("Balancer Strategy: close position on DAI", async function () {
+  xit("Balancer Strategy: close position on DAI", async function () {
     const initialVaultBalance = await marginToken.balanceOf(vault.address);
     const initialTraderBalance = await marginToken.balanceOf(trader1.address);
     // Calculate how much we will obtain
