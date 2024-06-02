@@ -12,9 +12,11 @@ import type { TestStrategy } from "../src/types/TestStrategy";
 import type { YearnStrategy } from "../src/types/YearnStrategy";
 import type { MarginTradingStrategy } from "../src/types/MarginTradingStrategy";
 import type { Vault } from "../src/types/Vault";
+import type { Backer } from "../src/types/Backer";
 
 declare module "mocha" {
   export interface Context {
+    backer: Backer;
     liquidator: Liquidator;
     staker: Staker;
     mockKyberNetworkProxy: MockKyberNetworkProxy;
